@@ -1,5 +1,4 @@
-﻿using BaseLib.Abstracts;
-using SpireLab.SpireLabCode.Extensions;
+using BaseLib.Abstracts;
 using Godot;
 
 namespace SpireLab.SpireLabCode.Character;
@@ -8,6 +7,6 @@ public class SpireLabRelicPool : CustomRelicPoolModel
 {
     public override Color LabOutlineColor => SpireLab.Color;
 
-    public override string BigEnergyIconPath => "charui/big_energy.png".ImagePath();
-    public override string TextEnergyIconPath => "charui/text_energy.png".ImagePath();
+    public override string BigEnergyIconPath => $"{MainFile.ResPath}/images/surveyor/energy.png";
+    public override string TextEnergyIconPath => $"{MainFile.ResPath}/images/surveyor/energy.png";
 }

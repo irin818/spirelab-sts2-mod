@@ -1,9 +1,10 @@
 # SpireLab
 
-《杀戮尖塔 2》原创角色 Mod 的 Phase A 工程。实验角色有 70 点初始生命、5 张原版打击、5 张原版防御、1 张校准打击和原版初始遗物 Burning Blood。校准打击耗费 1 点能量，造成 8 点伤害，升级为 11 点。角色外观、图标与战后奖励池均为开发占位。
+《杀戮尖塔 2》C# 角色 Mod。测试版 `v0.2.0` 的提灯测绘师拥有 72 点最大生命、专属起始牌组、辉印机制、原创美术、16 张新牌、2 件遗物和 2 种药水。测试目标是跑通角色、机制、战斗、资源制作与打包的完整流程。
 
+- [测试版内容、改动位置和美术记录](docs/surveyor-preview.md)
 - [学习同步](LEARNING_SYNC.md)
-- [原版机制与原创候选](docs/character-design.md)
+- [早期原版机制与角色候选](docs/character-design.md)
 
 ## 构建环境
 
@@ -58,43 +59,22 @@ git pull --ff-only
 git switch -c codex/your-task
 ```
 
-## 在 Mac 上复现游戏测试
+## 隔离实机与自动化验证
 
-下面的步骤将 Steam 游戏克隆到 `.local/game-smoke/`，在副本中增加 Mod 文件与 Godot 的 `override.cfg`。测试设置与存档写入单独的 macOS Application Support 子目录。仓库内已有一次通过测试的副本，可用下方最后一条命令直接启动。重新创建副本时，请用新的测试目录或保留已有 `override.cfg`，以便保留同一测试存档。
+关闭现有的隔离测试实例后，在仓库根目录执行。
 
 ```sh
-game="$HOME/Library/Application Support/Steam/steamapps/common/Slay the Spire 2"
-mkdir -p .local/game-smoke .local/logs
-test -d .local/game-smoke/SlayTheSpire2.app || cp -cR "$game/SlayTheSpire2.app" .local/game-smoke/
-test_game="$PWD/.local/game-smoke/SlayTheSpire2.app/Contents/MacOS"
-mkdir -p "$test_game/mods/BaseLib"
-cp .local/baselib/BaseLib{.dll,.json,.pck,CompatibilityHelper.dll,CompatibilityHelper.json} "$test_game/mods/BaseLib/"
-cp -R SpireLab/bin/mods/ExportRelease/SpireLab "$test_game/mods/"
-if [ ! -f "$test_game/override.cfg" ]; then
-  cat > "$test_game/override.cfg" <<EOF_CONFIG
-[application]
-config/use_custom_user_dir=true
-config/custom_user_dir_name="SpireLabPhaseASmoke-$(date +%s)"
-EOF_CONFIG
-fi
-
-"$test_game/Slay the Spire 2" --force-steam=off --log-file "$PWD/.local/logs/game-smoke.log"
+./scripts/smoke-macos.sh
 ```
 
-如需获取 `.local/baselib/`，从 v3.4.8 release 下载 `BaseLib.v3.4.8.zip` 并解压。ZIP 预期 SHA-256 为 `ad30d8aa4dee8e5d31150ab75eae6e6b927fa83ce30af93f4b2a144c3b09f82f`。该版同时需要归档里的 Compatibility Helper。首次选择 **Load Mods** 后，游戏可能自动重启且丢失离线参数。若出现 Steam 初始化提示，退出该测试窗口，再用上面的离线命令启动。
+脚本构建 DLL 和 PCK，使用 APFS 克隆创建独立游戏副本，关闭 Steam 集成，并在单独的 Application Support 子目录写入测试配置。它把测试 DLL 放在副本内，启动实际游戏的无窗口模式，验证内容注册、资源、卡牌与药水结算、回合钩子、战斗奖励、存档序列化、商店、休息点和简中本地化。成功时日志会打印 `[SpireLabSmoke] PASS`，脚本也会检查运行期间的错误。脚本输出具体日志路径，测试副本和产物放在 `.local/`。
 
-1. 检查日志中的 `User Data Directory` 指向独立测试目录、提示 Steam 初始化已跳过，并记录 `Loaded 3 mods (3 total)` 与 `Phase A initializer reached.`。
-2. 进入单人模式，选择问号图标的 **SpireLab Test Character**，核对 70 点生命与 Burning Blood，开始一局。
-3. 进入第一场战斗。抽到 **Calibration Strike** 后，用其在手牌中的数字快捷键选牌并点击敌人。无伤害修正和格挡时，预期消耗 1 点能量、减少敌人 8 点生命。
-4. 击败敌人，检查 Burning Blood 治疗与三张卡牌奖励。日志应有 `playing card SPIRELAB-CALIBRATION_STRIKE` 和实验角色的胜利记录。
+在窗口模式手测时，把 BaseLib 解压得到的 5 个运行文件与 `SpireLab.dll`、`SpireLab.json`、`SpireLab.pck` 分别放在测试副本的同级子目录 `Contents/MacOS/mods/BaseLib/` 与 `Contents/MacOS/mods/SpireLab/`。通过本地测试配置开启 Mod，以 `--force-steam=off` 启动副本。首次出现 **Load Mods** 时点击启用，退出可能出现的自动重启窗口，再用同一条离线命令启动。详见 [测试版验证清单](docs/surveyor-preview.md)。
 
-确认要在 Steam 安装中使用时，可以把两个 Mod 目录放到原 app 的 `Contents/MacOS/mods/`，重启后从游戏的 Mod 菜单检查启用状态。若已通过创意工坊安装相同的 BaseLib 版本，可复用它。回退时关闭游戏并移出新增的 Mod 目录，保留测试存档和原始 Steam 文件。Windows 的本地目录为游戏安装目录下的 `mods/`。
+## 本机安装与回退
 
-## 实测结果
+关闭游戏后，将 `SpireLab/` 与匹配的 `BaseLib/` 放入游戏的本地 Mod 目录。Mac 目录在 `SlayTheSpire2.app/Contents/MacOS/mods/`，Windows 目录在游戏安装目录下的 `mods/`。已有相同版本 BaseLib 和 Compatibility Helper 时可复用。打开游戏并按提示启用 Mod，在单人模式新开一局并选择提灯测绘师。
 
-- Debug 构建零警告、零错误。MegaDot 本地打包成功，英文和简中 JSON 两套资源进入 PCK。
-- macOS 隔离副本加载 Compatibility Helper、BaseLib、SpireLab 三个 Mod。英语角色选单、开局、两次出牌、战后遗物和卡牌奖励均实测成功。
-- 对 Nibbit 的第一次校准打击让能量由 3 降至 2，敌方生命由 44 降至 36。第二次抵消 5 格挡并扣除 3 生命。战胜后 Burning Blood 治疗 6 点，成功显示三张奖励卡。
-- 升级后的 11 点伤害目前仅通过代码与编译检查。简中运行时显示、存档重载、Windows、Steam 联机和公开测试分支留待各自验证。
+卸载时把新增的 Mod 文件夹移出本地 Mod 目录。创建的测试存档可以保留。原版游戏二进制和 Steam 存档由游戏自己管理。
 
-模板代码和临时图像来自 Alchyr 的角色模板，NuGet 声明 MIT。原版战斗外观和声音由 BaseLib 的 `PlaceholderCharacterModel` 在本机引用。发布前将确认资源归属并替换开发占位图。[Alchyr.Sts2.Templates 2.5.3](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3) · [角色模板指南](https://github.com/Alchyr/ModTemplate-StS2/wiki/Creating-a-Character)
+角色模板来自 Alchyr，NuGet 声明 MIT。测绘师的形象、场景和卡面为本项目生成。测试版复用游戏的通用界面、部分特效与音效。[Alchyr.Sts2.Templates 2.5.3](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3)

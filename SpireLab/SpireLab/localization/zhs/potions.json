@@ -1,0 +1,6 @@
+{
+  "SPIRELAB-LUMEN_TONIC.title": "辉印浓剂",
+  "SPIRELAB-LUMEN_TONIC.description": "获得 {Lumen:diff()} 层[gold]辉印[/gold]。",
+  "SPIRELAB-FAULT_SOLVENT.title": "断层溶剂",
+  "SPIRELAB-FAULT_SOLVENT.description": "施加 {Vulnerable:diff()} 层[gold]易伤[/gold]。"
+}

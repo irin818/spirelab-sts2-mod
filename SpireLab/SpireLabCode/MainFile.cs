@@ -13,6 +13,7 @@ public partial class MainFile : Node
 
     public static void Initialize()
     {
-        Logger.Info("Phase A initializer reached.");
+        Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(typeof(MainFile).Assembly);
+        Logger.Info("Lantern Surveyor preview initialized.");
     }
 }

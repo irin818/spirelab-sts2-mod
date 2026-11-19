@@ -16,3 +16,12 @@
 - [dev-macos.sh](scripts/dev-macos.sh) 复现安装、检查、编译和打包。版本由 `global.json`、工具清单和项目引用管理。SDK 负责构建，目标框架决定代码可用的 API，运行时由游戏提供。
 - 干净检出复用已校验的下载缓存，重新安装工具、编译零警告零错误，并导出 PCK。VS Code 的 C# 日志确认使用项目 SDK 加载 `SpireLab.csproj`。ILSpy 成功读取游戏中 `StrikeIronclad.OnPlay` 的签名。
 - 私有 GitHub 仓库建立 `main` 基线，工具改动走单独分支和 PR。角色机制选型暂停。
+
+## 2026-11-20 · 提灯测绘师测试版
+
+- 采用简单的辉印机制验证全链路。加入原创角色模型、场景、美术、专属卡池、16 张新牌、2 件遗物、2 种药水、2 个状态与中英本地化。内容、实现位置和美术制作记录见 [测试版](docs/surveyor-preview.md)。
+- 每种牌用 `CanonicalVars` 提供运行数值和本地化变量。辉印通过 `PowerCmd` 更新可见状态，生成牌通过 `CardPileCmd` 加入当前战斗。普通奖励使用 `FilterThroughEpochs` 排除战斗衍生物。
+- 三处适合亲自阅读的代码是 [辉印与回合钩子](SpireLab/SpireLabCode/Powers/LumenPower.cs)、[起始牌和资源消费](SpireLab/SpireLabCode/Cards/StarterCards.cs)、[真实游戏集成测试](tests/SpireLab.Smoke/SurveyorSmoke.cs)。前两处保留游戏原生 Command，最后一处从隔离游戏启动并断言实战状态。
+- Apple Silicon 上实际游戏通过 26 项断言，覆盖辉印、起始牌、两类药水、升级、回合、战斗胜利、专属奖励、存档模型往返、商店动画、休息点和简中文案。窗口实测了角色选择、开局、立绘、手牌和起始辉印。ZIP 已与测试运行文件逐个比对并安装到 Steam 游戏的本地 `mods` 目录。
+- 首轮出现过教程阻断、商店 Spine 类型错误和引擎启动预载错误。测试用独立存档跳过教程，商店改为 `NMerchantCharacter` 子类，脚本也捕获引擎直接写出的 `ERROR:`。通过的日志仍有游戏关停时的资源回收诊断，保存在本机 `.local/`。
+- 下一版可直接换核心规则和卡面，再用同一套脚本跑回归。跨进程存档恢复、Windows、联网多人及一整局的平衡性仍待验证。

@@ -1,52 +1,49 @@
 using BaseLib.Abstracts;
 using BaseLib.Utils.NodeFactories;
-using SpireLab.SpireLabCode.Cards;
-using SpireLab.SpireLabCode.Extensions;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Cards;
-using MegaCrit.Sts2.Core.Models.Relics;
+using SpireLab.SpireLabCode.Cards;
+using SpireLab.SpireLabCode.Relics;
 
 namespace SpireLab.SpireLabCode.Character;
 
-public class SpireLab : PlaceholderCharacterModel
+public sealed class SpireLab : PlaceholderCharacterModel
 {
     public const string CharacterId = "SpireLab";
-
-    public static readonly Color Color = new("ffffff");
+    public static readonly Color Color = new("85d3c5");
+    private const string Scenes = MainFile.ResPath + "/scenes";
+    private const string Art = MainFile.ResPath + "/images/surveyor";
 
     public override Color NameColor => Color;
     public override CharacterGender Gender => CharacterGender.Neutral;
-    public override int StartingHp => 70;
+    public override int StartingHp => 72;
+    public override float DeathAnimTime => 0.5f;
 
-    public override IEnumerable<CardModel> StartingDeck => [
-        ModelDb.Card<StrikeIronclad>(),
-        ModelDb.Card<StrikeIronclad>(),
-        ModelDb.Card<StrikeIronclad>(),
-        ModelDb.Card<StrikeIronclad>(),
-        ModelDb.Card<StrikeIronclad>(),
-        ModelDb.Card<DefendIronclad>(),
-        ModelDb.Card<DefendIronclad>(),
-        ModelDb.Card<DefendIronclad>(),
-        ModelDb.Card<DefendIronclad>(),
-        ModelDb.Card<DefendIronclad>(),
-        ModelDb.Card<CalibrationStrike>()
-    ];
-
-    public override IReadOnlyList<RelicModel> StartingRelics =>
+    public override IEnumerable<CardModel> StartingDeck =>
     [
-        ModelDb.Relic<BurningBlood>()
+        ModelDb.Card<CaliperStrike>(), ModelDb.Card<CaliperStrike>(),
+        ModelDb.Card<CaliperStrike>(), ModelDb.Card<CaliperStrike>(),
+        ModelDb.Card<CeramicGuard>(), ModelDb.Card<CeramicGuard>(),
+        ModelDb.Card<CeramicGuard>(), ModelDb.Card<CeramicGuard>(),
+        ModelDb.Card<LightProbe>(), ModelDb.Card<ResonantRelease>()
     ];
 
+    public override IReadOnlyList<RelicModel> StartingRelics => [ModelDb.Relic<SurveyLantern>()];
     public override CardPoolModel CardPool => ModelDb.CardPool<SpireLabCardPool>();
     public override RelicPoolModel RelicPool => ModelDb.RelicPool<SpireLabRelicPool>();
     public override PotionPoolModel PotionPool => ModelDb.PotionPool<SpireLabPotionPool>();
 
-    /*  PlaceholderCharacterModel will utilize placeholder basegame assets for most of your character assets until you
-        override all the other methods that define those assets.
-        These are just some of the simplest assets, given some placeholders to differentiate your character with.
-        You don't have to, but you're suggested to rename these images. */
+    public override string CustomVisualPath => $"{Scenes}/surveyor_combat.tscn";
+    public override string CustomCharacterSelectBg => $"{Scenes}/surveyor_select.tscn";
+    public override string CustomRestSiteAnimPath => $"{Scenes}/surveyor_rest.tscn";
+    public override string CustomMerchantAnimPath => $"{Scenes}/surveyor_merchant.tscn";
+    public override string CustomIconTexturePath => $"{Art}/surveyor_icon.png";
+    public override string CustomIconOutlineTexturePath => $"{Art}/surveyor_icon.png";
+    public override string CustomCharacterSelectIconPath => $"{Art}/surveyor_select_icon.png";
+    public override string CustomCharacterSelectLockedIconPath => $"{Art}/surveyor_select_locked.png";
+    public override string CustomMapMarkerPath => $"{Art}/surveyor_icon.png";
+
     public override Control CustomIcon
     {
         get
@@ -56,8 +53,4 @@ public class SpireLab : PlaceholderCharacterModel
             return icon;
         }
     }
-    public override string CustomIconTexturePath => "character_icon_char_name.png".CharacterUiPath();
-    public override string CustomCharacterSelectIconPath => "char_select_char_name.png".CharacterUiPath();
-    public override string CustomCharacterSelectLockedIconPath => "char_select_char_name_locked.png".CharacterUiPath();
-    public override string CustomMapMarkerPath => "map_marker_char_name.png".CharacterUiPath();
 }

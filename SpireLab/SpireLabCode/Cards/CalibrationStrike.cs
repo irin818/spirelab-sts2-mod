@@ -6,10 +6,8 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace SpireLab.SpireLabCode.Cards;
 
-public sealed class CalibrationStrike() : SpireLabCard(1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy)
+public sealed class CalibrationStrike() : SpireLabCard(1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy, "caliper")
 {
-    public override string BetaPortraitPath => PortraitPath;
-
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DamageVar(8m, ValueProp.Move)];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)

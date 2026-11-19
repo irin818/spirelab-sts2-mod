@@ -1,9 +1,9 @@
 {
   "id": "SpireLab",
-  "name": "SpireLab",
+  "name": "SpireLab — Lantern Surveyor",
   "author": "irin",
-  "description": "Phase A character and combat smoke test for Slay the Spire 2.",
-  "version": "v0.1.0",
+  "description": "Lantern Surveyor playable character preview.",
+  "version": "v0.2.0",
   "min_game_version": "0.111.1",
   "has_pck": true,
   "has_dll": true,
