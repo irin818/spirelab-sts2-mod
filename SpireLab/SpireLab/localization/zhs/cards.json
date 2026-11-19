@@ -1,0 +1,4 @@
+{
+  "SPIRELAB-CALIBRATION_STRIKE.title": "校准打击",
+  "SPIRELAB-CALIBRATION_STRIKE.description": "造成 {Damage:diff()} 点伤害。"
+}
