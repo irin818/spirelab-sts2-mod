@@ -1,6 +1,7 @@
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.AutoSlay.Helpers;
+using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -21,6 +22,7 @@ using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.TestSupport;
+using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch;
 using SpireLab.SpireLabCode.Witch.Cards;
 using SpireLab.SpireLabCode.Witch.Mechanics;
@@ -95,12 +97,14 @@ internal static class WitchVisualPreview
                 await CardCmd.Discard(new ThrowingPlayerChoiceContext(), card);
             }
 
-            WitchCard[] cards = [await Add<PinnacleOfMana>(player), await Add<TheMirrorSelf>(player), await Add<FallenConfidence>(player)];
-            Check(piles.Hand.Cards.Count == 3 && cards.All(card =>
+            WitchCard[] cards = [await Add<PinnacleOfMana>(player), await Add<TheMirrorSelf>(player), await Add<FallenConfidence>(player),
+                await Add<ForbiddenFrontispiece>(player)];
+            Check(piles.Hand.Cards.Count == cards.Length && cards.All(card =>
                 card.Pile?.Type == PileType.Hand &&
                 ResourceLoader.Load<Texture2D>(card.PortraitPath)?.GetSize() == new Vector2(500, 380)),
-                "three native hand cards use the candidate portraits");
+                "native hand shows the four themed card portraits including the integrated U31 art");
             await Capture(tree, "card-hand-macos.png");
+            await Capture(tree, "status-before-macos.png");
             await CreatureCmd.SetCurrentHp(player.Creature, 20);
             await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[1], null);
             await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[0], null);
@@ -116,8 +120,9 @@ internal static class WitchVisualPreview
                 Check(relic.Icon.GetSize() == new Vector2(94, 94)
                     && pinnacle!.CustomPackedIconPath.EndsWith("/powers/pinnacle.png", StringComparison.Ordinal)
                     && pinnacle.Icon.GetSize() == new Vector2(64, 64)
+                    && ResourceLoader.Load<Texture2D>(pinnacle.CustomBigIconPath)?.GetSize() == new Vector2(256, 256)
                     && ResourceLoader.Load<Texture2D>(cards[0].PortraitPath).GetSize() == new Vector2(500, 380),
-                    "the shipped game UI can resolve replacement card, relic and power textures from the PCK");
+                    "the PCK resolves the card, relic and both native sizes of the replacement Power icon");
             }
             await Capture(tree, "mirror-form-macos.png");
             var powers = player.Creature.GetCreatureNode()!.GetNode<Control>("%HealthBar")
@@ -131,6 +136,55 @@ internal static class WitchVisualPreview
                 "native hover shows the Simplified Chinese Pinnacle power tooltip");
             await Capture(tree, "power-tooltip-macos.png");
             badge.EmitSignal(Control.SignalName.MouseExited);
+
+            var choice = new ThrowingPlayerChoiceContext();
+            await CardCmd.AutoPlay(choice, cards[3], null);
+            await Play<BloodstainedBookmark>(player, choice);
+            await Play<HallOfGlass>(player, choice);
+            await Play<RefinedAbyss>(player, choice);
+            await Play<ManaPump>(player, choice, upgrade: true);
+            await Play<ReflectiveInscription>(player, choice, upgrade: true);
+            await Play<MirrorBurial>(player, choice);
+            await Play<TemporalSeal>(player, choice);
+            await Play<MirrorTransfer>(player, choice);
+            await Play<MoonInTheMirror>(player, choice);
+            Check(powers.GetChildren().OfType<NPower>().Select(node => node.Model).Any(power => power is WitchImmunityPower)
+                && player.Creature.GetPower<GrimoireRetainPower>()?.Amount == 1
+                && player.Creature.GetPower<BookmarkPower>()?.Amount == 1
+                && player.Creature.GetPower<GlassHallPower>()?.Amount == 5
+                && player.Creature.GetPower<RefinedAbyssPower>()?.Amount == 1
+                && player.Creature.GetPower<ManaPumpPower>()?.Amount == 3,
+                "native buffs show after playing persistent cards and the shared attack-immunity effect");
+            Check(player.Creature.GetPower<PendingEnergyPower>()?.Amount == 2
+                && player.Creature.GetPower<PendingBlockPower>()?.Amount == 3
+                && player.Creature.GetPower<PendingDrawPower>()?.Amount == 2
+                && player.Creature.GetPower<ReflectChargesPower>()?.Amount == 1,
+                "delayed energy, block, draw and one blocked reflection show their real amounts");
+            await Capture(tree, "status-active-macos.png");
+
+            var creature = player.Creature;
+            var enemy = creature.CombatState!.HittableEnemies.First();
+            var originalBlock = creature.Block;
+            await CreatureCmd.Damage(choice, creature, 4, ValueProp.Move, enemy);
+            Check(creature.Block == originalBlock && creature.GetPower<WitchImmunityPower>() == null,
+                "the first enemy hit consumes immunity without losing Block");
+            await CreatureCmd.Damage(choice, creature, 4, ValueProp.Move, enemy);
+            Check(creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<InscribedSkillPower>()?.Amount == 1,
+                "the next blocked hit consumes the reflection charge and queues one Inscription");
+            await Capture(tree, "status-after-hit-macos.png");
+
+            using var selection = CardSelectCmd.UseSelector(new WitchSelector());
+            var turn = piles.TurnNumber;
+            CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
+            await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play,
+                "the game advances through the enemy turn and next draw");
+            Check(creature.GetPower<PendingEnergyPower>() == null && creature.GetPower<PendingDrawPower>() == null
+                && creature.GetPower<PendingBlockPower>() == null && creature.GetPower<ManaPumpPower>()?.Amount == 2,
+                "turn start consumes delayed icons and decrements the pump while persistent powers remain");
+            await Play<WitchDefend>(player, choice);
+            Check(creature.GetPower<InscribedSkillPower>() == null,
+                "playing the first Skill consumes the current Inscription discount");
+            await Capture(tree, "status-next-turn-macos.png");
             GD.Print("[SpireLabSmoke] PASS");
             game.Quit();
         }

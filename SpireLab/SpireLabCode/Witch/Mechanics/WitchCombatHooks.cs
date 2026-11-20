@@ -86,6 +86,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         {
             await CreatureCmd.GainBlock(player.Creature, block, ValueProp.Unpowered, null);
         }
+        await WitchStatuses.Refresh(choice, player, state);
     }
 
     public override async Task AfterAutoPrePlayPhaseEnteredEarly(PlayerChoiceContext choice, Player player)
@@ -93,6 +94,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         if (WitchCombatState.Find(player) is { } state)
         {
             state.NextDraw = 0;
+            await WitchStatuses.Refresh(choice, player, state);
             await Enlightenment.ChooseSwap(choice, player, this);
             state.TraitSwapOffered = true;
             await WitchStatuses.Refresh(choice, player, state);

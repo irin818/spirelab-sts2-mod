@@ -17,8 +17,17 @@ if [[ "$character" == witch-legacy-save && ! -f "${SPIRELAB_WITCH_LEGACY_SAVE:-}
     exit 2
 fi
 mkdir -p .local/logs
-./scripts/dev-macos.sh build
-./scripts/dev-macos.sh pack > .local/logs/"$character"-smoke-pack.log 2>&1
+if [[ -n "${SPIRELAB_SMOKE_MOD_SOURCE:-}" ]]; then
+    payload="$(cd "$SPIRELAB_SMOKE_MOD_SOURCE" && pwd -P)"
+    for suffix in dll pck json; do
+        [[ -s "$payload/SpireLab.$suffix" ]] || { printf 'Missing SpireLab.%s in %s\n' "$suffix" "$payload" >&2; exit 1; }
+    done
+    printf 'Using existing runtime files from %s\n' "$payload"
+else
+    ./scripts/dev-macos.sh build
+    ./scripts/dev-macos.sh pack > .local/logs/"$character"-smoke-pack.log 2>&1
+    payload="$root/SpireLab/bin/mods/ExportRelease/SpireLab"
+fi
 
 export DOTNET_ROOT="$root/.local/dotnet-10"
 export DOTNET_CLI_HOME="$root/.local"
@@ -39,8 +48,9 @@ mods="$bin/mods"
 if [[ -d "$mods" ]]; then mv "$mods" "$test_dir/original-mods"; fi
 if [[ -d "$bin/mods_STEAMTEST" ]]; then mv "$bin/mods_STEAMTEST" "$test_dir/original-mods-steamtest"; fi
 mkdir -p "$mods/BaseLib" "$mods/SpireLab" "$mods/SpireLabSmoke"
-cp .local/baselib/BaseLib{.dll,.pck,.json,CompatibilityHelper.dll,CompatibilityHelper.json} "$mods/BaseLib/"
-cp SpireLab/bin/mods/ExportRelease/SpireLab/SpireLab{.dll,.pck,.json} "$mods/SpireLab/"
+baselib_payload="${SPIRELAB_SMOKE_BASELIB_SOURCE:-$root/.local/baselib}"
+cp "$baselib_payload"/BaseLib{.dll,.pck,.json,CompatibilityHelper.dll,CompatibilityHelper.json} "$mods/BaseLib/"
+cp "$payload"/SpireLab{.dll,.pck,.json} "$mods/SpireLab/"
 dotnet build tests/SpireLab.Smoke/SpireLab.Smoke.csproj -o "$test_dir/smoke-build"
 cp "$test_dir/smoke-build/SpireLab.Smoke.dll" tests/SpireLab.Smoke/SpireLab.Smoke.json "$mods/SpireLabSmoke/"
 
