@@ -10,7 +10,6 @@ using Finesse = MegaCrit.Sts2.Core.Models.Cards.Finesse;
 using FlashOfSteel = MegaCrit.Sts2.Core.Models.Cards.FlashOfSteel;
 using MegaCrit.Sts2.Core.Models.Enchantments;
 using MegaCrit.Sts2.Core.Models.Relics;
-using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -140,14 +139,7 @@ internal static class WitchContentSmoke
         await CombatManager.Instance.CheckWinCondition();
         await WaitFor(tree, () => !CombatManager.Instance.IsInProgress, "second Witch battle won");
         Check(creature.CurrentHp == 33, "Sealed Potion recovers 3 after card life loss");
-        // The fixture enters a scripted next room. Close the actual reward overlay first so
-        // deferred card holder recycling runs while the old room is still attached.
-        await RunManager.Instance.ProceedFromTerminalRewardsScreen();
-        NOverlayStack.Instance?.Clear();
-        for (var frame = 0; frame < 3; frame++)
-        {
-            await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
-        }
+        await LeaveCompletedCombat(tree);
 
         await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
         piles = player.PlayerCombatState!;
@@ -175,12 +167,7 @@ internal static class WitchContentSmoke
         var deluge = await Add<ManaDeluge>(player, upgrade: true);
         Check(deluge.TryManualPlay(null), "X-cost attack spends retained energy through game queue");
         await WaitFor(tree, () => !CombatManager.Instance.IsInProgress, "X-cost uses high energy and stops on victory");
-        await RunManager.Instance.ProceedFromTerminalRewardsScreen();
-        NOverlayStack.Instance?.Clear();
-        for (var frame = 0; frame < 3; frame++)
-        {
-            await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
-        }
+        await LeaveCompletedCombat(tree);
 
         // Confirm the Witch rules still permit a proven two-card draw cycle with base-game colorless cards.
         var run = player.RunState;

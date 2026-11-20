@@ -10,8 +10,32 @@ internal static class WitchFeedback
     public static void Reflect(Creature dealer) => Pulse(dealer, "reflect", new Color("b8c2ce"), 28);
     public static void Desire(Creature creature) => Pulse(creature, "desire", new Color("cf3044"), 63);
     public static void Energy(Creature creature) => Pulse(creature, "energy", new Color("9479b5"), 29);
+    public static void Block(Creature creature) => Pulse(creature, null, new Color("b8c2ce"), 52);
 
-    private static void Pulse(Creature creature, string cue, Color color, float radius)
+    public static void UpdateHealth(Creature creature)
+    {
+        var visuals = creature.GetCreatureNode()?.Visuals;
+        if (visuals?.GetNodeOrNull<AnimationPlayer>("HealthAnimation") is not { } animation)
+        {
+            return;
+        }
+
+        // This player only controls the sprite's own color; BaseLib keeps ownership of combat animations.
+        if (creature.IsAlive && WitchRules.IsBelowHalf(creature.CurrentHp, creature.MaxHp))
+        {
+            if (!animation.IsPlaying())
+            {
+                animation.Play("low_health");
+            }
+        }
+        else if (animation.IsPlaying())
+        {
+            animation.Stop();
+            visuals.Body.SelfModulate = Colors.White;
+        }
+    }
+
+    private static void Pulse(Creature creature, string? cue, Color color, float radius)
     {
         if (DisplayServer.GetName() == "headless" || creature.GetVfxContainer() is not { } host)
         {
@@ -20,6 +44,7 @@ internal static class WitchFeedback
 
         var pulse = new Line2D
         {
+            Name = cue == null ? "WitchBlockFlash" : "WitchMagicFlash",
             Width = 3,
             DefaultColor = color,
             Antialiased = true,
@@ -31,6 +56,18 @@ internal static class WitchFeedback
         tween.TweenProperty(pulse, "scale", new Vector2(1.8f, 1.8f), 0.34);
         tween.TweenProperty(pulse, "modulate:a", 0f, 0.34);
         tween.Finished += pulse.QueueFree;
+
+        if (cue == null)
+        {
+            return;
+        }
+
+        var glyph = cue == "energy" ? $"{TheWitch.Art}/witch_energy.svg" : $"{TheWitch.Art}/abilities/{cue}.svg";
+        pulse.AddChild(new Sprite2D
+        {
+            Texture = ResourceLoader.Load<Texture2D>(glyph),
+            Scale = new Vector2(0.48f, 0.48f)
+        });
 
         var audio = new AudioStreamPlayer
         {

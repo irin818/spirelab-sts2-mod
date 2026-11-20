@@ -23,7 +23,7 @@ SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-save
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 ```
 
-- `witch` 实测加载、牌池、英文及简中升级预览、物品和古代路由，再进入固定战斗执行启迪回收、升级附魔复制、欲望、反伤、虚像、生命支付和能量上限的组合。
+- `witch` 实测加载、牌池、英文及简中升级预览、物品和古代路由，再进入固定战斗执行启迪回收、升级附魔复制、欲望、反伤、虚像、生命支付和能量上限的组合。检查低血待机、回血恢复和格挡闪光，随后走游戏的死亡结算、返回主菜单、新开一局和商店付费移除卡牌。
 - `witch-save` 在第一进程通过真实地图进入战斗并保存，从第二进程使用游戏读档流程恢复 41 点真实生命、牌组、升级的古代牌和初始遗物。
 - `witch-campaign` 在隔离副本使用原版 AutoSlay。种子 `WITCH10004` 以魔女走过三幕并返回主菜单。使用了 AutoSlay 的防护与后期力量强化，结果用于测试跨幕兼容。
 - 窗口实机确认独立卡面、魔女立绘、能量表以及真实／镜像生命条。自动模式保留引擎关闭时的 RID 与 Shader 回收诊断。早期无窗口预载曾出现引擎 dummy texture 和 worker task 诊断，窗口模式是本版完整回归的基准。
@@ -31,4 +31,11 @@ SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 ## 平衡与待验收
 
 - 保留同回合可循环构筑。最小验证牌组只含两张原版无色牌 Finesse 与 Flash of Steel，要求移除其他牌并实际取得这两张牌。构筑按原版抽牌和费用规则循环。魔女自身的狂赌之渊按 40%／50% 向上取整扣真实生命，在 1 点时无法继续，不能用镜像生命支付。
+- 在堕落自信生效后实测回血组合。真实生命从 1 经「回复」和「灵药瓶」升到 7，两张牌都进入消耗堆。狂赌之渊随后以 0 费打出两次并净得 4 点能量，真实生命回到 1，第三次无法打出。
 - 现有测试覆盖代表性场景和极端组合。无强化整局胜率、全面构筑平衡、Windows、联网多人、正式逐张美术验收和精细演出仍需独立样本。
+
+## 安装包与发布准备
+
+- 私有验证包内含 `SpireLab.dll`、`SpireLab.pck`、`SpireLab.json`、锁定的 BaseLib 及其兼容组件、BaseLib 许可证和双语安装说明。用 `./scripts/dev-macos.sh pack` 重建工程内三件运行文件。ZIP 内的运行文件与实际窗口回归的副本逐一比对；随包提供 SHA-256。
+- [创意工坊封面](art/witch/workshop-cover.jpg) 为 1200 × 675 原创图，仓库保留源图和导出脚本。[Steamworks 预览图文档](https://partner.steamgames.com/doc/api/ISteamUGC#SetItemPreview)
+- BaseLib 使用上游 MIT 许可证；角色模板的 NuGet 元数据也声明 MIT。魔女代码和原创素材当前在私有库交付，公开许可由项目所有者决定。[BaseLib 许可证](https://github.com/Alchyr/BaseLib-StS2/blob/v3.4.8/LICENSE.txt) · [模板许可信息](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3)

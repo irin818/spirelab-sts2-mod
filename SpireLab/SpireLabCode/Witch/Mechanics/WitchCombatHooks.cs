@@ -49,6 +49,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         }
 
         state.TrackEnergy = true;
+        WitchFeedback.UpdateHealth(player.Creature);
         var energy = state.NextEnergy + state.StartingEnergy + state.ManaPumpDurations.Count;
         state.NextEnergy = 0;
         for (var i = state.ManaPumpDurations.Count - 1; i >= 0; i--)
@@ -95,6 +96,10 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         {
             await WitchEnergy.Resolve(new BlockingPlayerChoiceContext(), play.Player, state);
             state.Plays++;
+            if (play.Card is WitchCard && play.Card.Type is CardType.Skill or CardType.Power)
+            {
+                await CreatureCmd.TriggerAnim(play.Player.Creature, "Cast", 0);
+            }
             if (play.Card is WitchCard { IsDesire: true })
             {
                 WitchFeedback.Desire(play.Player.Creature);
@@ -360,6 +365,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 veil.Flash();
             }
             WitchLife.RefreshDisplay(creature, state);
+            WitchFeedback.UpdateHealth(creature);
         }
 
         return Task.CompletedTask;
@@ -399,6 +405,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             return;
         }
 
+        WitchFeedback.Block(target);
         var firstBlock = !state.BlockedAttackThisTurn;
         state.BlockedAttackThisTurn = true;
         state.BlockedDuringEnemyTurn |= target.CombatState?.CurrentSide == CombatSide.Enemy;
