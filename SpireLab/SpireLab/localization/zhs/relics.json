@@ -1,9 +1,9 @@
 {
   "SPIRELAB-CRACKED_VANITY_MIRROR.title": "破损梳妆镜",
-  "SPIRELAB-CRACKED_VANITY_MIRROR.description": "每场战斗首次成功使用魔法启迪时获得3点格挡。",
+  "SPIRELAB-CRACKED_VANITY_MIRROR.description": "每场战斗第一次通过魔法启迪成功换牌后，获得3点格挡。失去此遗物后，魔法启迪仍然生效。",
   "SPIRELAB-CRACKED_VANITY_MIRROR.flavor": "她的倒影从不等她先开口。",
   "SPIRELAB-TWIN_STANDING_MIRROR.title": "双生全身镜",
-  "SPIRELAB-TWIN_STANDING_MIRROR.description": "每回合首次成功使用魔法启迪时获得3点格挡。",
+  "SPIRELAB-TWIN_STANDING_MIRROR.description": "每回合第一次通过魔法启迪成功换牌后，获得3点格挡。",
   "SPIRELAB-TWIN_STANDING_MIRROR.flavor": "倒影和本体终于站在了同一边。",
   "SPIRELAB-CRACKED_PHIAL.title": "裂口药瓶",
   "SPIRELAB-CRACKED_PHIAL.description": "每场战斗首次通过卡牌效果获得额外能量时，获得3点格挡。",
