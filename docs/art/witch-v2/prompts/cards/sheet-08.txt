@@ -1,0 +1,13 @@
+Production art atlas for the original Witch in a 2D dark fantasy card game. Input 1 is the authoritative model sheet with exact visual identity. Input 2 is reference of the glass/metal/cel illustration treatment only. Use the production model for any hand/cuff/hat/faces. Render EXACTLY 3 columns by 3 rows (nine equal contiguous rectangles, no dividers, gaps, frames, labels, type, or UI). Overall landscape ratio about 1.32:1 so each declared tile is a standalone landscape card painting, like a professional nine-image contact sheet with clear cut boundaries at exactly one-third and two-thirds on each axis. No characters or objects cross tile boundaries. Keep the main subject inside the middle 72% of each tile. Every card scene has its own camera, composition, detail and lighting. Use the following tiles in exact row-major order and never print the IDs, titles or numbers.
+
+1. R03 [Pure Mana] distilled floating gold mana droplet.
+2. R04 [Red Catalyst] crimson-red catalyst in a lab crucible.
+3. R05 [Potion Torrent] flood of violet potions and vapors.
+4. R06 [Refined Abyss] obsidian abyss spiraling into a flask.
+5. R07 [Gilded Pact] dark gold pact inscribed with a red droplet.
+6. R08 [Final Distillation] last distillation releases brilliant purple flame.
+7. R09 [Dusk Refinement] amber dusk alchemical infusion resting on a sill.
+8. R11 [Hall of All Mirrors] infinite multitude of cold silver mirrors.
+9. R12 [Moon in the Mirror] pale moon reflected in cracked glass and water.
+
+Style across every tile: refined Japanese 2D cel anime with fine ink contours, hard-edged shaded shapes and high, controlled contrast. Palette obsidian, ivory, gray-white with cold silver and garnet accents. Garnet/ivory glass for potions, clear cool-silver glass for mirrors, warm-gray ink and silver corners for grimoire, concentrated crimson for Desire. Convert any legacy color name in the scene's description to these narrow hues. Whenever a character is pictured, she is the petite dark ringlet-haired girl-shaped figure with deep red eyes wearing the model sheet wide pointed black witch hat, ivory lace with garnet clasp and black rose, black ivory gothic court dress, platform buckle boots and moderate proportions. Mirror self is identical costume/shape, only her face and lighting differ. Clear story at 150px wide, with high-contrast center focal point. No copied art, no shading discontinuity among tiles, no 3D, no realism, no random background typography.

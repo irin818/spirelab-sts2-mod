@@ -1,10 +1,4 @@
 {
-  "SPIRELAB-SURVEY_LANTERN.title": "勘测提灯",
-  "SPIRELAB-SURVEY_LANTERN.description": "在战斗开始时，获得 {Lumen:diff()} 层[gold]辉印[/gold]。",
-  "SPIRELAB-SURVEY_LANTERN.flavor": "刚好够照亮第一处测点。",
-  "SPIRELAB-BRASS_MERIDIAN.title": "黄铜基准仪",
-  "SPIRELAB-BRASS_MERIDIAN.description": "在战斗开始时，获得 {Block:diff()} 点[gold]格挡[/gold]。",
-  "SPIRELAB-BRASS_MERIDIAN.flavor": "岩层翻卷时仍不移动的基准。",
   "SPIRELAB-CRACKED_VANITY_MIRROR.title": "破损梳妆镜",
   "SPIRELAB-CRACKED_VANITY_MIRROR.description": "每场战斗首次成功使用魔法启迪时获得3点格挡。",
   "SPIRELAB-CRACKED_VANITY_MIRROR.flavor": "她的倒影从不等她先开口。",

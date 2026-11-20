@@ -1,6 +1,7 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Texture2D" path="res://SpireLab/images/witch/witch_sprite.png" id="1_witch"]
+[ext_resource type="Texture2D" path="res://SpireLab/images/witch/witch_mirror_form.png" id="2_mirror"]
 
 [sub_resource type="Animation" id="Animation_idle"]
 resource_name = "idle"
@@ -113,6 +114,12 @@ _data = {
 }
 
 [node name="WitchCombat" type="Node2D"]
+
+[node name="MirrorFormVisual" type="Sprite2D" parent="."]
+modulate = Color(0.71, 0.71, 0.82, 0.4)
+position = Vector2(-106, -145)
+scale = Vector2(0.65, 0.65)
+texture = ExtResource("2_mirror")
 
 [node name="Visuals" type="Sprite2D" parent="."]
 unique_name_in_owner = true

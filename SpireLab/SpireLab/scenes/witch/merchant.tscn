@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Texture2D" path="res://SpireLab/images/witch/witch_sprite.png" id="1_witch"]
-[ext_resource type="Script" path="res://Visuals/SurveyorMerchantVisual.cs" id="2_script"]
+[ext_resource type="Script" path="res://Visuals/WitchMerchantVisual.cs" id="2_script"]
 
 [sub_resource type="Animation" id="Animation_idle"]
 resource_name = "idle"

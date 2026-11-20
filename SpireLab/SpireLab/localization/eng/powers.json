@@ -1,8 +1,0 @@
-{
-  "SPIRELAB-LUMEN_POWER.title": "Lumen",
-  "SPIRELAB-LUMEN_POWER.description": "A combat resource spent by certain cards. Maximum 6.",
-  "SPIRELAB-LUMEN_POWER.smartDescription": "You have {Amount} Lumen. Maximum 6.",
-  "SPIRELAB-ECHO_LANTERN_POWER.title": "Echo Lantern",
-  "SPIRELAB-ECHO_LANTERN_POWER.description": "Gain Lumen at the start of your turn.",
-  "SPIRELAB-ECHO_LANTERN_POWER.smartDescription": "At the start of your turn, gain {Amount} Lumen."
-}

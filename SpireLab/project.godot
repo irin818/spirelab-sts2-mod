@@ -12,7 +12,7 @@ config_version=5
 
 config/name="SpireLab"
 config/features=PackedStringArray("4.5", "C#", "Mobile")
-config/icon="res://SpireLab/images/surveyor/surveyor_icon.png"
+config/icon="res://SpireLab/images/witch/witch_icon.svg"
 
 [display]
 

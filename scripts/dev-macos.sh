@@ -101,6 +101,9 @@ check_tools() {
 
 pack() {
     [[ -x "$godot" ]] || fail "MegaDot is missing. Run $0 setup."
+    if [[ ! -f SpireLab/.godot/editor/project_metadata.cfg ]]; then
+        "$godot" --headless --editor --path "$root/SpireLab" --import
+    fi
     dotnet publish "$project" -c ExportRelease -p:GodotPath="$godot"
     local extension
     for extension in dll json pck; do

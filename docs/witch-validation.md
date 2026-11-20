@@ -1,6 +1,6 @@
-# 魔女 V1.0
+# 魔女 v1.1.0 验证
 
-适用基线为 Steam STS2 v0.111.1 build 26655341、BaseLib 3.4.8、Apple Silicon。项目沿用原有 C#、MegaDot 和 macOS 构建流程。魔女与提灯测绘师使用各自的模型 ID 和卡池。
+适用基线为 Steam STS2 v0.111.1 build 26655341、BaseLib 3.4.8、Apple Silicon。项目沿用原有 C#、MegaDot 和 macOS 构建流程。魔女角色、牌池和存档沿用 V1.0 的模型 ID。旧实验角色及旧资源保存在 Git 归档 `archive/witch-v1-and-surveyor`。
 
 ## 实现位置
 
@@ -9,7 +9,7 @@
 - [生命和伤害](../SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 使用目标版本 `AbstractModel` 和 `CreatureCmd.Damage` 的 Hook。先计算免疫、格挡，再由镜像生命吸收未被格挡的战斗伤害。原版中毒会以无攻击者的伤害调用这条管线，生命支付则直接走真实生命结算。反射分别取整后走非攻击伤害命令。
 - [额外能量](../SpireLab/SpireLabCode/Witch/Mechanics/WitchEnergy.cs) 通过 `PlayerCombatState.EnergyChanged` 取实际变化。每回合默认能量重置排除在外，遗物额外能量有明确的递归保护。魔力之巅沿用原生保留能量路径。
 - 古代内容使用 BaseLib 的 `ITranscendenceCard`、`ITomeCard` 和 `GetUpgradeReplacement`。D5 只规定基础数值，故原版可正常保存和显示升级标记，效果数值沿用 D5。接口对照 [BaseLib v3.4.8 源码](https://github.com/Alchyr/BaseLib-StS2/tree/v3.4.8)、[模板命令手册](https://github.com/Alchyr/ModTemplate-StS2/wiki/Common-Commands-Cookbook) 和本机程序集。
-- [美术基准、图集、提示与源文件](art/witch/README.md) 先于逐张卡面制作。战斗立绘、选角场景、91 张 PNG、12 种物品图标、能量表和机制音效作为实际导入资源打包。
+- [新版美术基准、图集、提示与源文件](art/witch-v2/README.md) 先于逐张卡面制作。战斗立绘、镜中形态、选角场景、91 张 PNG、12 种物品图标和能量表作为实际导入资源打包。
 
 ## 复现
 
@@ -21,12 +21,16 @@
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-save
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
+./scripts/smoke-macos.sh witch-art
 ```
 
 - `witch` 实测加载、牌池、英文及简中升级预览、物品和古代路由，再进入固定战斗执行启迪回收、升级附魔复制、欲望、反伤、虚像、生命支付和能量上限的组合。检查低血待机、回血恢复和格挡闪光，随后走游戏的死亡结算、返回主菜单、新开一局和商店付费移除卡牌。
 - `witch-save` 在第一进程通过真实地图进入战斗并保存，从第二进程使用游戏读档流程恢复 41 点真实生命、牌组、升级的古代牌和初始遗物。
-- `witch-campaign` 在隔离副本使用原版 AutoSlay。种子 `WITCH10004` 以魔女走过三幕并返回主菜单。使用了 AutoSlay 的防护与后期力量强化，结果用于测试跨幕兼容。
+- `witch-legacy-save` 通过 `SPIRELAB_WITCH_LEGACY_SAVE` 将旧版本 `witch-save` 生成的专用固定夹具复制到独立档案，读档断言与当前版本相同。
+- `witch-campaign` 在隔离副本使用原版 AutoSlay。以魔女走过三幕并返回主菜单时，记录实际种子和三幕首领结果。原版 AutoSlay 会施加防护和后期力量强化，用于验证跨幕流程。
+- `witch-art` 使用原版选角场景和真实战斗手牌。在指定副本的 `captures/` 中保存简中选角、三张样始牌与镜中形态截图。
 - 窗口实机确认独立卡面、魔女立绘、能量表以及真实／镜像生命条。自动模式保留引擎关闭时的 RID 与 Shader 回收诊断。早期无窗口预载曾出现引擎 dummy texture 和 worker task 诊断，窗口模式是本版完整回归的基准。
+- v1.1.0 全新工程目录完成无缓存构建与 PCK 导出。窗口完整回归 98 项通过。新版跨进程读档与 V1.0 魔女固定存档迁移均恢复了 41 点真实生命、角色、已升级古代牌、初始遗物和第六张手牌。
 
 ## 平衡与待验收
 
@@ -36,6 +40,6 @@ SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 
 ## 安装包与发布准备
 
-- 私有验证包内含 `SpireLab.dll`、`SpireLab.pck`、`SpireLab.json`、锁定的 BaseLib 及其兼容组件、BaseLib 许可证和双语安装说明。用 `./scripts/dev-macos.sh pack` 重建工程内三件运行文件。ZIP 内的运行文件与实际窗口回归的副本逐一比对；随包提供 SHA-256。
-- [创意工坊封面](art/witch/workshop-cover.jpg) 为 1200 × 675 原创图，仓库保留源图和导出脚本。[Steamworks 预览图文档](https://partner.steamgames.com/doc/api/ISteamUGC#SetItemPreview)
+- 手动安装包内含 Mod 的三个运行文件、锁定的 BaseLib 及其兼容组件、BaseLib 许可证和双语安装说明。用 `./scripts/dev-macos.sh pack` 重建工程内三件运行文件。
+- `./scripts/stage-witch-release.sh <已测的 mods 目录> <已测的 captures 目录>` 生成两份 ZIP 与 SHA-256。工作区包括尺寸受限的封面、游戏截图和依赖声明。[工坊准备](workshop/README.md)
 - BaseLib 使用上游 MIT 许可证；角色模板的 NuGet 元数据也声明 MIT。魔女代码和原创素材当前在私有库交付，公开许可由项目所有者决定。[BaseLib 许可证](https://github.com/Alchyr/BaseLib-StS2/blob/v3.4.8/LICENSE.txt) · [模板许可信息](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3)

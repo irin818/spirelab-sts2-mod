@@ -1,5 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.Core.Modding;
+using SpireLab.SpireLabCode.Witch.Cards;
 
 namespace SpireLab.SpireLabCode;
 
@@ -14,6 +15,7 @@ public partial class MainFile : Node
     public static void Initialize()
     {
         Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(typeof(MainFile).Assembly);
-        Logger.Info("The Witch and Lantern Surveyor initialized.");
+        WitchCardAppearance.RegisterSuitBadges();
+        Logger.Info("The Witch initialized.");
     }
 }

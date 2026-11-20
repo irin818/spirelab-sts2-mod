@@ -1,13 +1,13 @@
 # SpireLab
 
-《杀戮尖塔 2》C# 角色 Mod。`v1.0.0` 新增原创角色「魔女」，实现规格书的 91 种卡牌、9 件遗物和 3 种药水。提灯测绘师仍作为独立角色可选。
+《杀戮尖塔 2》C# 原创角色 Mod。`v1.1.0` 提供新版黑白哥特魔女、91 种卡牌、9 件遗物和 3 种药水。
 
 - [魔女 V1.0 规格书](SpireLab_The_Witch_GDD_v1.0.md)
 - [魔女构建、验证与已知边界](docs/witch-validation.md)
 - [魔女内容索引](docs/witch-content.tsv)
-- [测试版内容、改动位置和美术记录](docs/surveyor-preview.md)
+- [魔女新版视觉设定与资源](docs/art/witch-v2/README.md)
+- [创意工坊发布准备](docs/workshop/README.md)
 - [学习同步](LEARNING_SYNC.md)
-- [早期原版机制与角色候选](docs/character-design.md)
 
 ## 构建环境
 
@@ -67,15 +67,15 @@ git switch -c codex/your-task
 关闭现有的隔离测试实例后，在仓库根目录执行。
 
 ```sh
-./scripts/smoke-macos.sh
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-save
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
+./scripts/smoke-macos.sh witch-art
 ```
 
-脚本构建 DLL 和 PCK，使用 APFS 克隆创建独立游戏副本，关闭 Steam 集成，并在单独的 Application Support 子目录写入测试配置。它把测试 DLL 放在副本内，启动实际游戏的无窗口模式，验证内容注册、资源、卡牌与药水结算、回合钩子、战斗奖励、存档序列化、商店、休息点和简中本地化。成功时日志会打印 `[SpireLabSmoke] PASS`，脚本也会检查运行期间的错误。脚本输出具体日志路径，测试副本和产物放在 `.local/`。
+脚本构建 DLL 和 PCK，使用 APFS 克隆创建独立游戏副本，关闭 Steam 集成，并在单独的 Application Support 子目录写入测试配置。回归验证内容注册、资源、卡牌与药水结算、回合钩子、战斗奖励、独立进程读档、商店和简中本地化。美术模式从实际窗口帧保存 PNG。日志、测试副本和产物放在 `.local/`。[验证清单](docs/witch-validation.md)
 
-在窗口模式手测时，把 BaseLib 解压得到的 5 个运行文件与 `SpireLab.dll`、`SpireLab.json`、`SpireLab.pck` 分别放在测试副本的同级子目录 `Contents/MacOS/mods/BaseLib/` 与 `Contents/MacOS/mods/SpireLab/`。通过本地测试配置开启 Mod，以 `--force-steam=off` 启动副本。首次出现 **Load Mods** 时点击启用，退出可能出现的自动重启窗口，再用同一条离线命令启动。详见 [测试版验证清单](docs/surveyor-preview.md)。
+在窗口模式手测时，把 BaseLib 解压得到的 5 个运行文件与 `SpireLab.dll`、`SpireLab.json`、`SpireLab.pck` 分别放在测试副本的同级子目录 `Contents/MacOS/mods/BaseLib/` 与 `Contents/MacOS/mods/SpireLab/`。通过本地测试配置开启 Mod，以 `--force-steam=off` 启动副本。首次出现 **Load Mods** 时点击启用，退出可能出现的自动重启窗口，再用同一条离线命令启动。
 
 ## 本机安装与回退
 
@@ -83,4 +83,4 @@ SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 
 卸载时把新增的 Mod 文件夹移出本地 Mod 目录。创建的测试存档可以保留。原版游戏二进制和 Steam 存档由游戏自己管理。
 
-角色模板来自 Alchyr，NuGet 声明 MIT。测绘师的形象、场景和卡面为本项目生成。测试版复用游戏的通用界面、部分特效与音效。[Alchyr.Sts2.Templates 2.5.3](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3)
+魔女存档继续使用 V1.0 的角色和物品 ID。旧提灯测绘师局保留存档备份，使用 `archive/witch-v1-and-surveyor` 对应的版本继续。角色模板来自 Alchyr，NuGet 声明 MIT。[Alchyr.Sts2.Templates 2.5.3](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3)

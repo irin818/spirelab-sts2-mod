@@ -30,6 +30,21 @@ internal static class WitchContentSmoke
             && groups[CardRarity.Basic] == 4 && groups[CardRarity.Common] == 20 && groups[CardRarity.Uncommon] == 38
             && groups[CardRarity.Rare] == 27 && groups[CardRarity.Ancient] == 2, "91 distinct cards with exact GDD rarity counts");
         Check(witch.RelicPool.AllRelics.Count() == 9 && witch.PotionPool.AllPotions.Count() == 3, "nine relics and three potions");
+        Check(witch.RelicPool.AllRelics.OfType<WitchRelic>().Count(relic =>
+        {
+            var small = relic.PackedIconPath;
+            var outline = small.Replace(".png", "_outline.png", StringComparison.Ordinal);
+            var big = $"{TheWitch.Art}/relics/big/{Path.GetFileName(small)}";
+            return HasSize(small, 94) && HasSize(outline, 94) && HasSize(big, 256);
+        }) == 9, "all relic portraits, outlines and large icons load at native sizes");
+        Check(witch.PotionPool.AllPotions.OfType<WitchPotion>().Count(potion =>
+            HasSize(potion.CustomPackedImagePath!, 256) && HasSize(potion.CustomPackedOutlinePath!, 256)) == 3,
+            "all potion portraits and outlines load at native sizes");
+        var standardTrims = all.OfType<WitchCard>().Where(card => card.Rarity != CardRarity.Ancient)
+            .GroupBy(card => card.Rarity).Select(group => (group.First().FrameMaterial as ShaderMaterial)?.GetShaderParameter("trim"))
+            .ToArray();
+        Check(standardTrims.All(trim => trim.HasValue && trim.Value.VariantType == Variant.Type.Color)
+            && standardTrims.Distinct().Count() == 4, "four regular rarity frame palettes use the custom shader");
         ValidateCardText(witch);
         var tome = (DustyTome)ModelDb.Relic<DustyTome>().ToMutable();
         tome.SetupForPlayer(player);
@@ -38,6 +53,9 @@ internal static class WitchContentSmoke
             && ModelDb.Relic<TouchOfOrobas>().GetUpgradedStarterRelic(ModelDb.Relic<CrackedVanityMirror>()) is TwinStandingMirror,
             "base-game Tome, Archaic Tooth and starter relic upgrade route to the specified models");
     }
+
+    private static bool HasSize(string path, int size) =>
+        ResourceLoader.Load<Texture2D>(path)?.GetSize() == new Vector2(size, size);
 
     public static void ValidateCardText(TheWitch witch)
     {

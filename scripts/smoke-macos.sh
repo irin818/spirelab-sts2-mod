@@ -4,13 +4,18 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 root="$(pwd -P)"
 quit_after=15000
-case "${1:-surveyor}" in
-    surveyor) character=surveyor; smoke_flag=--spirelab-smoke ;;
+case "${1:-witch}" in
     witch) character=witch; smoke_flag=--witch-smoke ;;
     witch-save) character=witch-save; smoke_flag=--witch-save-probe ;;
+    witch-legacy-save) character=witch-legacy-save; smoke_flag=--witch-resume-probe ;;
     witch-campaign) character=witch-campaign; smoke_flag=--witch-campaign; quit_after=200000 ;;
-    *) printf 'Usage: %s [surveyor|witch|witch-save|witch-campaign]\n' "$0" >&2; exit 2 ;;
+    witch-art) character=witch-art; smoke_flag=--witch-art ;;
+    *) printf 'Usage: %s [witch|witch-save|witch-legacy-save|witch-campaign|witch-art]\n' "$0" >&2; exit 2 ;;
 esac
+if [[ "$character" == witch-legacy-save && ! -f "${SPIRELAB_WITCH_LEGACY_SAVE:-}" ]]; then
+    printf 'Set SPIRELAB_WITCH_LEGACY_SAVE to a Witch v1.0 save probe fixture.\n' >&2
+    exit 2
+fi
 mkdir -p .local/logs
 ./scripts/dev-macos.sh build
 ./scripts/dev-macos.sh pack > .local/logs/"$character"-smoke-pack.log 2>&1
@@ -49,10 +54,19 @@ mkdir -p "$profile"
 cat > "$profile/settings.save" <<'EOF_SETTINGS'
 {"language":"eng","mod_settings":{"mods_enabled":true}}
 EOF_SETTINGS
+if [[ "$character" == witch-legacy-save ]]; then
+    mkdir -p "$profile/modded/profile1/saves"
+    cp "$SPIRELAB_WITCH_LEGACY_SAVE" "$profile/modded/profile1/saves/current_run.save"
+fi
 
 render_args=(--headless)
-if [[ "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
-    render_args=(--windowed --resolution 1200x675)
+if [[ "$character" == witch-art || "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
+    render_args=(--windowed --resolution "${SPIRELAB_SMOKE_RESOLUTION:-1200x675}")
+fi
+if [[ "$character" == witch-art ]]; then
+    export SPIRELAB_WITCH_ART_SCREENSHOTS="$test_dir/captures"
+    mkdir -p "$SPIRELAB_WITCH_ART_SCREENSHOTS"
+    printf 'Screenshots: %s\n' "$SPIRELAB_WITCH_ART_SCREENSHOTS"
 fi
 log="$test_dir/game.log"
 printf 'Smoke test log: %s\n' "$log"

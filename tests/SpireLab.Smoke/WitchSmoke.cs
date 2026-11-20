@@ -47,6 +47,8 @@ internal static class WitchSmoke
             }, "main menu and common scenes finish preloading");
             SaveManager.Instance.SetFtuesEnabled(false);
             var witch = ModelDb.Character<TheWitch>();
+            Check(ModelDb.AllCharacters.Where(character => character.Id.Entry.StartsWith("SPIRELAB-", StringComparison.Ordinal))
+                .SequenceEqual([witch]), "Witch is the only installed SpireLab character");
             var run = await game.StartNewSingleplayerRun(witch, false, ActModel.GetDefaultList(), [], "682026", GameMode.Standard);
             var player = run.Players.Single();
             Check(witch.StartingHp == 68 && player.Deck.Cards.Count == 10 && player.Deck.Cards.Select(card => card.Id).Distinct().Count() == 4, "Witch starting deck and HP");
@@ -62,9 +64,9 @@ internal static class WitchSmoke
                     return art != null && (card.Rarity == CardRarity.Ancient
                         ? art.GetSize() == new Vector2(606, 852) : art.GetSize() == new Vector2(500, 380));
                 }), "91 unique card assets load at their expected normal and ancient sizes");
-            Check(new[] { "enlighten", "mirror", "reflect", "desire" }.All(glyph =>
+            Check(new[] { "enlighten", "mirror", "reflect", "desire", "reserve" }.All(glyph =>
                 ResourceLoader.Load<Texture2D>($"{TheWitch.Art}/abilities/{glyph}.svg")?.GetSize() == new Vector2(64, 64)),
-                "four custom ability glyphs load from the resource pack");
+                "five custom ability glyphs load from the resource pack");
 
             WitchContentSmoke.ValidateDefinitions(witch, player);
             var selector = new WitchSelector();

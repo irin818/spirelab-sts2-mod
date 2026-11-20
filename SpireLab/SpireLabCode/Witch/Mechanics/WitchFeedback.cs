@@ -5,12 +5,24 @@ namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 internal static class WitchFeedback
 {
-    public static void Enlighten(Creature creature) => Pulse(creature, "enlighten", new Color("c19a60"), 43);
-    public static void Invert(Creature creature) => Pulse(creature, "mirror", new Color("b8c2ce"), 96);
-    public static void Reflect(Creature dealer) => Pulse(dealer, "reflect", new Color("b8c2ce"), 28);
-    public static void Desire(Creature creature) => Pulse(creature, "desire", new Color("cf3044"), 63);
-    public static void Energy(Creature creature) => Pulse(creature, "energy", new Color("9479b5"), 29);
-    public static void Block(Creature creature) => Pulse(creature, null, new Color("b8c2ce"), 52);
+    public static void Enlighten(Creature creature) => Pulse(creature, "enlighten", new Color("eed9d9"), 43);
+    public static void Reflect(Creature dealer) => Pulse(dealer, "reflect", new Color("d6e1ed"), 28);
+    public static void Desire(Creature creature) => Pulse(creature, "desire", new Color("d84362"), 63);
+    public static void Energy(Creature creature) => Pulse(creature, "energy", new Color("c58298"), 29);
+    public static void ReserveEnergy(Creature creature) => Pulse(creature, "reserve", new Color("f6ccd4"), 66);
+    public static void Block(Creature creature) => Pulse(creature, null, new Color("d6e1ed"), 52);
+
+    public static void Invert(Creature creature)
+    {
+        if (creature.GetCreatureNode()?.Visuals.GetNodeOrNull<Sprite2D>("MirrorFormVisual") is { } mirror)
+        {
+            var awakening = mirror.CreateTween();
+            awakening.TweenProperty(mirror, "modulate", new Color("ffe8ec"), 0.28);
+            awakening.TweenProperty(mirror, "modulate", Colors.White, 0.35);
+        }
+
+        Pulse(creature, "mirror", new Color("dfecf9"), 96);
+    }
 
     public static void UpdateHealth(Creature creature)
     {
@@ -37,7 +49,8 @@ internal static class WitchFeedback
 
     private static void Pulse(Creature creature, string? cue, Color color, float radius)
     {
-        if (DisplayServer.GetName() == "headless" || creature.GetVfxContainer() is not { } host)
+        if (DisplayServer.GetName() == "headless" || creature.GetVfxContainer() is not { } host
+            || creature.GetCreatureNode() is not { } target)
         {
             return;
         }
@@ -52,6 +65,7 @@ internal static class WitchFeedback
             Points = [new(-radius, 0), new(0, -radius), new(radius, 0), new(0, radius)]
         };
         host.AddChild(pulse);
+        pulse.GlobalPosition = target.VfxSpawnPosition;
         var tween = pulse.CreateTween().SetParallel();
         tween.TweenProperty(pulse, "scale", new Vector2(1.8f, 1.8f), 0.34);
         tween.TweenProperty(pulse, "modulate:a", 0f, 0.34);
@@ -71,7 +85,7 @@ internal static class WitchFeedback
 
         var audio = new AudioStreamPlayer
         {
-            Stream = ResourceLoader.Load<AudioStream>($"{MainFile.ResPath}/audio/witch/{cue}.wav"),
+            Stream = ResourceLoader.Load<AudioStream>($"{MainFile.ResPath}/audio/witch/{(cue == "reserve" ? "energy" : cue)}.wav"),
             VolumeDb = -15
         };
         host.AddChild(audio);

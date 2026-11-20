@@ -19,7 +19,7 @@
 
 ## 2026-11-20 · 提灯测绘师测试版
 
-- 采用简单的辉印机制验证全链路。加入原创角色模型、场景、美术、专属卡池、16 张新牌、2 件遗物、2 种药水、2 个状态与中英本地化。内容、实现位置和美术制作记录见 [测试版](docs/surveyor-preview.md)。
+- 采用简单的辉印机制验证全链路。加入原创角色模型、场景、美术、专属卡池、16 张新牌、2 件遗物、2 种药水、2 个状态与中英本地化。内容、实现位置和美术制作记录见 归档 archive/witch-v1-and-surveyor 的 docs/surveyor-preview.md。
 - 每种牌用 `CanonicalVars` 提供运行数值和本地化变量。辉印通过 `PowerCmd` 更新可见状态，生成牌通过 `CardPileCmd` 加入当前战斗。普通奖励使用 `FilterThroughEpochs` 排除战斗衍生物。
 - 三处适合亲自阅读的代码是 [辉印与回合钩子](SpireLab/SpireLabCode/Powers/LumenPower.cs)、[起始牌和资源消费](SpireLab/SpireLabCode/Cards/StarterCards.cs)、[真实游戏集成测试](tests/SpireLab.Smoke/SurveyorSmoke.cs)。前两处保留游戏原生 Command，最后一处从隔离游戏启动并断言实战状态。
 - Apple Silicon 上实际游戏通过 26 项断言，覆盖辉印、起始牌、两类药水、升级、回合、战斗胜利、专属奖励、存档模型往返、商店动画、休息点和简中文案。窗口实测了角色选择、开局、立绘、手牌和起始辉印。ZIP 已与测试运行文件逐个比对并安装到 Steam 游戏的本地 `mods` 目录。
@@ -32,7 +32,7 @@
 - [Enlightenment.cs](SpireLab/SpireLabCode/Witch/Mechanics/Enlightenment.cs) 从永久牌组副本用游戏 RNG 等权采样。BaseLib 隐藏牌堆保管原卡，游戏插入阶段维持手牌原位，Pile Hook 还原来源。学习点是区分对象身份、永久模型和战斗生命周期。
 - [WitchCombatHooks.cs](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 接入原版抽牌、回合、能量、费用和伤害阶段。[WitchRules.cs](SpireLab/SpireLabCode/Witch/Mechanics/WitchRules.cs) 把逆转、支付、反射取整写成纯函数。实机使用 `CreatureCmd.Damage` 在格挡前处理下一击免疫，并在原版扣真实生命之前吸收镜像生命。
 - `./scripts/dev-macos.sh check`、构建、打包成功。Apple Silicon 上 STS2 v0.111.1 的原型实机记录 33 项通过，含两场开战、真实回合转换和一次获胜；单元测试覆盖 500 条狂赌生命路径。隔离日志位于本机 `.local/witch-smoke.RfqHpw/game.log`，引擎退出时仍打印资源回收诊断。
-- ImageGen 角色三视图先于战斗立绘、选角背景和四个画风锚点，源图和提示词见 [美术基准](docs/art/witch/README.md)。独立全卡插画、正式音效、多幕验证和完整池属于下一阶段。
+- ImageGen 角色三视图先于战斗立绘、选角背景和四个画风锚点，源图和提示词见 归档 archive/witch-v1-and-surveyor 的旧美术目录。独立全卡插画、正式音效、多幕验证和完整池属于下一阶段。
 
 ## 2026-11-20 · 魔女 Phase 3
 
@@ -43,7 +43,7 @@
 
 ## 2026-11-20 · 魔女 Phase 4–5
 
-- [美术目录](docs/art/witch/README.md) 保留源图和提示词。91 张独立卡面由规格 ID 路由，古代牌用 606×852 竖图。界面新增红黑能量表和真实／镜像生命条，战斗窗口中核对了立绘、卡面和 HUD。
+- 归档 archive/witch-v1-and-surveyor 保留这一版的源图和提示词。91 张独立卡面由规格 ID 路由，古代牌用 606×852 竖图。界面新增红黑能量表和真实／镜像生命条，战斗窗口中核对了立绘、卡面和 HUD。
 - 窗口回归 `witch` 通过 74 项断言。除核心机制、牌池和中英文本之外，验证无起始遗物仍能启迪、不可格挡状态伤害仍会消耗镜像生命，以及同一回合的两牌循环打出 8 次且生命与能量保持原值。原版 AutoSlay 辅助种子 `WITCH10004` 走完三幕并返回主菜单。
 - `witch-save` 在两个进程之间验证了真正的读档链路。关键学习点是区分永久牌组、战斗卡牌实例、可序列化升级与只存在于战斗的镜像生命，并通过实际游戏动作队列检查 UI 同步。
 - 安装 ZIP 放在本机 `.local/release/`，八个运行文件与已测副本逐一比对。Windows、联机、无辅助胜率及精细动画留给后续验收。完整说明见 [魔女验证记录](docs/witch-validation.md)。
@@ -54,3 +54,10 @@
 - [实机回归代码](tests/SpireLab.Smoke/WitchSmoke.cs) 让两张消耗型治疗牌和狂赌之渊走原版动作队列，直接观察能量、真实生命与卡堆，而低血、格挡、死亡和重开通过游戏节点验证。商店移除使用实际购买选项。
 - 最终安装版通过 94 项窗口实机断言，日志见 `.local/witch-smoke.rkuxEF/game.log`。压测发现原版卡牌动画会在动作队列清空后继续运行，测试夹具现在等卡牌动画结束再跳转房间。发布 ZIP 的运行文件与通过回归的副本逐一比对。
 - 新增四张能力图标、双语封面及其可重导出脚本。安装说明、第三方许可归属、复现命令和待验收范围集中在 [魔女验证记录](docs/witch-validation.md)。
+
+## 2026-11-20 · 魔女 v1.1.0 美术替换
+
+- [角色母版与资源表](docs/art/witch-v2/README.md) 记录用户基准、人物比例、三视图和表情、提示词及来源索引。91 张卡图、27 个遗物纹理和 6 个药水纹理均与旧版逐文件比对，尺寸和唯一性通过检查。
+- [卡框和侧徽实现](SpireLab/SpireLabCode/Witch/Cards/WitchCardAppearance.cs) 使用 BaseLib 原有显示入口。着色器沿用原卡框的轮廓和透明通道，视觉分类不参与战斗逻辑。镜中人格是场景中的独立 Sprite，现有生命逆转只额外触发演出。
+- [截图测试](tests/SpireLab.Smoke/WitchVisualPreview.cs) 从原版界面取实际窗口帧。第一次截图发现选角背景缩放会裁掉帽尖，于是重新构图并回到同一场景验证。全量改版后通过 98 项实机回归。
+- [发布工作区](docs/workshop/README.md) 由已验证的游戏副本生成，封面和截图独立于运行文件。旧实验角色及第一版美术留在归档标签，工作版本只包含新版魔女。

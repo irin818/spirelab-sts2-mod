@@ -78,6 +78,7 @@ public sealed class PinnacleOfMana() : WitchCard("R01", 4, CardType.Power, CardR
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         State.RetainEnergy = true;
+        WitchFeedback.ReserveEnergy(Owner.Creature);
         return Task.CompletedTask;
     }
 

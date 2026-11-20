@@ -1,6 +1,7 @@
 using BaseLib.Abstracts;
 using BaseLib.Patches.Content;
 using BaseLib.Utils;
+using Godot;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -27,6 +28,7 @@ public abstract class WitchCard(string specId, int cost, CardType type, CardRari
     public override string CustomPortraitPath => $"{TheWitch.Art}/cards/{SpecId.ToLowerInvariant()}.png";
     public override string PortraitPath => CustomPortraitPath;
     public override string BetaPortraitPath => CustomPortraitPath;
+    public override Material? CreateCustomFrameMaterial => WitchCardAppearance.Frame(Rarity);
 
     private protected WitchCombatState State => WitchCombatState.For(Owner);
     protected int Number(string name) => DynamicVars[name].IntValue;

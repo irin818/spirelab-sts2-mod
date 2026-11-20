@@ -75,8 +75,8 @@ internal static class WitchLife
         {
             meter = new Control { Name = DisplayName, Position = new Vector2(0, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
             meter.AddChild(Segment("Shadow", "17131b"));
-            meter.AddChild(Segment("Real", "7f182b"));
-            meter.AddChild(Segment("Mirror", "b8c2ce"));
+            meter.AddChild(Segment("Real", "8c2645"));
+            meter.AddChild(Segment("Mirror", "d7dbe2"));
             var caption = new Label { Name = "Caption", Position = new Vector2(0, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
             caption.AddThemeFontSizeOverride("font_size", 15);
             meter.AddChild(caption);

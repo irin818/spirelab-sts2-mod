@@ -1,8 +1,0 @@
-{
-  "SPIRELAB-LUMEN_POWER.title": "辉印",
-  "SPIRELAB-LUMEN_POWER.description": "特定牌可消耗的战斗资源。上限 6 层。",
-  "SPIRELAB-LUMEN_POWER.smartDescription": "你有 {Amount} 层辉印。上限 6 层。",
-  "SPIRELAB-ECHO_LANTERN_POWER.title": "回声提灯",
-  "SPIRELAB-ECHO_LANTERN_POWER.description": "在你的回合开始时获得辉印。",
-  "SPIRELAB-ECHO_LANTERN_POWER.smartDescription": "在你的回合开始时，获得 {Amount} 层辉印。"
-}
