@@ -12,5 +12,19 @@
   "SPIRELAB-SPIRE_LAB.cardsModifierTitle": "Surveyor Cards",
   "SPIRELAB-SPIRE_LAB.cardsModifierDescription": "Lantern Surveyor cards can appear in rewards and shops.",
   "SPIRELAB-SPIRE_LAB.banter.alive.endTurnPing": "Your turn to mark the route.",
-  "SPIRELAB-SPIRE_LAB.banter.dead.endTurnPing": "..."
+  "SPIRELAB-SPIRE_LAB.banter.dead.endTurnPing": "...",
+  "SPIRELAB-THE_WITCH.title": "The Witch",
+  "SPIRELAB-THE_WITCH.titleObject": "the Witch",
+  "SPIRELAB-THE_WITCH.description": "She climbs with a broken mirror. Enlightenment draws an extra card each turn and lets her temporarily replace a card in hand.",
+  "SPIRELAB-THE_WITCH.pronounObject": "her",
+  "SPIRELAB-THE_WITCH.possessiveAdjective": "her",
+  "SPIRELAB-THE_WITCH.pronounPossessive": "hers",
+  "SPIRELAB-THE_WITCH.pronounSubject": "she",
+  "SPIRELAB-THE_WITCH.goldMonologue": "Enough for another draught.",
+  "SPIRELAB-THE_WITCH.eventDeathPrevention": "It was the one in the mirror who fell.",
+  "SPIRELAB-THE_WITCH.aromaPrinciple": "Inversion",
+  "SPIRELAB-THE_WITCH.cardsModifierTitle": "Witch Cards",
+  "SPIRELAB-THE_WITCH.cardsModifierDescription": "Witch cards can appear in rewards and shops.",
+  "SPIRELAB-THE_WITCH.banter.alive.endTurnPing": "How much longer must the mirror wait?",
+  "SPIRELAB-THE_WITCH.banter.dead.endTurnPing": "…"
 }

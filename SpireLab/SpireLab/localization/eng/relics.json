@@ -4,5 +4,8 @@
   "SPIRELAB-SURVEY_LANTERN.flavor": "Just enough light for the first mark.",
   "SPIRELAB-BRASS_MERIDIAN.title": "Brass Meridian",
   "SPIRELAB-BRASS_MERIDIAN.description": "At the start of combat, gain {Block:diff()} [gold]Block[/gold].",
-  "SPIRELAB-BRASS_MERIDIAN.flavor": "A fixed point in a folding world."
+  "SPIRELAB-BRASS_MERIDIAN.flavor": "A fixed point in a folding world.",
+  "SPIRELAB-CRACKED_VANITY_MIRROR.title": "Cracked Vanity Mirror",
+  "SPIRELAB-CRACKED_VANITY_MIRROR.description": "The first time you successfully use Enlightenment each combat, gain 3 Block.",
+  "SPIRELAB-CRACKED_VANITY_MIRROR.flavor": "Her reflection never waits for her to speak."
 }

@@ -25,3 +25,11 @@
 - Apple Silicon 上实际游戏通过 26 项断言，覆盖辉印、起始牌、两类药水、升级、回合、战斗胜利、专属奖励、存档模型往返、商店动画、休息点和简中文案。窗口实测了角色选择、开局、立绘、手牌和起始辉印。ZIP 已与测试运行文件逐个比对并安装到 Steam 游戏的本地 `mods` 目录。
 - 首轮出现过教程阻断、商店 Spine 类型错误和引擎启动预载错误。测试用独立存档跳过教程，商店改为 `NMerchantCharacter` 子类，脚本也捕获引擎直接写出的 `ERROR:`。通过的日志仍有游戏关停时的资源回收诊断，保存在本机 `.local/`。
 - 下一版可直接换核心规则和卡面，再用同一套脚本跑回归。跨进程存档恢复、Windows、联网多人及一整局的平衡性仍待验证。
+
+## 2026-11-20 · 魔女 Phase 1–2
+
+- 采用规格书的 68 生命、4 种基础牌、10 张起始卡和 12 张奖励牌，含恰好 5 种欲望牌。保留原有两个 PR 和提灯测绘师。魔女使用独立角色和卡池 ID。
+- [Enlightenment.cs](SpireLab/SpireLabCode/Witch/Mechanics/Enlightenment.cs) 从永久牌组副本用游戏 RNG 等权采样。BaseLib 隐藏牌堆保管原卡，游戏插入阶段维持手牌原位，Pile Hook 还原来源。学习点是区分对象身份、永久模型和战斗生命周期。
+- [WitchCombatHooks.cs](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 接入原版抽牌、回合、能量、费用和伤害阶段。[WitchRules.cs](SpireLab/SpireLabCode/Witch/Mechanics/WitchRules.cs) 把逆转、支付、反射取整写成纯函数。实机使用 `CreatureCmd.Damage` 在格挡前处理下一击免疫，并在原版扣真实生命之前吸收镜像生命。
+- `./scripts/dev-macos.sh check`、构建、打包成功。Apple Silicon 上 STS2 v0.111.1 的原型实机记录 33 项通过，含两场开战、真实回合转换和一次获胜；单元测试覆盖 500 条狂赌生命路径。隔离日志位于本机 `.local/witch-smoke.RfqHpw/game.log`，引擎退出时仍打印资源回收诊断。
+- ImageGen 角色三视图先于战斗立绘、选角背景和四个画风锚点，源图和提示词见 [美术基准](docs/art/witch/README.md)。独立全卡插画、正式音效、多幕验证和完整池属于下一阶段。

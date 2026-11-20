@@ -3,9 +3,14 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 root="$(pwd -P)"
+case "${1:-surveyor}" in
+    surveyor) character=surveyor; smoke_flag=--spirelab-smoke ;;
+    witch) character=witch; smoke_flag=--witch-smoke ;;
+    *) printf 'Usage: %s [surveyor|witch]\n' "$0" >&2; exit 2 ;;
+esac
 mkdir -p .local/logs
 ./scripts/dev-macos.sh build
-./scripts/dev-macos.sh pack > .local/logs/surveyor-smoke-pack.log 2>&1
+./scripts/dev-macos.sh pack > .local/logs/"$character"-smoke-pack.log 2>&1
 
 export DOTNET_ROOT="$root/.local/dotnet-10"
 export DOTNET_CLI_HOME="$root/.local"
@@ -15,7 +20,7 @@ export PATH="$DOTNET_ROOT:$PATH"
 
 steamapps="${SteamLibraryPath:-$HOME/Library/Application Support/Steam/steamapps}"
 game="${Sts2Path:-$steamapps/common/Slay the Spire 2}"
-test_dir="$(mktemp -d "$root/.local/surveyor-smoke.XXXXXX")"
+test_dir="$(mktemp -d "$root/.local/$character-smoke.XXXXXX")"
 test_profile="SpireLabSmoke-${test_dir##*.}"
 app="$test_dir/SlayTheSpire2.app"
 cp -cR "$game/SlayTheSpire2.app" "$test_dir/"
@@ -44,7 +49,7 @@ EOF_SETTINGS
 
 log="$test_dir/game.log"
 printf 'Smoke test log: %s\n' "$log"
-if ! "$bin/Slay the Spire 2" --headless --force-steam=off --spirelab-smoke --quit-after 15000 \
+if ! "$bin/Slay the Spire 2" --headless --force-steam=off "$smoke_flag" --quit-after 15000 \
     --max-fps 120 --log-file "$log" > "$test_dir/console.log" 2>&1; then
     tail -n 40 "$test_dir/console.log" >&2
     exit 1
