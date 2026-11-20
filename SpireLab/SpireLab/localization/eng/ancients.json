@@ -1,6 +1,6 @@
 {
-  "THE_ARCHITECT.talk.SPIRELAB-SPIRE_LAB.0-0r.char": "Ready to begin.",
-  "THE_ARCHITECT.talk.SPIRELAB-SPIRE_LAB.0-0r.next": "I will go now.",
-  "THE_ARCHITECT.talk.SPIRELAB-SPIRE_LAB.0-1r.ancient": "Proceed.",
-  "THE_ARCHITECT.talk.SPIRELAB-SPIRE_LAB.0-attack": "Another test?"
+  "THE_ARCHITECT.talk.SPIRELAB-THE_WITCH.0-0r.char": "My mirror says the Spire is lying.",
+  "THE_ARCHITECT.talk.SPIRELAB-THE_WITCH.0-0r.next": "I intend to see for myself.",
+  "THE_ARCHITECT.talk.SPIRELAB-THE_WITCH.0-1r.ancient": "Then see for yourself, Witch.",
+  "THE_ARCHITECT.talk.SPIRELAB-THE_WITCH.0-attack": "Which side of the glass are you on?"
 }

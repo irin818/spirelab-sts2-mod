@@ -1,9 +1,9 @@
 {
   "id": "SpireLab",
-  "name": "SpireLab",
+  "name": "SpireLab — The Witch",
   "author": "irin",
-  "description": "Phase A character and combat smoke test for Slay the Spire 2.",
-  "version": "v0.1.0",
+  "description": "The Witch, an original playable character with a complete black-and-ivory gothic visual update.",
+  "version": "v1.1.0",
   "min_game_version": "0.111.1",
   "has_pck": true,
   "has_dll": true,

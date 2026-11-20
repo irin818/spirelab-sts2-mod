@@ -1,5 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.Core.Modding;
+using SpireLab.SpireLabCode.Witch.Cards;
 
 namespace SpireLab.SpireLabCode;
 
@@ -13,6 +14,8 @@ public partial class MainFile : Node
 
     public static void Initialize()
     {
-        Logger.Info("Phase A initializer reached.");
+        Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(typeof(MainFile).Assembly);
+        WitchCardAppearance.RegisterSuitBadges();
+        Logger.Info("The Witch initialized.");
     }
 }

@@ -1,0 +1,8 @@
+{
+  "SPIRELAB-MIST_DRAUGHT.title": "Mist Draught",
+  "SPIRELAB-MIST_DRAUGHT.description": "Gain {Block} Block. The next time you block an enemy attack this turn, reflect {Reflection} extra damage.",
+  "SPIRELAB-TWIN_DRAUGHT.title": "Twin Draught",
+  "SPIRELAB-TWIN_DRAUGHT.description": "Replace a card in your hand by Enlightenment's rules, then draw 1 card.",
+  "SPIRELAB-ABYSSAL_DISTILLATE.title": "Abyssal Distillate",
+  "SPIRELAB-ABYSSAL_DISTILLATE.description": "Lose {Life} real HP. Gain {Energy:energyIcons()}. Can only be used if it leaves at least 1 real HP."
+}

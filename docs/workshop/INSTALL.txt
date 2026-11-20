@@ -1,0 +1,9 @@
+SpireLab v1.1.0 · 魔女 / The Witch
+Verified for Slay the Spire 2 v0.111.1, Apple Silicon macOS.
+
+关闭游戏。将 SpireLab 放到本地 mods 目录，替换整个旧 SpireLab 文件夹前可把旧文件夹移到 mods 之外备份。已有 BaseLib 3.4.8 和配套兼容组件时，可沿用。每个 Mod 只使用一种安装方式。
+启动游戏并启用 Mod，在单人模式新开一局选择魔女。魔女 V1.0 的存档模型 ID 保留。曾使用提灯测绘师的旧局请保存备份并使用旧 Mod 版本继续。
+macOS 本地目录通常为 SlayTheSpire2.app/Contents/MacOS/mods/。其他平台见游戏和社区模组文档。
+
+Close the game. Put the SpireLab folder in the local mods folder. To keep a backup, move the old SpireLab folder outside the mods folder before replacing it. Reuse BaseLib 3.4.8 and its compatibility helper if already installed. Use one installation method per mod.
+Enable mods and select The Witch in a new solo run. The Witch's model IDs are retained from v1.0. Use the old mod version to continue a Lantern Surveyor run and keep its save backup.

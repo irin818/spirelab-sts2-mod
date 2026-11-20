@@ -1,0 +1,149 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Texture2D" path="res://SpireLab/images/witch/witch_sprite.png" id="1_witch"]
+[ext_resource type="Texture2D" path="res://SpireLab/images/witch/witch_mirror_form.png" id="2_mirror"]
+
+[sub_resource type="Animation" id="Animation_idle"]
+resource_name = "idle"
+length = 1.6
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.8, 1.6),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -158), Vector2(0, -162), Vector2(0, -158)]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Visuals:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_attack"]
+resource_name = "attack"
+length = 0.34
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.11, 0.34),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -158), Vector2(27, -158), Vector2(0, -158)]
+}
+
+[sub_resource type="Animation" id="Animation_cast"]
+resource_name = "cast"
+length = 0.38
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.14, 0.38),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1.25, 1.12, 0.78, 1), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_hit"]
+resource_name = "hit"
+length = 0.25
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.25),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -158), Vector2(-13, -158), Vector2(0, -158)]
+}
+
+[sub_resource type="Animation" id="Animation_die"]
+resource_name = "die"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(0.5, 0.6, 0.6, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_witch"]
+_data = {
+&"idle": SubResource("Animation_idle"),
+&"attack": SubResource("Animation_attack"),
+&"cast": SubResource("Animation_cast"),
+&"hit": SubResource("Animation_hit"),
+&"die": SubResource("Animation_die")
+}
+
+[sub_resource type="Animation" id="Animation_low_health"]
+resource_name = "low_health"
+length = 0.86
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:self_modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.34, 0.47, 0.86),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1.18, 0.67, 0.73, 1), Color(1, 0.88, 0.9, 1), Color(1.12, 0.76, 0.81, 1), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_health"]
+_data = {
+&"low_health": SubResource("Animation_low_health")
+}
+
+[node name="WitchCombat" type="Node2D"]
+
+[node name="MirrorFormVisual" type="Sprite2D" parent="."]
+modulate = Color(0.71, 0.71, 0.82, 0.4)
+position = Vector2(-106, -145)
+scale = Vector2(0.65, 0.65)
+texture = ExtResource("2_mirror")
+
+[node name="Visuals" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -158)
+scale = Vector2(0.70, 0.70)
+texture = ExtResource("1_witch")
+
+[node name="Bounds" type="Control" parent="."]
+unique_name_in_owner = true
+offset_left = -96.0
+offset_top = -315.0
+offset_right = 96.0
+mouse_filter = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_witch")
+}
+autoplay = "idle"
+next/attack = &"idle"
+next/cast = &"idle"
+next/hit = &"idle"
+
+[node name="HealthAnimation" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_health")
+}

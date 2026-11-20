@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="../../SpireLab/Sts2PathDiscovery.props" />
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <NoWarn>$(NoWarn);MSB3270</NoWarn>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" Private="false" />
+        <Reference Include="GodotSharp" HintPath="$(Sts2DataDir)/GodotSharp.dll" Private="false" />
+        <Reference Include="BaseLib" HintPath="../../.local/baselib/BaseLib.dll" Private="false" />
+        <Reference Include="SpireLab" HintPath="../../SpireLab/bin/mods/ExportRelease/SpireLab/SpireLab.dll" Private="false" />
+    </ItemGroup>
+</Project>

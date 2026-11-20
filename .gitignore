@@ -4,3 +4,5 @@
 .env.*
 !.env.example
 .vscode/
+/tests/**/bin/
+/tests/**/obj/
