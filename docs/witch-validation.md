@@ -20,7 +20,7 @@
 .local/dotnet-10/dotnet run --project tests/SpireLab.Witch.Rules
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-save
-SPIRELAB_SMOKE_WINDOWED=1 SPIRELAB_WITCH_CAMPAIGN_SAMPLE=1 ./scripts/smoke-macos.sh witch-campaign
+SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 ./scripts/smoke-macos.sh witch-art
 ```
 
@@ -32,6 +32,8 @@ SPIRELAB_SMOKE_WINDOWED=1 SPIRELAB_WITCH_CAMPAIGN_SAMPLE=1 ./scripts/smoke-macos
 - 窗口实机确认独立卡面、魔女立绘、能量表以及真实／镜像生命条。自动模式保留引擎关闭时的 RID 与 Shader 回收诊断。早期无窗口预载曾出现引擎 dummy texture 和 worker task 诊断，窗口模式是本版完整回归的基准。
 - v1.1.0 全新工程目录完成无缓存构建与 PCK 导出。窗口完整回归 100 项通过。新版跨进程读档与 V1.0 魔女固定存档迁移均恢复了 41 点真实生命、角色、已升级古代牌、初始遗物和第六张手牌。
 - 原版 AutoSlay 在首次启动提示仍打开时，会在假商人事件等待继续按钮超时。隔离配置预先确认该提示后，定向测试实测假商人按钮可用并返回地图。生产 Mod 的事件代码和本机使用者的设置没有参与此修复。
+- v1.1.0 辅助种子 `WITCH10051` 赢下第一幕第 17 层、第二幕第 16 层和第三幕第 15 层的首领战，完成结算并返回主菜单。此局也经过第三幕假商人事件。命令退出码为 0。
+- 辅助种子 `WITCH10058` 通过前两幕首领及假商人事件。第三幕第 6 层前一房间存档为 54/54，自动玩家在球头战斗的第 2 回合使用「镜中人」后战败。原版记录为 `GLOBE_HEAD_NORMAL`、失败、0/57，符合高真实生命时逆转有代价的规则。AutoSlay 在败局后仍等待胜利奖励，最终报超时。
 
 ## 平衡与待验收
 
@@ -43,4 +45,5 @@ SPIRELAB_SMOKE_WINDOWED=1 SPIRELAB_WITCH_CAMPAIGN_SAMPLE=1 ./scripts/smoke-macos
 
 - 手动安装包内含 Mod 的三个运行文件、锁定的 BaseLib 及其兼容组件、BaseLib 许可证和双语安装说明。用 `./scripts/dev-macos.sh pack` 重建工程内三件运行文件。
 - `./scripts/stage-witch-release.sh <已测的 mods 目录> <已测的 captures 目录>` 生成两份 ZIP 与 SHA-256。工作区包括尺寸受限的封面、游戏截图和依赖声明。[工坊准备](workshop/README.md)
+- 本机 Steam Mod 目录已切换到 v1.1.0。执行 100 项回归的副本、手动安装包和工坊工作区的三个运行文件均与本机安装逐字节一致。后续长流程副本重新构建了 DLL，经 ILSpy 比对方法指令一致，PCK 和 manifest 哈希一致。旧版安装连同旧安装包在本机 `.local/` 归档，以便回退。
 - BaseLib 使用上游 MIT 许可证；角色模板的 NuGet 元数据也声明 MIT。魔女代码和原创素材当前在私有库交付，公开许可由项目所有者决定。[BaseLib 许可证](https://github.com/Alchyr/BaseLib-StS2/blob/v3.4.8/LICENSE.txt) · [模板许可信息](https://www.nuget.org/packages/Alchyr.Sts2.Templates/2.5.3)
