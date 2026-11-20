@@ -110,6 +110,10 @@ internal static class WitchSmoke
             var hit = (await CreatureCmd.Damage(choice, creature, 12, ValueProp.Move, enemy)).Single();
             Check(hit.BlockedDamage == 7 && creature.CurrentHp == 20 && state.MirrorHp == 23 && enemy.CurrentHp == foe - 5,
                 "7 Block absorbs attack, 5 mirror HP absorbs overflow, 3+2 reflection");
+            var poisonLike = (await CreatureCmd.Damage(choice, creature, 4, ValueProp.Unblockable | ValueProp.Unpowered,
+                dealer: null, cardSource: null, cardPlay: null)).Single();
+            Check(poisonLike.BlockedDamage == 0 && creature.CurrentHp == 20 && state.MirrorHp == 19,
+                "unblockable status damage still consumes mirror HP without counting as Block");
             await CreatureCmd.Heal(creature, 100);
             Check(creature.CurrentHp + state.MirrorHp == 68, "healing and mirror HP obey effective cap");
 

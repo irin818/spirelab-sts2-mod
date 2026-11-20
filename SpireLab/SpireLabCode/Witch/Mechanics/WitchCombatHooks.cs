@@ -329,10 +329,12 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props,
         Creature? dealer, CardModel? cardSource)
     {
-        if (amount >= 1 && dealer?.Side == CombatSide.Enemy && !props.HasFlag(ValueProp.Unblockable)
-            && WitchCombatState.Find(target.Player) is { MirrorHp: > 0 } state)
+        var selfInflictedCardLoss = props.HasFlag(ValueProp.Unblockable) && cardSource?.Owner == target.Player
+            && target.Player != null && dealer?.Side != CombatSide.Enemy;
+        if (amount >= 1 && !selfInflictedCardLoss && WitchCombatState.Find(target.Player) is { MirrorHp: > 0 } state)
         {
-            // CreatureCmd obtains this adjustment after damage to block and before mutating real HP.
+            // This hook runs after block even for penetrating damage. Native status damage,
+            // such as PoisonPower, may have no dealer. Deliberate payments use WitchLife.Pay.
             var absorbed = (int)Math.Min(decimal.Truncate(amount), state.MirrorHp);
             state.MirrorHp -= absorbed;
             WitchLife.RefreshDisplay(target, state);
