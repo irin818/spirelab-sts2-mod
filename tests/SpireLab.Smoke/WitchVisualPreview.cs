@@ -51,14 +51,14 @@ internal static class WitchVisualPreview
             var button = select.GetNode<NCharacterSelectButton>($"CharSelectButtons/ButtonContainer/{witch.Id.Entry}_button");
             Check(!button.IsLocked, "Witch character button selectable");
             select.SelectCharacter(button, witch);
-            CheckSelectionText(select, "Character Trait • Enlightenment", "may freely swap", "random card from your deck",
-                "Cracked Vanity Mirror", "first successful Enlightenment swap each combat", "keeps Enlightenment without this relic");
+            CheckSelectionText(select, "Character Trait • Arcane Insight", "choose 1 Witch reward card", "random card from your draw or discard pile",
+                "Cracked Vanity Mirror", "first successful Arcane Insight swap each combat", "keeps Arcane Insight without this relic");
             await Capture(tree, "character-select-eng-macos.png");
 
             LocManager.Instance.SetLanguage("zhs");
             select.SelectCharacter(button, witch);
-            CheckSelectionText(select, "角色特性 · 魔法启迪", "可以免费将1张手牌临时换成", "当前牌组中的随机牌",
-                "破损梳妆镜", "每场战斗第一次通过魔法启迪成功换牌", "失去此遗物后，魔法启迪仍然生效");
+            CheckSelectionText(select, "角色特性 · 魔法启迪", "选1张魔女奖励牌临时加入抽牌堆", "抽牌堆或弃牌堆中的随机牌交换",
+                "破损梳妆镜", "每场战斗第一次成功完成魔法启迪随机交换", "失去此遗物后，魔法启迪仍然生效");
             Check(select.GetNode<TextureRect>($"AnimatedBg/{witch.Id.Entry}_bg").Texture.GetSize() == new Vector2(1600, 900),
                 "Witch selection candidate loaded from PCK");
             await Capture(tree, "character-select-macos.png");

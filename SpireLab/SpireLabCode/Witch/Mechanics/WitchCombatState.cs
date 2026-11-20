@@ -28,8 +28,9 @@ internal sealed class WitchCombatState
         };
     }
 
-    public Dictionary<CardModel, CardModel?> StandIns { get; } = new(ReferenceEqualityComparer.Instance);
-    public Dictionary<CardModel, int> HandInsertions { get; } = new(ReferenceEqualityComparer.Instance);
+    public bool OpeningChoiceResolved { get; set; }
+    public CardModel? OpeningCard { get; set; }
+    public bool TraitSwapUsed { get; set; }
     public bool TrackEnergy { get; set; }
     public int ExtraEnergy { get; private set; }
     public int TurnEnlightenments { get; set; }
@@ -102,6 +103,7 @@ internal sealed class WitchCombatState
     {
         TrackEnergy = false;
         ExtraEnergy = 0;
+        TraitSwapUsed = false;
         TurnEnlightenments = 0;
         Plays = 0;
         BlockGains = 0;

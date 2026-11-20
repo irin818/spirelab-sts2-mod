@@ -84,19 +84,26 @@ internal static class WitchSmoke
             var creature = player.Creature;
             var enemy = creature.CombatState!.HittableEnemies.First();
             Check(piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 0 && creature.Block == 0, "passive sixth draw, skip gives no credit or Block");
+            var opening = state.OpeningCard ?? throw new InvalidOperationException("No opening card");
+            Check(selector.OpeningChoices == 1 && opening is PotionMist && !opening.IsUpgraded
+                && opening.Pile?.Type is PileType.Draw or PileType.Hand && player.Deck.Cards.Count == 10,
+                "the full opening grid adds a fresh combat-only reward card before the first draw");
 
             var original = piles.Hand.Cards[2];
-            var proxy = await Enlightenment.Replace(player, original) ?? throw new InvalidOperationException("No substitute");
-            Check(ReferenceEquals(piles.Hand.Cards[2], proxy) && original.Pile?.Type == EnlightenmentPile.HeldType
-                && piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 1 && creature.Block == 3, "same-slot swap with held original and once-per-combat Block");
-            Check(player.Deck.Cards.Count == 10 && !player.Deck.Cards.Contains(proxy), "permanent deck unchanged");
-            await CardCmd.Discard(choice, proxy);
-            Check(proxy.HasBeenRemovedFromState && piles.DiscardPile.Cards.Contains(original) && state.StandIns.Count == 0, "discarded substitute restores original");
+            var previousPiles = piles.DrawPile.Cards.Concat(piles.DiscardPile.Cards).ToDictionary(card => card, card => card.Pile);
+            var incoming = await Enlightenment.Swap(player, original) ?? throw new InvalidOperationException("No swap");
+            Check(piles.Hand.Cards.Contains(incoming) && previousPiles[incoming] == original.Pile
+                && piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 1 && creature.Block == 3,
+                "real instances swap between piles and trigger the starter relic once");
+            Check(player.Deck.Cards.Count == 10 && !player.Deck.Cards.Contains(incoming), "permanent deck unchanged");
+            await CardCmd.Discard(choice, incoming);
+            Check(incoming.Pile?.Type == PileType.Discard && original.Pile == previousPiles[incoming],
+                "discarding the incoming card moves the real card without restoring the outgoing card");
             var second = piles.Hand.Cards[1];
-            var nextProxy = await Enlightenment.Replace(player, second) ?? throw new InvalidOperationException("No substitute");
-            var chained = await Enlightenment.Replace(player, nextProxy) ?? throw new InvalidOperationException("No chained substitute");
-            Check(nextProxy.HasBeenRemovedFromState && piles.DiscardPile.Cards.Contains(second) && state.StandIns.Count == 1 && creature.Block == 3,
-                "retransformation releases original without copying it or re-awarding relic Block");
+            Check(await Enlightenment.Swap(player, second) == null && second.Pile?.Type == PileType.Hand,
+                "the intrinsic swap can succeed only once per turn");
+            Check(await Enlightenment.Swap(player, second, fromTrait: false) != null && creature.Block == 3,
+                "a separate potion swap can succeed without another starter relic trigger");
 
             var attack = await Add<StarterDraught>(player);
             var beforeEnemy = enemy.CurrentHp;
@@ -110,9 +117,9 @@ internal static class WitchSmoke
             selector.SelectFirstHand = true;
             CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
             await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play, "actual enemy/player turn transition");
-            Check(chained.HasBeenRemovedFromState && state.CombatEnlightenments == 4 && state.TurnEnlightenments == 1
-                && piles.Energy == remaining + 4 && state.ExtraEnergy == 1, "turn expiry, one new passive transform and retained energy");
-            await Enlightenment.ReleaseAll(player, state);
+            Check(state.CombatEnlightenments == 3 && state.TurnEnlightenments == 1 && state.TraitSwapUsed
+                && state.OpeningCard == opening && selector.OpeningChoices == 1 && piles.Energy == remaining + 4 && state.ExtraEnergy == 1,
+                "next turn resets the intrinsic swap while keeping one opening choice and retained energy");
 
             await CreatureCmd.SetCurrentHp(creature, 20);
             var visuals = creature.GetCreatureNode()!.Visuals;
@@ -323,10 +330,19 @@ internal static class WitchSmoke
         public bool SelectFirstHand { get; set; }
         public int DesireOptions { get; private set; }
         public CardModel? LastDesire { get; private set; }
+        public int OpeningChoices { get; private set; }
 
         public Task<IEnumerable<CardModel>> GetSelectedCards(IEnumerable<CardModel> options, int minSelect, int maxSelect)
         {
             var cards = options.ToArray();
+            if (cards.Length == 85 && cards.All(card => card is WitchCard))
+            {
+                Check(minSelect == 1 && maxSelect == 1 && cards.Count(card => ((WitchCard)card).IsDesire) == 5
+                    && cards.All(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare),
+                    "Fate Selection shows all 85 rewards including the five Desire cards");
+                OpeningChoices++;
+                return Task.FromResult<IEnumerable<CardModel>>([cards.OfType<PotionMist>().Single()]);
+            }
             if (cards.All(card => card.Pile == null && card is DesireCard))
             {
                 if (cards.Length != cards.Select(card => card.Id).Distinct().Count() || cards.Any(card => card is SourceOfCalamity))

@@ -6,77 +6,103 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.ValueProps;
+using SpireLab.SpireLabCode.Witch.Cards;
 
 namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 internal static class Enlightenment
 {
-    public static async Task Choose(PlayerChoiceContext choice, Player player, AbstractModel source, int maximum = 1)
+    public static async Task ChooseOpeningCard(PlayerChoiceContext choice, Player player, CombatState combat)
     {
-        if (player.Deck.IsEmpty || player.PlayerCombatState?.Hand.IsEmpty != false || CombatManager.Instance.IsOverOrEnding)
+        var state = WitchCombatState.For(player);
+        if (state.OpeningChoiceResolved || CombatManager.Instance.IsOverOrEnding)
         {
             return;
         }
 
-        var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_ENLIGHTENMENT"), 0, maximum)
+        state.OpeningChoiceResolved = true;
+        var rewards = player.Character.CardPool.AllCards.OfType<WitchCard>()
+            .Where(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare)
+            .OrderBy(card => card.SpecId, StringComparer.Ordinal).Cast<CardModel>().ToArray();
+        var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_OPENING_CHOICE"), 1)
+        {
+            RequireManualConfirmation = true
+        };
+        var selected = (await CardSelectCmd.FromSimpleGrid(choice, rewards, player, prefs)).SingleOrDefault();
+        if (selected == null || CombatManager.Instance.IsOverOrEnding)
+        {
+            return;
+        }
+
+        var card = combat.CreateCard(selected, player);
+        // The native initial shuffle already ran. Inserting uniformly among all slots
+        // includes this card without reshuffling the already randomized deck.
+        var added = await CardPileCmd.Add(card, PileType.Draw, CardPilePosition.Random, skipVisuals: true);
+        if (added.success && card.Pile?.Type == PileType.Draw)
+        {
+            state.OpeningCard = card;
+            WitchFeedback.Enlighten(player.Creature);
+        }
+        else
+        {
+            card.RemoveFromState();
+        }
+    }
+
+    public static async Task ChooseSwap(PlayerChoiceContext choice, Player player, AbstractModel source, bool fromTrait = true)
+    {
+        if (!CanSwap(player, fromTrait) || CandidateCards(player.PlayerCombatState!).FirstOrDefault() == null)
+        {
+            return;
+        }
+
+        var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_ENLIGHTENMENT"), 0, 1)
         {
             Cancelable = true,
             RequireManualConfirmation = true,
             PretendCardsCanBePlayed = true
         };
-        var cards = await CardSelectCmd.FromHand(choice, player, prefs, card => card != source, source);
-        foreach (var card in cards.ToArray())
+        var selected = (await CardSelectCmd.FromHand(choice, player, prefs, card => card != source, source)).SingleOrDefault();
+        if (selected != null)
         {
-            await Replace(player, card);
+            await Swap(player, selected, fromTrait);
         }
     }
 
-    public static async Task<CardModel?> Replace(Player player, CardModel source)
+    public static async Task<CardModel?> Swap(Player player, CardModel outgoing, bool fromTrait = true)
     {
-        if (source.Owner != player || player.Creature.CombatState is not CombatState combat || source.Pile?.Type != PileType.Hand
-            || CombatManager.Instance.IsOverOrEnding)
+        if (!CanSwap(player, fromTrait) || outgoing.Owner != player || outgoing.Pile?.Type != PileType.Hand)
         {
             return null;
         }
 
-        var pool = player.Deck.Cards.Where(card => card.Rarity is not (CardRarity.Token or CardRarity.Status)).ToArray();
-        if (pool.Length == 0)
+        var candidates = CandidateCards(player.PlayerCombatState!).ToArray();
+        if (candidates.Length == 0)
         {
+            return null;
+        }
+
+        var incoming = candidates[player.RunState.Rng.CombatCardSelection.NextInt(candidates.Length)];
+        var incomingPile = incoming.Pile!;
+        // Vacate a hand slot first so a full hand does not send the incoming card to discard.
+        var movedOut = await CardPileCmd.Add(outgoing, incomingPile);
+        if (!movedOut.success || outgoing.Pile != incomingPile)
+        {
+            return null;
+        }
+
+        var movedIn = await CardPileCmd.Add(incoming, PileType.Hand);
+        if (!movedIn.success || incoming.Pile?.Type != PileType.Hand)
+        {
+            if (!CombatManager.Instance.IsOverOrEnding)
+            {
+                await CardPileCmd.Add(outgoing, PileType.Hand);
+            }
             return null;
         }
 
         var state = WitchCombatState.For(player);
-        var hand = player.PlayerCombatState!.Hand;
-        var index = hand.Cards.ToList().IndexOf(source);
-        var sample = pool[player.RunState.Rng.CombatCardSelection.NextInt(pool.Length)];
-        var substitute = combat.CloneCard(sample);
-        CardModel? heldSource = source;
-        if (state.StandIns.TryGetValue(source, out var original))
-        {
-            await Release(player, state, source, original);
-            heldSource = null;
-        }
-        else
-        {
-            var held = await CardPileCmd.Add(source, EnlightenmentPile.HeldType);
-            if (!held.success)
-            {
-                substitute.RemoveFromState();
-                return null;
-            }
-        }
-
-        state.HandInsertions.Add(substitute, index);
-        state.StandIns.Add(substitute, heldSource);
-        var added = await CardPileCmd.AddGeneratedCardToCombat(substitute, PileType.Hand, player);
-        state.HandInsertions.Remove(substitute);
-        if (!added.success || substitute.Pile?.Type != PileType.Hand)
-        {
-            await Release(player, state, substitute, heldSource);
-            return null;
-        }
-
+        state.TraitSwapUsed |= fromTrait;
         WitchFeedback.Enlighten(player.Creature);
         state.TurnEnlightenments++;
         state.CombatEnlightenments++;
@@ -84,56 +110,18 @@ internal static class Enlightenment
         {
             await starter.FlashAndBlock(3);
         }
-
-        if (state.TurnEnlightenments == 1)
+        if (state.TurnEnlightenments == 1 && player.Relics.OfType<TwinStandingMirror>().FirstOrDefault() is { } upgraded)
         {
-            if (player.Relics.OfType<TwinStandingMirror>().FirstOrDefault() is { } upgraded)
-            {
-                await upgraded.FlashAndBlock(3);
-            }
-            if (state.EnlightenmentBlock > 0)
-            {
-                await CreatureCmd.GainBlock(player.Creature, state.EnlightenmentBlock, ValueProp.Unpowered, null);
-            }
-            if (state.EnlightenmentDiscount)
-            {
-                substitute.EnergyCost.AddThisTurn(-1, reduceOnly: true);
-            }
+            await upgraded.FlashAndBlock(3);
         }
 
-        return substitute;
+        return incoming;
     }
 
-    public static async Task Release(Player player, WitchCombatState state, CardModel standIn, CardModel? original)
-    {
-        if (!state.StandIns.Remove(standIn))
-        {
-            return;
-        }
+    private static bool CanSwap(Player player, bool fromTrait) =>
+        !CombatManager.Instance.IsOverOrEnding && player.PlayerCombatState?.Hand.IsEmpty == false
+        && (!fromTrait || !WitchCombatState.For(player).TraitSwapUsed);
 
-        if (standIn.Pile?.Type is PileType.Hand or PileType.Play)
-        {
-            // Move any visible holder away before the silent cleanup. Discard and Exhaust
-            // have already completed their own holder transitions when their pile hook fires.
-            await CardPileCmd.Add(standIn, EnlightenmentPile.HeldType);
-        }
-        if (standIn.Pile?.IsCombatPile == true)
-        {
-            await CardPileCmd.RemoveFromCombat(standIn, skipVisuals: true);
-        }
-
-        if (original?.Pile?.Type == EnlightenmentPile.HeldType && player.Creature.IsAlive
-            && CombatManager.Instance.IsInProgress)
-        {
-            await CardPileCmd.Add(original, PileType.Discard);
-        }
-    }
-
-    public static async Task ReleaseAll(Player player, WitchCombatState state)
-    {
-        foreach (var (standIn, original) in state.StandIns.ToArray())
-        {
-            await Release(player, state, standIn, original);
-        }
-    }
+    private static IEnumerable<CardModel> CandidateCards(PlayerCombatState combat) =>
+        combat.DrawPile.Cards.Concat(combat.DiscardPile.Cards);
 }

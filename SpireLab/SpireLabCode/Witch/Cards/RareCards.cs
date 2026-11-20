@@ -267,15 +267,18 @@ public sealed class ForbiddenFinalChapter() : WitchCard("R19", 3, CardType.Attac
 public sealed class TurnThePageOfFate() : WitchCard("R20", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
-    protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(2)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        await Enlightenment.Choose(choice, Owner, this, maximum: 2);
-        await Draw(choice);
+        var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_FATE_DRAW"), 1);
+        var selected = (await CardSelectCmd.FromCombatPile(choice, Owner.PlayerCombatState!.DrawPile, Owner, prefs)).SingleOrDefault();
+        if (selected != null)
+        {
+            await CardPileCmd.Add(selected, PileType.Hand);
+        }
     }
 
-    protected override void OnUpgrade() => DynamicVars.Cards.UpgradeValueBy(1);
+    protected override void OnUpgrade() => EnergyCost.UpgradeBy(-1);
 }
 
 // R21

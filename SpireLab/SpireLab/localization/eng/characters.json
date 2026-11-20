@@ -1,7 +1,7 @@
 {
   "SPIRELAB-THE_WITCH.title": "The Witch",
   "SPIRELAB-THE_WITCH.titleObject": "the Witch",
-  "SPIRELAB-THE_WITCH.description": "[gold]Character Trait • Enlightenment[/gold]\nAt the start of your turn, draw 1 extra card. Then you may freely swap 1 card in hand for a temporary copy of a random card from your deck.",
+  "SPIRELAB-THE_WITCH.description": "[gold]Character Trait • Arcane Insight[/gold]\nAt combat start, choose 1 Witch reward card for this fight. Draw 1 extra card each turn. Then you may swap 1 card in hand with a random card from your draw or discard pile.",
   "SPIRELAB-THE_WITCH.pronounObject": "her",
   "SPIRELAB-THE_WITCH.possessiveAdjective": "her",
   "SPIRELAB-THE_WITCH.pronounPossessive": "hers",

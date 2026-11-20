@@ -1,7 +1,7 @@
 {
   "SPIRELAB-THE_WITCH.title": "魔女",
   "SPIRELAB-THE_WITCH.titleObject": "魔女",
-  "SPIRELAB-THE_WITCH.description": "[gold]角色特性 · 魔法启迪[/gold]\n每回合开始额外抽1张牌。抽牌后，你可以免费将1张手牌临时换成当前牌组中的随机牌。",
+  "SPIRELAB-THE_WITCH.description": "[gold]角色特性 · 魔法启迪[/gold]\n战斗开始时，选1张魔女奖励牌临时加入抽牌堆。每回合额外抽1张牌，随后可将1张手牌与抽牌堆或弃牌堆中的随机牌交换。",
   "SPIRELAB-THE_WITCH.pronounObject": "她",
   "SPIRELAB-THE_WITCH.possessiveAdjective": "她的",
   "SPIRELAB-THE_WITCH.pronounPossessive": "她的",

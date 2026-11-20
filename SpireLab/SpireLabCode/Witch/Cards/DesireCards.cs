@@ -17,17 +17,10 @@ public sealed class PrimalGreed() : DesireCard("U37", 2, CardType.Skill, CardRar
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        var hand = Owner.PlayerCombatState!.Hand.Cards.ToArray();
+        var kept = BelowHalf ? await ChooseOtherHandCard(choice, "SPIRELAB-WITCH_GREED_KEEP") : null;
+        var hand = Owner.PlayerCombatState!.Hand.Cards.Where(card => card != this && card != kept).ToArray();
         var drawPile = Owner.PlayerCombatState.DrawPile;
-        var combined = drawPile.Cards.Concat(hand.Where(card => !State.StandIns.ContainsKey(card))).ToList();
-        foreach (var card in hand)
-        {
-            if (State.StandIns.TryGetValue(card, out var original))
-            {
-                await Enlightenment.Release(Owner, State, card, original);
-            }
-        }
-
+        var combined = drawPile.Cards.Concat(hand).ToList();
         Owner.RunState.Rng.Shuffle.Shuffle(combined);
         if (combined.Count > 0)
         {
@@ -57,6 +50,11 @@ public sealed class Sloth() : DesireCard("U38", 2, CardType.Skill, CardRarity.Un
         else
         {
             await Block(play);
+        }
+
+        if (BelowHalf && await ChooseOtherHandCard(choice, "SPIRELAB-WITCH_SLOTH_RETAIN") is { } retained)
+        {
+            CardCmd.ApplySingleTurnRetain(retained);
         }
 
         PlayerCmd.EndTurn(Owner, canBackOut: false);

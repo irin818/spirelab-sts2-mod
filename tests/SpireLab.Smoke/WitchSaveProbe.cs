@@ -40,7 +40,8 @@ internal static class WitchSaveProbe
                     && player.Relics.Single() is CrackedVanityMirror && player.Creature.CurrentHp == 41,
                     "new process restores Witch, ancient upgrade, relic and real HP");
                 var state = WitchCombatState.For(player);
-                Check(state.MirrorHp == 0 && state.StandIns.Count == 0 && player.PlayerCombatState!.Hand.Cards.Count == 6,
+                Check(state.MirrorHp == 0 && state.OpeningCard is PotionMist && !player.Deck.Cards.Contains(state.OpeningCard)
+                    && player.Deck.Cards.Count == 11 && player.PlayerCombatState!.Hand.Cards.Count == 6,
                     "resumed battle starts clean and triggers intrinsic draw");
             }
             else

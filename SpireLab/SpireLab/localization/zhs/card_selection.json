@@ -1,4 +1,8 @@
 {
-  "SPIRELAB-WITCH_ENLIGHTENMENT": "魔法启迪：选择至多 {Amount} 张手牌临时转化",
-  "SPIRELAB-WITCH_PACT_ECHO": "选择弃牌堆中一张非消耗牌放回手牌"
+  "SPIRELAB-WITCH_ENLIGHTENMENT": "魔法启迪：选择1张手牌，与抽牌堆或弃牌堆中的随机牌交换",
+  "SPIRELAB-WITCH_PACT_ECHO": "选择弃牌堆中一张非消耗牌放回手牌",
+  "SPIRELAB-WITCH_OPENING_CHOICE": "命运选牌：选择1张卡牌加入本场战斗的抽牌堆",
+  "SPIRELAB-WITCH_GREED_KEEP": "镜中欲望：选择至多1张其他手牌留在手中",
+  "SPIRELAB-WITCH_SLOTH_RETAIN": "镜中欲望：选择至多1张其他手牌保留到下回合",
+  "SPIRELAB-WITCH_FATE_DRAW": "选择抽牌堆中的1张牌加入手牌"
 }

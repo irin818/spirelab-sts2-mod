@@ -69,3 +69,8 @@
 - 简中与英文的 `characters.json` 在原版选角面板明确展示固有特性。两份 `relics.json` 写明破损梳妆镜每场战斗首次成功换牌给 3 点格挡，双生全身镜改为每回合首次。失去初始遗物仍可使用启迪。
 - 本机 `sts2.dll` 中 `NCharacterSelectScreen.SelectCharacter` 分别读取角色描述和 `StartingRelics[0].DynamicDescription`。因此可以用本地化资源清楚区分特性和遗物，战斗钩子、存档和场景布局继续沿用现有实现。
 - [实机预览测试](tests/SpireLab.Smoke/WitchVisualPreview.cs) 读取原版面板的渲染文字，验证双语并截图。`witch-art` 通过 14 项检查。`witch` 首次完成 100 项断言，但在启动预载时出现引擎 `Invalid Task ID`，整项复跑以 0 退出并通过全部 100 项。已将实测 PCK 装入本机 Steam Mod 目录。
+
+## 2026-11-20 · 魔女 V1.6 开场与换牌
+
+- [V1.6 规格](SpireLab_The_Witch_GDD_v1.6.md) 和 [差异与验证](docs/witch-v1.6-validation.md) 记录当前基线。命运选牌只在首次抽牌前创建 1 张未升级战斗牌，随机插入抽牌堆。手牌交换用两次原版移动保留实例、升级与附魔。
+- [启迪](SpireLab/SpireLabCode/Witch/Mechanics/Enlightenment.cs) 体现随机插入与实例等权采样的区别。[战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 分开处理首次抽牌、回合选择和战斗清理。106 项窗口实机断言通过，下一阶段继续检查角标、美术同步与卡池改动。

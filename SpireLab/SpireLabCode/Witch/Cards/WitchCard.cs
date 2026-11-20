@@ -81,6 +81,17 @@ public abstract class WitchCard(string specId, int cost, CardType type, CardRari
 
     protected Task<bool> PayLife(PlayerChoiceContext choice) => WitchLife.Pay(choice, Owner, LifeCost, fromCard: true);
 
+    protected async Task<CardModel?> ChooseOtherHandCard(PlayerChoiceContext choice, string prompt)
+    {
+        var prefs = new CardSelectorPrefs(new LocString("card_selection", prompt), 0, 1)
+        {
+            Cancelable = true,
+            RequireManualConfirmation = true,
+            PretendCardsCanBePlayed = true
+        };
+        return (await CardSelectCmd.FromHand(choice, Owner, prefs, card => card != this, this)).SingleOrDefault();
+    }
+
     protected Task<decimal> Block(CardPlay play, int extra = 0) =>
         CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block.BaseValue + extra, ValueProp.Move, play);
 

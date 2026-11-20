@@ -1,4 +1,8 @@
 {
-  "SPIRELAB-WITCH_ENLIGHTENMENT": "Enlightenment: choose up to {Amount} card(s) to replace temporarily",
-  "SPIRELAB-WITCH_PACT_ECHO": "Return a non-Exhaust card from your discard pile"
+  "SPIRELAB-WITCH_ENLIGHTENMENT": "Arcane Insight: choose 1 card to swap with a random card from your draw or discard pile",
+  "SPIRELAB-WITCH_PACT_ECHO": "Return a non-Exhaust card from your discard pile",
+  "SPIRELAB-WITCH_OPENING_CHOICE": "Fate Selection: choose 1 card to add to your draw pile for this combat",
+  "SPIRELAB-WITCH_GREED_KEEP": "Mirror Desire: choose up to 1 other card to keep in hand",
+  "SPIRELAB-WITCH_SLOTH_RETAIN": "Mirror Desire: choose up to 1 other card to Retain this turn",
+  "SPIRELAB-WITCH_FATE_DRAW": "Choose 1 card from your draw pile to put into your hand"
 }

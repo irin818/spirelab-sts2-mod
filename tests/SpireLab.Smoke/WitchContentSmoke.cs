@@ -142,12 +142,11 @@ internal static class WitchContentSmoke
         Check(creature.CurrentHp == 1 && piles.Energy == energy + 3 && state.MirrorHp == 12,
             "distillate pays real HP and grants energy at the boundary");
 
-        var original = piles.Hand.Cards.First(card => !state.StandIns.ContainsKey(card));
-        var substitute = await Enlightenment.Replace(player, original) ?? throw new InvalidOperationException("No Greed fixture");
+        var original = piles.Hand.Cards.First();
+        var incoming = await Enlightenment.Swap(player, original, fromTrait: false) ?? throw new InvalidOperationException("No Greed fixture");
         await Play<PrimalGreed>(player, choice);
-        Check(substitute.HasBeenRemovedFromState && original.Pile?.IsCombatPile == true
-            && original.Pile.Type != EnlightenmentPile.HeldType && player.Deck.Cards.Count == 10,
-            "Greed does not shuffle a substitute or lose its original");
+        Check(!incoming.HasBeenRemovedFromState && original.Pile?.IsCombatPile == true && player.Deck.Cards.Count == 10,
+            "Greed retains the integrity of the cards moved by Arcane Insight");
 
         await CreatureCmd.SetCurrentHp(creature, 30);
         if (enemy.IsAlive)
@@ -162,14 +161,18 @@ internal static class WitchContentSmoke
         await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
         piles = player.PlayerCombatState!;
         await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "third Witch battle");
-        await Enlightenment.ReleaseAll(player, WitchCombatState.For(player));
         var source = player.Deck.Cards.OfType<WitchStrike>().First();
         CardCmd.Upgrade(source);
         Check(CardCmd.Enchant<Sharp>(source, 2) != null, "native permanent sample enchantment");
         await CardPileCmd.RemoveFromDeck(player.Deck.Cards.Where(card => card != source).ToArray(), showPreview: false);
-        var standIn = await Enlightenment.Replace(player, piles.Hand.Cards.First());
-        Check(standIn is WitchStrike && standIn.IsUpgraded && standIn.Enchantment is Sharp { Amount: 2 },
-            "substitute inherits actual sampled copy's upgrade and enchantment");
+        await CardPileCmd.Add(piles.DrawPile.Cards.Concat(piles.DiscardPile.Cards).ToArray(), PileType.Exhaust);
+        var sample = ((CombatState)creature.CombatState!).CloneCard(source);
+        await CardPileCmd.Add(sample, PileType.Discard);
+        var offered = piles.Hand.Cards.First();
+        var swapped = await Enlightenment.Swap(player, offered, fromTrait: false);
+        Check(swapped == sample && sample.IsUpgraded && sample.Enchantment is Sharp { Amount: 2 }
+            && offered.Pile?.Type == PileType.Discard,
+            "discard swap moves the actual upgraded and enchanted combat card");
         var sloth = await Add<Sloth>(player);
         var turn = piles.TurnNumber;
         Check(sloth.TryManualPlay(null), "Sloth enters the native action queue as first play");
@@ -199,10 +202,9 @@ internal static class WitchContentSmoke
         piles = player.PlayerCombatState!;
         await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "fourth Witch battle with two-card deck");
         state = WitchCombatState.For(player);
-        Check(state.CombatEnlightenments == 1 && creature.Block == 0 && piles.Hand.Cards.Count == 2,
-            "intrinsic Enlightenment still works without the starter relic");
-        await Enlightenment.ReleaseAll(player, state);
-        await CardPileCmd.Draw(choice, player);
+        Check(state.CombatEnlightenments == 0 && creature.Block == 0 && piles.Hand.Cards.Count == 3
+            && state.OpeningCard is PotionMist, "opening choice works without the starter relic, and an empty swap pool is skipped");
+        await CardPileCmd.Add(state.OpeningCard!, PileType.Exhaust);
         enemy = creature.CombatState!.HittableEnemies.First();
         var originalFinesse = piles.Hand.Cards.OfType<Finesse>().Single();
         var originalFlash = piles.Hand.Cards.OfType<FlashOfSteel>().Single();
@@ -225,7 +227,7 @@ internal static class WitchContentSmoke
         }
 
         Check(piles.Energy == cycleMana && creature.CurrentHp == cycleHp && piles.TurnNumber == cycleTurn
-            && creature.Block == 16 && enemy.CurrentHp == startEnemyHp - 20 && state.CombatEnlightenments == 1,
+            && creature.Block == 16 && enemy.CurrentHp == startEnemyHp - 20 && state.CombatEnlightenments == 0,
             "same-turn cycle gains Block and deals damage without depleting energy or real HP");
     }
 }

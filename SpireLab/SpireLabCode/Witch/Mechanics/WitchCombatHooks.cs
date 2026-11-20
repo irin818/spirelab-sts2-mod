@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch.Cards;
 
@@ -37,6 +38,11 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
     public override decimal ModifyHandDraw(Player player, decimal count) =>
         WitchCombatState.Find(player) is { } state ? count + 1 + state.NextDraw : count;
+
+    public override Task BeforeHandDraw(Player player, PlayerChoiceContext choiceContext, ICombatState combatState) =>
+        WitchCombatState.Find(player) != null && combatState is CombatState combat
+            ? Enlightenment.ChooseOpeningCard(choiceContext, player, combat)
+            : Task.CompletedTask;
 
     public override bool ShouldPlayerResetEnergy(Player player) =>
         WitchCombatState.Find(player)?.RetainEnergy != true || player.PlayerCombatState!.TurnNumber == 1;
@@ -86,7 +92,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         if (WitchCombatState.Find(player) is { } state)
         {
             state.NextDraw = 0;
-            await Enlightenment.Choose(choice, player, this);
+            await Enlightenment.ChooseSwap(choice, player, this);
         }
     }
 
@@ -248,42 +254,29 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         return Task.CompletedTask;
     }
 
-    public override Task AfterCardEnteredCombat(CardModel card)
-    {
-        if (WitchCombatState.Find(card.Owner) is { } state && state.HandInsertions.TryGetValue(card, out var index)
-            && card.Pile is { Type: PileType.Hand } hand)
-        {
-            // CardPileCmd has inserted the model but has yet to create its hand holder.
-            hand.RemoveInternal(card, silent: true);
-            hand.AddInternal(card, Math.Min(index, hand.Cards.Count), silent: true);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public override async Task AfterCardChangedPilesLate(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
-    {
-        var player = card.Owner;
-        if (WitchCombatState.Find(player) is not { } state)
-        {
-            return;
-        }
-
-        foreach (var (standIn, original) in state.StandIns.ToArray())
-        {
-            if (standIn.Pile is null || (standIn == card && standIn.Pile.Type is not (PileType.Hand or PileType.Play)))
-            {
-                await Enlightenment.Release(player, state, standIn, original);
-            }
-        }
-    }
-
-    public override async Task BeforeFlush(PlayerChoiceContext choice, Player player)
+    public override Task BeforeFlush(PlayerChoiceContext choice, Player player)
     {
         if (WitchCombatState.Find(player) is { } state)
         {
             state.LastRemainingEnergy = player.PlayerCombatState!.Energy;
-            await Enlightenment.ReleaseAll(player, state);
+        }
+        return Task.CompletedTask;
+    }
+
+    public override async Task AfterCombatEnd(CombatRoom room)
+    {
+        foreach (var player in room.CombatState.Players)
+        {
+            if (WitchCombatState.Find(player) is not { } state)
+            {
+                continue;
+            }
+
+            if (state.OpeningCard is { Pile.IsCombatPile: true } card)
+            {
+                await CardPileCmd.RemoveFromCombat(card, skipVisuals: true);
+            }
+            state.OpeningCard = null;
         }
     }
 

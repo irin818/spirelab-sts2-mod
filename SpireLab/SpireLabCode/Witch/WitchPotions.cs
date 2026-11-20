@@ -39,7 +39,7 @@ public sealed class TwinDraught() : WitchPotion("twin_draught")
 
     protected override async Task OnUse(PlayerChoiceContext choice, Creature? target)
     {
-        await Enlightenment.Choose(choice, Owner, this);
+        await Enlightenment.ChooseSwap(choice, Owner, this, fromTrait: false);
         await CardPileCmd.Draw(choice, Owner);
     }
 }
