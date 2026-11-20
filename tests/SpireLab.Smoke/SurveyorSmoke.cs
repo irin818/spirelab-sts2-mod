@@ -30,7 +30,11 @@ public static class SurveyorSmoke
 {
     public static void Initialize()
     {
-        if (OS.GetCmdlineArgs().Contains("--witch-smoke"))
+        if (OS.GetCmdlineArgs().Contains("--witch-campaign"))
+        {
+            Callable.From(() => { _ = WitchCampaign.Start(); }).CallDeferred();
+        }
+        else if (OS.GetCmdlineArgs().Contains("--witch-smoke"))
         {
             Callable.From(() => { _ = WitchSmoke.Run(); }).CallDeferred();
         }

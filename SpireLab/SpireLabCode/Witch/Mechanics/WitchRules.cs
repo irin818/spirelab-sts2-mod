@@ -17,6 +17,10 @@ public static class WitchRules
 
     public static int MirrorCapacity(int realHp, int maxHp) => Math.Max(0, maxHp - realHp);
 
+    // The hook expects a multiplier. Round upward so 9 * (3/9) does not truncate to a 2-damage hit.
+    public static decimal FlatReductionFactor(decimal amount, int reduction) =>
+        amount > reduction ? decimal.Round((amount - reduction) / amount, 20, MidpointRounding.ToPositiveInfinity) : 0;
+
     public static int Reflect(int blocked, int percent, decimal multiplier = 1) =>
         (int)Math.Floor((decimal)blocked * percent / 100 * multiplier);
 }

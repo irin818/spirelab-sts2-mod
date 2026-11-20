@@ -3,10 +3,12 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 root="$(pwd -P)"
+quit_after=15000
 case "${1:-surveyor}" in
     surveyor) character=surveyor; smoke_flag=--spirelab-smoke ;;
     witch) character=witch; smoke_flag=--witch-smoke ;;
-    *) printf 'Usage: %s [surveyor|witch]\n' "$0" >&2; exit 2 ;;
+    witch-campaign) character=witch-campaign; smoke_flag=--witch-campaign; quit_after=200000 ;;
+    *) printf 'Usage: %s [surveyor|witch|witch-campaign]\n' "$0" >&2; exit 2 ;;
 esac
 mkdir -p .local/logs
 ./scripts/dev-macos.sh build
@@ -47,17 +49,29 @@ cat > "$profile/settings.save" <<'EOF_SETTINGS'
 {"language":"eng","mod_settings":{"mods_enabled":true}}
 EOF_SETTINGS
 
+render_args=(--headless)
+if [[ "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
+    render_args=(--windowed --resolution 1200x675)
+fi
 log="$test_dir/game.log"
 printf 'Smoke test log: %s\n' "$log"
-if ! "$bin/Slay the Spire 2" --headless --force-steam=off "$smoke_flag" --quit-after 15000 \
+if ! "$bin/Slay the Spire 2" "${render_args[@]}" --force-steam=off "$smoke_flag" --quit-after "$quit_after" \
     --max-fps 120 --log-file "$log" > "$test_dir/console.log" 2>&1; then
     tail -n 40 "$test_dir/console.log" >&2
     exit 1
 fi
+if [[ "$character" == witch-campaign ]]; then
+    awk '/Selecting character:|Entering Boss|Victory!|Run failed/ { print }' "$log"
+    awk '/Selecting character: .*SPIRELAB-THE_WITCH/ { witch = 1 }
+         /Victory! Run completed/ { win = 1 }
+         END { exit !(witch && win) }' "$log"
+    exit $?
+fi
+
 if ! awk '
     /^\[SpireLabSmoke\] / { print }
     /^\[ERROR\]/ || /^ERROR:/ || /^SCRIPT ERROR:/ {
-        if (passed && /were leaked at exit\.$|resources still in use at exit/) next
+        if (passed && /were leaked at exit\.$|resources still in use at exit|shaders of type .* were never freed$/) next
         print
         failed = 1
     }

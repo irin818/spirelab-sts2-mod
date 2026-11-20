@@ -1,4 +1,6 @@
+using BaseLib.Abstracts;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
@@ -24,15 +26,16 @@ public sealed class WitchDefend() : WitchCard(1, CardType.Skill, CardRarity.Basi
 }
 
 // B03
-public sealed class ThinMirror() : WitchCard(1, CardType.Skill, CardRarity.Basic, TargetType.Self, "mirror")
+public sealed class ThinMirror() : WitchCard(1, CardType.Skill, CardRarity.Basic, TargetType.Self, "mirror"), ITranscendenceCard
 {
+    public CardModel GetTranscendenceTransformedCard() => ModelDb.Card<BeyondTheGlass>();
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(7), new DynamicVar("Reflection", 2)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Block(play);
-        State.NextReflect += Number("Reflection");
+        State.NextReflections.Add(Number("Reflection"));
     }
 
     protected override void OnUpgrade()

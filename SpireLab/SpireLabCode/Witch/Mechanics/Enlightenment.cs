@@ -25,7 +25,7 @@ internal static class Enlightenment
             RequireManualConfirmation = true,
             PretendCardsCanBePlayed = true
         };
-        var cards = await CardSelectCmd.FromHand(choice, player, prefs, filter: null, source);
+        var cards = await CardSelectCmd.FromHand(choice, player, prefs, card => card != source, source);
         foreach (var card in cards.ToArray())
         {
             await Replace(player, card);
@@ -34,7 +34,7 @@ internal static class Enlightenment
 
     public static async Task<CardModel?> Replace(Player player, CardModel source)
     {
-        if (player.Creature.CombatState is not CombatState combat || source.Pile?.Type != PileType.Hand
+        if (source.Owner != player || player.Creature.CombatState is not CombatState combat || source.Pile?.Type != PileType.Hand
             || CombatManager.Instance.IsOverOrEnding)
         {
             return null;
@@ -51,10 +51,11 @@ internal static class Enlightenment
         var index = hand.Cards.ToList().IndexOf(source);
         var sample = pool[player.RunState.Rng.CombatCardSelection.NextInt(pool.Length)];
         var substitute = combat.CloneCard(sample);
+        CardModel? heldSource = source;
         if (state.StandIns.TryGetValue(source, out var original))
         {
             await Release(player, state, source, original);
-            source = null!;
+            heldSource = null;
         }
         else
         {
@@ -67,20 +68,37 @@ internal static class Enlightenment
         }
 
         state.HandInsertions.Add(substitute, index);
-        state.StandIns.Add(substitute, source);
+        state.StandIns.Add(substitute, heldSource);
         var added = await CardPileCmd.AddGeneratedCardToCombat(substitute, PileType.Hand, player);
         state.HandInsertions.Remove(substitute);
         if (!added.success || substitute.Pile?.Type != PileType.Hand)
         {
-            await Release(player, state, substitute, source);
+            await Release(player, state, substitute, heldSource);
             return null;
         }
 
+        WitchFeedback.Enlighten(player.Creature);
         state.TurnEnlightenments++;
         state.CombatEnlightenments++;
-        if (state.CombatEnlightenments == 1 && player.Relics.Any(relic => relic is CrackedVanityMirror))
+        if (state.CombatEnlightenments == 1 && player.Relics.OfType<CrackedVanityMirror>().FirstOrDefault() is { } starter)
         {
-            await CreatureCmd.GainBlock(player.Creature, 3, ValueProp.Unpowered, null);
+            await starter.FlashAndBlock(3);
+        }
+
+        if (state.TurnEnlightenments == 1)
+        {
+            if (player.Relics.OfType<TwinStandingMirror>().FirstOrDefault() is { } upgraded)
+            {
+                await upgraded.FlashAndBlock(3);
+            }
+            if (state.EnlightenmentBlock > 0)
+            {
+                await CreatureCmd.GainBlock(player.Creature, state.EnlightenmentBlock, ValueProp.Unpowered, null);
+            }
+            if (state.EnlightenmentDiscount)
+            {
+                substitute.EnergyCost.AddThisTurn(-1, reduceOnly: true);
+            }
         }
 
         return substitute;
@@ -93,9 +111,15 @@ internal static class Enlightenment
             return;
         }
 
+        if (standIn.Pile?.Type is PileType.Hand or PileType.Play)
+        {
+            // Move any visible holder away before the silent cleanup. Discard and Exhaust
+            // have already completed their own holder transitions when their pile hook fires.
+            await CardPileCmd.Add(standIn, EnlightenmentPile.HeldType);
+        }
         if (standIn.Pile?.IsCombatPile == true)
         {
-            await CardPileCmd.RemoveFromCombat(standIn);
+            await CardPileCmd.RemoveFromCombat(standIn, skipVisuals: true);
         }
 
         if (original?.Pile?.Type == EnlightenmentPile.HeldType && player.Creature.IsAlive

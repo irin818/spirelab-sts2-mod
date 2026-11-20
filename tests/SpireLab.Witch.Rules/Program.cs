@@ -16,6 +16,7 @@ Expect(WitchRules.MirrorCapacity(68, 68) == 0 && WitchRules.MirrorCapacity(20, 6
 Expect(!WitchRules.IsBelowHalf(34, 68) && WitchRules.IsBelowHalf(33, 68) && WitchRules.IsBelowHalf(34, 69), "strict half boundary");
 Expect(WitchRules.Reflect(1, 50) == 0 && WitchRules.Reflect(7, 50) == 3
     && WitchRules.Reflect(7, 50, 1.5m) == 5, "reflection rounds down after source modifiers");
+Expect(decimal.Truncate(9 * WitchRules.FlatReductionFactor(9, 6)) == 3, "flat reduction survives engine truncation");
 Expect(!WitchRules.CanPayLife(1, 1) && !WitchRules.CanPayLife(4, 0)
     && WitchRules.CanPayLife(2, 1), "payment requires a positive cost and leaves at least one HP");
 

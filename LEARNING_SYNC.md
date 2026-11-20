@@ -33,3 +33,10 @@
 - [WitchCombatHooks.cs](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 接入原版抽牌、回合、能量、费用和伤害阶段。[WitchRules.cs](SpireLab/SpireLabCode/Witch/Mechanics/WitchRules.cs) 把逆转、支付、反射取整写成纯函数。实机使用 `CreatureCmd.Damage` 在格挡前处理下一击免疫，并在原版扣真实生命之前吸收镜像生命。
 - `./scripts/dev-macos.sh check`、构建、打包成功。Apple Silicon 上 STS2 v0.111.1 的原型实机记录 33 项通过，含两场开战、真实回合转换和一次获胜；单元测试覆盖 500 条狂赌生命路径。隔离日志位于本机 `.local/witch-smoke.RfqHpw/game.log`，引擎退出时仍打印资源回收诊断。
 - ImageGen 角色三视图先于战斗立绘、选角背景和四个画风锚点，源图和提示词见 [美术基准](docs/art/witch/README.md)。独立全卡插画、正式音效、多幕验证和完整池属于下一阶段。
+
+## 2026-11-20 · 魔女 Phase 3
+
+- 角色池扩展为 4 基础、20 普通、38 罕见、27 稀有、2 古代。9 件遗物与 3 种药水已接入。古代由 BaseLib 对接原版 Archaic Tooth、Dusty Tome 和 Touch of Orobas。D5 没有列出升级数值，原版古代来源可照常加升级标记，牌面效果沿用规格值。
+- [战斗状态和 Hook](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 记录回合边界、实际获得的能量和格挡次数。毛玻璃式减伤通过原版乘数 Hook 实现，向上调整比例精度使原生截断得到正确整数。额外能量命令完成后逐项处理触发，避免蒸馏器递归。
+- STS2 v0.111.1 的窗口实机回归通过 62 项断言，包括全池注册、两种语言的牌面预览、三场战斗、四来源反伤、生命献祭、贪婪与替身、升级附魔复制、怠惰结束回合与能量上限下 X 费收尾。日志在 `.local/witch-smoke.cWTw55/game.log`。原型中涌现的古代升级崩溃与验证夹具的房间切换回收错误均已在测试中复查。
+- 下一阶段接入 91 张独立卡面、检查更多游戏内渲染与跨幕流程。窗口自动战役使用原版 AutoSlay 的辅助强化，只验证流程兼容。

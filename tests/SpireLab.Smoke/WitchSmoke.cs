@@ -1,4 +1,5 @@
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -32,16 +33,24 @@ internal static class WitchSmoke
         {
             var game = NGame.Instance ?? throw new InvalidOperationException("Expected the game root.");
             await game.GameStartupComplete;
+            var commonScenes = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet)
+                .Where(path => path.EndsWith(".tscn", StringComparison.Ordinal) && ResourceLoader.Exists(path)).Distinct().ToArray();
+            await WaitFor(tree, () =>
+            {
+                var loaded = PreloadManager.Cache.GetLoadedCacheAssets();
+                return commonScenes.All(loaded.Contains);
+            }, "main menu and common scenes finish preloading");
             SaveManager.Instance.SetFtuesEnabled(false);
             var witch = ModelDb.Character<TheWitch>();
             var run = await game.StartNewSingleplayerRun(witch, false, ActModel.GetDefaultList(), [], "682026", GameMode.Standard);
             var player = run.Players.Single();
             Check(witch.StartingHp == 68 && player.Deck.Cards.Count == 10 && player.Deck.Cards.Select(card => card.Id).Distinct().Count() == 4, "Witch starting deck and HP");
             Check(player.Relics.Single() is CrackedVanityMirror, "Witch starting relic");
-            Check(witch.CardPool.AllCards.Count(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare) >= 12
-                && witch.CardPool.AllCards.Count(card => card.Tags.Contains(WitchCard.Desire)) == 5, "vertical slice rewards and exactly five Desire cards");
+            Check(witch.CardPool.AllCards.Count(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare) == 85
+                && witch.CardPool.AllCards.Count(card => card.Tags.Contains(WitchCard.Desire)) == 5, "85 reward cards and exactly five Desire cards");
             Check(witch.CardPool.AllCards.All(card => ResourceLoader.Exists(card.PortraitPath)), "Witch card portraits");
 
+            WitchContentSmoke.ValidateDefinitions(witch, player);
             var selector = new WitchSelector();
             using var selection = CardSelectCmd.UseSelector(selector);
             var room = await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
@@ -136,7 +145,9 @@ internal static class WitchSmoke
             Check(!state.MirrorForm && state.MirrorHp == 0 && !state.DesireDiscount, "next battle resets temporary state");
             await Play<TheMirrorSelf>(player, choice);
             Check(creature.CurrentHp == 1 && state.MirrorHp == 0, "maximum-HP inversion cannot kill its owner");
+            await WitchContentSmoke.Exercise(tree, player, choice);
             LocManager.Instance.SetLanguage("zhs");
+            WitchContentSmoke.ValidateCardText(witch);
             Check(witch.Title.GetRawText() == "魔女" && ModelDb.Card<AbyssOfGambling>().Title == "狂赌之渊", "Simplified Chinese names loaded");
             LocManager.Instance.SetLanguage("eng");
             GD.Print("[SpireLabSmoke] PASS");
@@ -149,7 +160,7 @@ internal static class WitchSmoke
         }
     }
 
-    private static async Task<T> Add<T>(Player player, bool upgrade = false) where T : CardModel
+    internal static async Task<T> Add<T>(Player player, bool upgrade = false) where T : CardModel
     {
         if (player.PlayerCombatState!.Hand.Cards.Count == CardPile.MaxCardsInHand)
         {
@@ -167,10 +178,10 @@ internal static class WitchSmoke
         return card;
     }
 
-    private static async Task Play<T>(Player player, PlayerChoiceContext choice, bool upgrade = false) where T : CardModel =>
+    internal static async Task Play<T>(Player player, PlayerChoiceContext choice, bool upgrade = false) where T : CardModel =>
         await CardCmd.AutoPlay(choice, await Add<T>(player, upgrade), null);
 
-    private static async Task WaitFor(SceneTree tree, Func<bool> predicate, string check)
+    internal static async Task WaitFor(SceneTree tree, Func<bool> predicate, string check)
     {
         for (var frame = 0; frame < 2200 && !predicate(); frame++)
         {
@@ -180,7 +191,7 @@ internal static class WitchSmoke
         Check(predicate(), check);
     }
 
-    private static void Check(bool condition, string check)
+    internal static void Check(bool condition, string check)
     {
         if (!condition)
         {

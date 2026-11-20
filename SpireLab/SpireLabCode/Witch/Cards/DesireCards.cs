@@ -2,6 +2,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using SpireLab.SpireLabCode.Witch.Mechanics;
@@ -30,7 +31,9 @@ public sealed class PrimalGreed() : DesireCard(2, CardType.Skill, CardRarity.Unc
         Owner.RunState.Rng.Shuffle.Shuffle(combined);
         if (combined.Count > 0)
         {
+            Hook.ModifyShuffleOrder(CombatState!, Owner, combined, isInitialShuffle: false);
             await CardPileCmd.Add(combined, drawPile);
+            await Hook.AfterShuffle(CombatState!, choice, Owner);
         }
 
         await CardPileCmd.Draw(choice, DynamicVars.Cards.BaseValue, Owner);
@@ -130,16 +133,21 @@ public sealed class SourceOfCalamity() : DesireCard(2, CardType.Skill, CardRarit
 // R27
 public sealed class AbyssOfGambling() : DesireCard(1, CardType.Skill, CardRarity.Rare)
 {
+    public override int LifeCost => WitchRules.GambleCost(Owner.Creature.CurrentHp, Number("Percent"));
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Percent", 50), new CardsVar(1), new EnergyVar(2)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        if (await WitchLife.Pay(Owner, WitchRules.GambleCost(Owner.Creature.CurrentHp, Number("Percent"))))
+        if (await PayLife(choice))
         {
-            // Reserve its place before drawing so a full hand cannot break the promised return.
-            await CardPileCmd.Add(this, PileType.Hand);
-            await CardPileCmd.Draw(choice, DynamicVars.Cards.BaseValue, Owner);
-            await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
+            // At hand capacity, reserve the return slot before asking the engine to draw.
+            if (Owner.PlayerCombatState!.Hand.Cards.Count >= CardPile.MaxCardsInHand - 1)
+            {
+                await CardPileCmd.Add(this, PileType.Hand);
+            }
+
+            await Draw(choice);
+            await GainEnergy(choice);
         }
     }
 

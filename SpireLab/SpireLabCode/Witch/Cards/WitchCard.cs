@@ -4,6 +4,9 @@ using BaseLib.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.CardSelection;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -19,6 +22,7 @@ public abstract class WitchCard(int cost, CardType type, CardRarity rarity, Targ
     public static CardTag Desire;
 
     public virtual bool IsDesire => false;
+    public virtual int LifeCost => 0;
     public override string CustomPortraitPath => $"{TheWitch.Art}/cards/{theme}.png";
     public override string PortraitPath => CustomPortraitPath;
     public override string BetaPortraitPath => CustomPortraitPath;
@@ -26,9 +30,53 @@ public abstract class WitchCard(int cost, CardType type, CardRarity rarity, Targ
     private protected WitchCombatState State => WitchCombatState.For(Owner);
     protected int Number(string name) => DynamicVars[name].IntValue;
 
-    protected Task<AttackCommand> Attack(PlayerChoiceContext choice, CardPlay play, int extra = 0) =>
-        DamageCmd.Attack(DynamicVars.Damage.BaseValue + extra).FromCard(this, play).Targeting(play.Target!)
-            .WithHitFx("vfx/vfx_attack_slash").Execute(choice);
+    protected Task<AttackCommand> Attack(PlayerChoiceContext choice, CardPlay play, int extra = 0, int hits = 1) =>
+        Deal(choice, play, DynamicVars.Damage.BaseValue + extra, hits);
+
+    protected Task<AttackCommand> Deal(PlayerChoiceContext choice, CardPlay play, decimal amount, int hits = 1)
+    {
+        var attack = DamageCmd.Attack(amount).FromCard(this, play).WithHitCount(hits)
+            .WithHitFx("vfx/vfx_attack_slash");
+        switch (TargetType)
+        {
+            case TargetType.AllEnemies:
+                attack.TargetingAllOpponents(CombatState!);
+                break;
+            case TargetType.RandomEnemy:
+                attack.TargetingRandomOpponents(CombatState!);
+                break;
+            default:
+                attack.Targeting(play.Target!);
+                break;
+        }
+
+        return attack.Execute(choice);
+    }
+
+    protected bool BelowHalf => WitchRules.IsBelowHalf(Owner.Creature.CurrentHp, Owner.Creature.MaxHp);
+    protected int ExtraEnergy => State.ExtraEnergy;
+
+    protected Task Draw(PlayerChoiceContext choice) => CardPileCmd.Draw(choice, DynamicVars.Cards.BaseValue, Owner);
+    protected Task GainEnergy(PlayerChoiceContext choice) => WitchEnergy.Gain(choice, Owner, DynamicVars.Energy.IntValue, fromCard: true);
+    protected Task Weak(PlayerChoiceContext choice, CardPlay play) =>
+        PowerCmd.Apply<MegaCrit.Sts2.Core.Models.Powers.WeakPower>(choice, play.Target!,
+            Number("Weak"), Owner.Creature, this);
+
+    protected async Task<bool> DiscardOne(PlayerChoiceContext choice, bool optional = false)
+    {
+        var prompt = CardSelectorPrefs.DiscardSelectionPrompt;
+        var prefs = new CardSelectorPrefs(prompt, optional ? 0 : 1, 1) { Cancelable = optional };
+        var selected = (await CardSelectCmd.FromHandForDiscard(choice, Owner, prefs, card => card != this, this)).FirstOrDefault();
+        if (selected == null)
+        {
+            return false;
+        }
+
+        await CardCmd.Discard(choice, selected);
+        return true;
+    }
+
+    protected Task<bool> PayLife(PlayerChoiceContext choice) => WitchLife.Pay(choice, Owner, LifeCost, fromCard: true);
 
     protected Task<decimal> Block(CardPlay play, int extra = 0) =>
         CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block.BaseValue + extra, ValueProp.Move, play);
