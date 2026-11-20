@@ -53,3 +53,12 @@
 4. V1.0 规格和既有角色源图按历史保留。已校验的输出 ZIP 和截图保存在本地，任何 Steam 可见性更改须以作者会话中的服务器查询为依据。[现有条目更新规则](workshop/README.md)
 
 本轮移走三份旧发布工作区和一份可重建 DLL/PCK 导出目录，均为 Git 忽略项目。原始图、Steam 下载的旧三件文件、可见性基线、关联 ID 和 Git bundle 均保存在项目外快照。新的本地工作区为 `.local/release/Witch-v1.6.0.C9NIhD`，`.local/release/latest` 指向该目录。
+
+## Steam 私密更新
+
+- 目标为原有 PublishedFileId `3842829456`、App ID `2868840`、Mod ID `SpireLab`。作者会话最初查到 Public，单独提交可见性后重新查到 Private。该次变更前后的内容文件句柄和字节数相同。
+- 确认 Private 后，通过 Steamworks 只提交 `SpireLab.dll`、`SpireLab.pck` 和 `SpireLab.json`。提交返回 OK。2026-11-20 23:40:46（上海时间）的服务器版本仍为 Private。标题、描述哈希、主预览句柄和 BaseLib 依赖 `3737335127` 都通过前后比对。切换为 Private 后，上传前后的无身份请求均无法取得条目数据。
+- 作者会话报告条目已订阅且安装完成。Steam 下载的三个文件与已验收工作区逐字节相同，清单版本为 v1.6.0。实际游戏的本地 mods 目录没有额外 SpireLab 副本，Steam 活动路径只有原条目的安装目录。
+- 本地证明文件位于 `.local/logs/v16-steam-visibility-only.log`、`v16-steam-private-upload.log`、`v16-steam-private-download.log` 和 `v16-steam-installed-sha256.txt`。两次下载版实机的断言通过，Godot 预载时的 `Invalid Task ID` 使严格日志检查失败。测试入口等待全量菜单资源，并用同一组 Steam 下载文件重跑。最终 `witch-art` 以退出码 0 通过全部 34 项，截图为 `.local/witch-art-smoke.cIB0FO/captures/`。
+
+公开发布由用户另行授权。新外部素材的公开分发许可、Windows、联网与逐卡手测仍需确认。

@@ -39,11 +39,10 @@ internal static class WitchVisualPreview
         {
             var game = NGame.Instance!;
             await game.GameStartupComplete;
-            var commonScenes = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet)
-                .Where(path => path.EndsWith(".tscn", StringComparison.Ordinal) && ResourceLoader.Exists(path))
-                .ToArray();
-            await WaitFor(tree, () => commonScenes.All(PreloadManager.Cache.GetLoadedCacheAssets().Contains),
-                "main menu scenes available");
+            var startupAssets = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet)
+                .Where(path => ResourceLoader.Exists(path)).Distinct().ToArray();
+            await WaitFor(tree, () => PreloadManager.Cache.GetLoadedCacheAssets().IsSupersetOf(startupAssets),
+                "deferred startup assets finish before the visual checks");
             if (NModalContainer.Instance?.OpenModal is NEarlyAccessDisclaimer disclaimer)
             {
                 await disclaimer.CloseScreen();
