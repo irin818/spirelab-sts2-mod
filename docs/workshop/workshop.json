@@ -1,9 +1,11 @@
 {
   "title": "SpireLab — 魔女 / The Witch",
-  "description": "[h1]魔女 / The Witch[/h1]\n一名以魔法启迪临时改写手牌、在真实生命与镜像生命之间周旋的原创角色。91 种卡牌、9 件遗物、3 种药水，含简体中文与英文。\n\nAn original playable character with an Enlightenment hand-swap passive, mirror life, and five Desire cards. Includes 91 cards, 9 relics, 3 potions, and English and Simplified Chinese support.\n\n[b]Requires BaseLib 3.4.8 or later.[/b] Tested locally on Slay the Spire 2 v0.111.1 for Apple Silicon macOS.",
+  "description": "[h1]魔女 / The Witch[/h1]\n原创魔女。每场战斗可选择一张临时奖励牌，并用魔法启迪交换牌堆中的实际卡牌。91 种卡牌、9 件遗物、3 种药水，含简体中文与英文。\n\nAn original playable Witch with Fate Selection and Arcane Insight. Includes 91 cards, 9 relics, 3 potions, and English and Simplified Chinese support.\n\n[b]Requires BaseLib 3.4.8 or later.[/b] Target game v0.111.1.",
   "visibility": "private",
-  "changeNote": "v1.1.0 · Black-and-ivory Gothic visual update. New character art, cards, icons, animations and combat feedback. The Witch's card rules and IDs retain the v1.0 baseline.",
+  "changeNote": "v1.6.0 · Fate Selection, real pile exchange, revised cards and live combat status icons.",
   "tags": [],
-  "dependencies": [3737335127],
+  "dependencies": [
+    3737335127
+  ],
   "contentDescriptors": []
 }

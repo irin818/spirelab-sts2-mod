@@ -29,7 +29,7 @@ public sealed class MistDraught() : WitchPotion("mist_draught")
     protected override async Task OnUse(PlayerChoiceContext choice, Creature? target)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
-        WitchCombatState.For(Owner).NextReflections.Add(DynamicVars["Reflection"].IntValue);
+        WitchCombatState.For(Owner).DeferredReflections.Add(DynamicVars["Reflection"].IntValue);
     }
 }
 

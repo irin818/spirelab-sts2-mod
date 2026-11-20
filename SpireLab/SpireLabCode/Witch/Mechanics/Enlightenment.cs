@@ -23,29 +23,34 @@ internal static class Enlightenment
         state.OpeningChoiceResolved = true;
         var rewards = player.Character.CardPool.AllCards.OfType<WitchCard>()
             .Where(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare)
-            .OrderBy(card => card.SpecId, StringComparer.Ordinal).Cast<CardModel>().ToArray();
+            .OrderBy(card => card.SpecId, StringComparer.Ordinal).Select(card => combat.CreateCard(card, player)).ToArray();
         var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_OPENING_CHOICE"), 1)
         {
             RequireManualConfirmation = true
         };
-        var selected = (await CardSelectCmd.FromSimpleGrid(choice, rewards, player, prefs)).SingleOrDefault();
-        if (selected == null || CombatManager.Instance.IsOverOrEnding)
+        try
         {
-            return;
-        }
+            var selected = (await CardSelectCmd.FromSimpleGrid(choice, rewards, player, prefs)).SingleOrDefault();
+            if (selected == null || CombatManager.Instance.IsOverOrEnding)
+            {
+                return;
+            }
 
-        var card = combat.CreateCard(selected, player);
-        // The native initial shuffle already ran. Inserting uniformly among all slots
-        // includes this card without reshuffling the already randomized deck.
-        var added = await CardPileCmd.Add(card, PileType.Draw, CardPilePosition.Random, skipVisuals: true);
-        if (added.success && card.Pile?.Type == PileType.Draw)
-        {
-            state.OpeningCard = card;
-            WitchFeedback.Enlighten(player.Creature);
+            // A uniform slot in the already shuffled deck includes this card in the initial permutation.
+            var added = await CardPileCmd.Add(selected, PileType.Draw, CardPilePosition.Random, skipVisuals: true);
+            if (added.success && selected.Pile?.Type == PileType.Draw)
+            {
+                state.OpeningCard = selected;
+                WitchFeedback.Enlighten(player.Creature);
+            }
         }
-        else
+        finally
         {
-            card.RemoveFromState();
+            // The grid needs an owner on each display instance. Unchosen cards never enter a pile.
+            foreach (var candidate in rewards.Where(card => card.Pile == null && !card.HasBeenRemovedFromState))
+            {
+                candidate.RemoveFromState();
+            }
         }
     }
 

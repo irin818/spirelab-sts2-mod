@@ -72,15 +72,16 @@ public sealed class PotionTorrent() : WitchCard("R05", 2, CardType.Skill, CardRa
 // R06
 public sealed class RefinedAbyss() : WitchCard("R06", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Ward", 2)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Ward", 0)];
 
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
+        State.DepthsEnergy++;
         State.DepthsBlock += Number("Ward");
         return Task.CompletedTask;
     }
 
-    protected override void OnUpgrade() => DynamicVars["Ward"].UpgradeValueBy(1);
+    protected override void OnUpgrade() => DynamicVars["Ward"].UpgradeValueBy(3);
 }
 
 // R07
@@ -105,16 +106,18 @@ public sealed class GildedPact() : WitchCard("R07", 1, CardType.Skill, CardRarit
 // R08
 public sealed class FinalDistillation() : WitchCard("R08", 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(26), new DynamicVar("Bonus", 10)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(26), new CardsVar(2), new EnergyVar(1)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, ExtraEnergy > 0 ? Number("Bonus") : 0);
-
-    protected override void OnUpgrade()
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        DynamicVars.Damage.UpgradeValueBy(8);
-        DynamicVars["Bonus"].UpgradeValueBy(2);
+        await Attack(choice, play);
+        if (play.Target?.IsDead == true)
+        {
+            await Draw(choice);
+            await GainEnergy(choice);
+        }
     }
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(8);
 }
 
 // R09
@@ -251,14 +254,25 @@ public sealed class FracturedCrown() : WitchCard("R18", 1, CardType.Power, CardR
 // R19
 public sealed class ForbiddenFinalChapter() : WitchCard("R19", 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(15), new DynamicVar("Bonus", 3)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(18), new DynamicVar("Bonus", 5)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, Math.Min(6, State.CombatEnlightenments) * Number("Bonus"));
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
+    {
+        var skills = Owner.PlayerCombatState!.Hand.Cards.Where(card => card != this && card.Type == CardType.Skill).ToArray();
+        var exhausted = 0;
+        foreach (var card in skills)
+        {
+            if (card.Pile?.Type == PileType.Hand && (await CardCmd.Exhaust(choice, card))?.success == true)
+            {
+                exhausted++;
+            }
+        }
+        await Attack(choice, play, exhausted * Number("Bonus"));
+    }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(5);
+        DynamicVars.Damage.UpgradeValueBy(6);
         DynamicVars["Bonus"].UpgradeValueBy(1);
     }
 }
@@ -282,12 +296,12 @@ public sealed class TurnThePageOfFate() : WitchCard("R20", 2, CardType.Skill, Ca
 }
 
 // R21
-public sealed class BloodstainedBookmark() : WitchCard("R21", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
+public sealed class BloodstainedBookmark() : WitchCard("R21", 2, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
 
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        State.EnlightenmentDiscount = true;
+        State.BookmarkEnergy++;
         return Task.CompletedTask;
     }
 

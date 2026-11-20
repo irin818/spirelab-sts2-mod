@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Models.Encounters;
 using Finesse = MegaCrit.Sts2.Core.Models.Cards.Finesse;
 using FlashOfSteel = MegaCrit.Sts2.Core.Models.Cards.FlashOfSteel;
 using MegaCrit.Sts2.Core.Models.Enchantments;
+using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
@@ -29,6 +30,7 @@ internal static class WitchContentSmoke
         Check(all.Length == 91 && all.Select(card => card.Id).Distinct().Count() == 91
             && groups[CardRarity.Basic] == 4 && groups[CardRarity.Common] == 20 && groups[CardRarity.Uncommon] == 38
             && groups[CardRarity.Rare] == 27 && groups[CardRarity.Ancient] == 2, "91 distinct cards with exact GDD rarity counts");
+        ValidatePrintedCosts(all.Cast<WitchCard>());
         Check(witch.RelicPool.AllRelics.Count() == 9 && witch.PotionPool.AllPotions.Count() == 3, "nine relics and three potions");
         Check(witch.RelicPool.AllRelics.OfType<WitchRelic>().Count(relic =>
         {
@@ -57,6 +59,43 @@ internal static class WitchContentSmoke
     private static bool HasSize(string path, int size) =>
         ResourceLoader.Load<Texture2D>(path)?.GetSize() == new Vector2(size, size);
 
+    private static void ValidatePrintedCosts(IEnumerable<WitchCard> cards)
+    {
+        var costsByRarity = new Dictionary<char, string>
+        {
+            ['B'] = "1111",
+            ['C'] = "11120211001112111211",
+            ['U'] = "12120111021121111211121212011111212022",
+            ['R'] = "4X3221131332212321322221321",
+            ['A'] = "12"
+        };
+        string[] reducedOnUpgrade = ["U37", "R01", "R03", "R10", "R16", "R20", "R21", "R25"];
+        foreach (var card in cards)
+        {
+            var number = int.Parse(card.SpecId.AsSpan(1), System.Globalization.CultureInfo.InvariantCulture);
+            var printed = costsByRarity[card.SpecId[0]][number - 1];
+            var upgraded = card.ToMutable();
+            if (upgraded.IsUpgradable)
+            {
+                upgraded.UpgradeInternal();
+                upgraded.FinalizeUpgradeInternal();
+            }
+
+            var expectedUpgrade = printed - '0' - (reducedOnUpgrade.Contains(card.SpecId) ? 1 : 0);
+            var correct = printed == 'X'
+                ? card.EnergyCost.CostsX && upgraded.EnergyCost.CostsX
+                : !card.EnergyCost.CostsX && !upgraded.EnergyCost.CostsX
+                    && card.EnergyCost.GetWithModifiers(CostModifiers.None) == printed - '0'
+                    && upgraded.EnergyCost.GetWithModifiers(CostModifiers.None) == expectedUpgrade;
+            if (!correct)
+            {
+                throw new InvalidOperationException($"Unexpected printed cost for {card.SpecId} ({card.Id}).");
+            }
+        }
+
+        Check(true, "all 91 base and upgraded printed costs match V1.6, including X");
+    }
+
     public static void ValidateCardText(TheWitch witch)
     {
         foreach (var card in witch.CardPool.AllCards)
@@ -77,23 +116,29 @@ internal static class WitchContentSmoke
         }
     }
 
-    public static async Task Exercise(SceneTree tree, Player player, PlayerChoiceContext choice)
+    public static async Task Exercise(SceneTree tree, Player player, PlayerChoiceContext choice, WitchSelector selector)
     {
         var creature = player.Creature;
         var enemy = creature.CombatState!.HittableEnemies.First();
         var state = WitchCombatState.For(player);
         var piles = player.PlayerCombatState!;
         await CreatureCmd.SetCurrentHp(creature, 30);
-        await Play<ReflectiveInscription>(player, choice);
-        await Play<SplitFace>(player, choice);
+        await Play<ReflectiveInscription>(player, choice, upgrade: true);
         await Play<MirrorBurial>(player, choice);
         await CreatureCmd.LoseBlock(choice, creature, creature.Block, null);
         await CreatureCmd.GainBlock(creature, 14, ValueProp.Unpowered, null);
         var enemyHp = enemy.CurrentHp;
         await CreatureCmd.Damage(choice, creature, 7, ValueProp.Move, enemy);
         await CreatureCmd.Damage(choice, creature, 7, ValueProp.Move, enemy);
-        Check(enemy.CurrentHp == enemyHp - 19 && creature.Block == 0 && creature.CurrentHp == 30,
-            "two hits reflect per-hit 50%, with flat bonuses and burial consumed only once");
+        Check(enemy.CurrentHp == enemyHp - 13 && creature.Block == 0 && creature.CurrentHp == 30
+            && state.NextSkillDiscount == 1 && state.NextSkillWard == 3
+            && creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<InscribedSkillPower>()?.Amount == 1,
+            "two hits reflect per-hit 50%, consume Burial once and schedule the upgraded Inscription");
+        await Play<SplitFace>(player, choice);
+        await CreatureCmd.Damage(choice, creature, 6, ValueProp.Move, enemy);
+        Check(enemy.GetPower<WeakPower>()?.Amount == 1 && creature.GetPower<SplitFacePower>() == null,
+            "Split Face applies Weak on the first block and clears its native icon");
+        await PowerCmd.Remove<WeakPower>(enemy);
 
         await Play<MoonInTheMirror>(player, choice);
         await CreatureCmd.GainBlock(creature, 6, ValueProp.Unpowered, null);
@@ -144,8 +189,10 @@ internal static class WitchContentSmoke
 
         var original = piles.Hand.Cards.First();
         var incoming = await Enlightenment.Swap(player, original, fromTrait: false) ?? throw new InvalidOperationException("No Greed fixture");
+        var kept = piles.Hand.Cards.First();
         await Play<PrimalGreed>(player, choice);
-        Check(!incoming.HasBeenRemovedFromState && original.Pile?.IsCombatPile == true && player.Deck.Cards.Count == 10,
+        Check(!incoming.HasBeenRemovedFromState && original.Pile?.IsCombatPile == true && player.Deck.Cards.Count == 10
+            && piles.Hand.Cards.Contains(kept) && !kept.ShouldRetainThisTurn,
             "Greed retains the integrity of the cards moved by Arcane Insight");
 
         await CreatureCmd.SetCurrentHp(creature, 30);
@@ -158,26 +205,59 @@ internal static class WitchContentSmoke
         Check(creature.CurrentHp == 33, "Sealed Potion recovers 3 after card life loss");
         await LeaveCompletedCombat(tree);
 
+        selector.OpeningSpecId = "R05";
         await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
         piles = player.PlayerCombatState!;
         await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "third Witch battle");
+        var torrent = (PotionTorrent)WitchCombatState.For(player).OpeningCard!;
         var source = player.Deck.Cards.OfType<WitchStrike>().First();
         CardCmd.Upgrade(source);
         Check(CardCmd.Enchant<Sharp>(source, 2) != null, "native permanent sample enchantment");
         await CardPileCmd.RemoveFromDeck(player.Deck.Cards.Where(card => card != source).ToArray(), showPreview: false);
-        await CardPileCmd.Add(piles.DrawPile.Cards.Concat(piles.DiscardPile.Cards).ToArray(), PileType.Exhaust);
+        await CardPileCmd.Add(piles.DrawPile.Cards.Concat(piles.DiscardPile.Cards).Where(card => card != torrent).ToArray(), PileType.Exhaust);
+        await CardPileCmd.Add(torrent, PileType.Play, skipVisuals: true);
+        var fillers = new List<CardModel>();
+        while (piles.Hand.Cards.Count < CardPile.MaxCardsInHand)
+        {
+            fillers.Add(await Add<ManaSeal>(player));
+        }
         var sample = ((CombatState)creature.CombatState!).CloneCard(source);
         await CardPileCmd.Add(sample, PileType.Discard);
         var offered = piles.Hand.Cards.First();
         var swapped = await Enlightenment.Swap(player, offered, fromTrait: false);
         Check(swapped == sample && sample.IsUpgraded && sample.Enchantment is Sharp { Amount: 2 }
-            && offered.Pile?.Type == PileType.Discard,
-            "discard swap moves the actual upgraded and enchanted combat card");
+            && offered.Pile?.Type == PileType.Discard && piles.Hand.Cards.Count == CardPile.MaxCardsInHand,
+            "full-hand discard swap moves the actual upgraded, enchanted card into the freed slot");
+        await CardPileCmd.Add(fillers, PileType.Exhaust);
         var sloth = await Add<Sloth>(player);
+        var keptBySloth = piles.Hand.Cards.First(card => card != sloth);
         var turn = piles.TurnNumber;
         Check(sloth.TryManualPlay(null), "Sloth enters the native action queue as first play");
         await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play, "Sloth ends turn through game queue");
-        Check(creature.CurrentHp == 33, "first-card Sloth negates next enemy attack");
+        Check(creature.CurrentHp == 33 && WitchCombatState.For(player).RetainedCards.Contains(keptBySloth)
+            && creature.GetPower<WitchImmunityPower>() == null,
+            "low-health first-card Sloth both retains the chosen card and negates the next attack");
+
+        await Play<ForbiddenFrontispiece>(player, choice);
+        await Play<BloodstainedBookmark>(player, choice);
+        await Play<ManaPump>(player, choice, upgrade: true);
+        state = WitchCombatState.For(player);
+        Check(creature.GetPower<ManaPumpPower>()?.Amount == 3, "upgraded Mana Pump shows three future activations");
+        energy = piles.Energy;
+        var distillerBonus = state.DistillerUsed ? 0 : 1;
+        await CardCmd.AutoPlay(choice, keptBySloth, null);
+        Check(state.BookmarkUsed && piles.Energy == energy + 1 + distillerBonus,
+            "Bookmark returns energy for a card actually retained by the game");
+
+        await CardPileCmd.Add(piles.DrawPile.Cards.Concat(piles.DiscardPile.Cards).ToArray(), PileType.Exhaust);
+        await CardPileCmd.Add(torrent, PileType.Draw);
+        await Play<TurnThePageOfFate>(player, choice);
+        Check(torrent.Pile?.Type == PileType.Hand,
+            "Fate's tutor brings the actual combat-only Torrent to hand");
+        await CardCmd.AutoPlay(choice, torrent, null);
+        Check(torrent.Pile?.Type == PileType.Exhaust && !player.Deck.Cards.Contains(torrent)
+            && await Enlightenment.Swap(player, piles.Hand.Cards.First(), fromTrait: false) == null,
+            "the selected Torrent exhausts and cannot reenter hand through Arcane Insight");
 
         await Play<PinnacleOfMana>(player, choice);
         await PlayerCmd.SetEnergy(WitchEnergy.EngineLimit, player);
@@ -185,6 +265,8 @@ internal static class WitchContentSmoke
         CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
         await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play, "large retained energy crosses turn boundary");
         Check(piles.Energy == WitchEnergy.EngineLimit, "native retained energy stays at game cap");
+        Check(creature.GetPower<ManaPumpPower>()?.Amount == 2 && state.RetainedCards.Count >= 2
+            && !state.BookmarkUsed, "Frontispiece retains another real card, Bookmark resets and Mana Pump counts down");
         var deluge = await Add<ManaDeluge>(player, upgrade: true);
         Check(deluge.TryManualPlay(null), "X-cost attack spends retained energy through game queue");
         await WaitFor(tree, () => !CombatManager.Instance.IsInProgress, "X-cost uses high energy and stops on victory");
@@ -198,6 +280,7 @@ internal static class WitchContentSmoke
         await CardPileCmd.Add(flash, PileType.Deck);
         await CardPileCmd.RemoveFromDeck([source], showPreview: false);
         await RelicCmd.Remove(player.Relics.Single(relic => relic is CrackedVanityMirror));
+        selector.OpeningSpecId = "C02";
         await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
         piles = player.PlayerCombatState!;
         await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "fourth Witch battle with two-card deck");

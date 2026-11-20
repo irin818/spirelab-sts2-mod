@@ -74,3 +74,11 @@
 
 - [V1.6 规格](SpireLab_The_Witch_GDD_v1.6.md) 和 [差异与验证](docs/witch-v1.6-validation.md) 记录当前基线。命运选牌只在首次抽牌前创建 1 张未升级战斗牌，随机插入抽牌堆。手牌交换用两次原版移动保留实例、升级与附魔。
 - [启迪](SpireLab/SpireLabCode/Witch/Mechanics/Enlightenment.cs) 体现随机插入与实例等权采样的区别。[战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 分开处理首次抽牌、回合选择和战斗清理。106 项窗口实机断言通过，下一阶段继续检查角标、美术同步与卡池改动。
+
+## 2026-11-20 · 魔女 V1.6 卡池、状态与打包
+
+- 更新魔药、镜子、魔法书和五张欲望牌的规则与双语描述。[内容索引](docs/witch-content.tsv) 对齐 91 种卡牌定义、费用、资源与源码。正式美术继续使用用户确认的现有资源，28 个新状态角标采用临时线稿。
+- [WitchStatuses.Refresh](SpireLab/SpireLabCode/Witch/Mechanics/WitchVisiblePowers.cs) 把一次结算的数据映射到原生 Power。`WitchCombatHooks.AfterFlush` 记录真实保留牌，书签通过实例身份匹配。命运选牌网格需要有玩家归属的战斗牌，确认后清理未入堆的候选。
+- [美术导入器](scripts/sync-art.py) 先验证并导出到临时目录，再导入和打包。三张测试源图替换了卡图、遗物和 Power，并从实机 PCK 加载。拒绝不透明能力图时保留原包。缩放与来源约定见 [美术资源包规范](artwork/README.md)。
+- 116 项规则与集成窗口断言以及双进程读档通过。实机截图复核了原生选牌与状态栏。测试了 500 条狂赌递减路径。安装与工坊候选 ZIP 已校验，当前发布条目按原状态保留。[验证记录](docs/witch-v1.6-validation.md)
+- 后续可用外部美术包替换临时角标，再做完整构筑平衡、Windows 和联网试验。

@@ -4,5 +4,7 @@
   "SPIRELAB-WITCH_OPENING_CHOICE": "Fate Selection: choose 1 card to add to your draw pile for this combat",
   "SPIRELAB-WITCH_GREED_KEEP": "Mirror Desire: choose up to 1 other card to keep in hand",
   "SPIRELAB-WITCH_SLOTH_RETAIN": "Mirror Desire: choose up to 1 other card to Retain this turn",
-  "SPIRELAB-WITCH_FATE_DRAW": "Choose 1 card from your draw pile to put into your hand"
+  "SPIRELAB-WITCH_FATE_DRAW": "Choose 1 card from your draw pile to put into your hand",
+  "SPIRELAB-WITCH_CONVERT_BLOCK": "Select to spend up to 4 Block for twice that amount next turn, or skip.",
+  "SPIRELAB-WITCH_OVERLOAD_ALL": "Select to pay 1 extra Energy and hit all enemies, or skip to hit your target."
 }

@@ -84,6 +84,8 @@ internal static class WitchSmoke
             var creature = player.Creature;
             var enemy = creature.CombatState!.HittableEnemies.First();
             Check(piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 0 && creature.Block == 0, "passive sixth draw, skip gives no credit or Block");
+            Check(creature.GetPower<InsightPower>() is { IsVisible: true, DisplayAmount: 0 },
+                "native Insight icon reflects that the opening swap window closed");
             var opening = state.OpeningCard ?? throw new InvalidOperationException("No opening card");
             Check(selector.OpeningChoices == 1 && opening is PotionMist && !opening.IsUpgraded
                 && opening.Pile?.Type is PileType.Draw or PileType.Hand && player.Deck.Cards.Count == 10,
@@ -112,6 +114,9 @@ internal static class WitchSmoke
             await WaitFor(tree, () => attack.Pile?.Type == PileType.Discard && piles.Energy == beforeEnergy - 1, "manual attack pays energy and finishes");
             Check(enemy.CurrentHp < beforeEnemy && state.NextEnergy == 1, "attack deals damage and schedules extra energy");
             await Play<PinnacleOfMana>(player, choice);
+            Check(creature.GetPower<PinnaclePower>() is { IsVisible: true } power && power.Icon != null
+                && power.GetDumbHoverTip().Description.Contains("unspent", StringComparison.Ordinal),
+                "Pinnacle displays the native power icon and localized description from live retained-energy state");
             var remaining = piles.Energy;
             var turn = piles.TurnNumber;
             selector.SelectFirstHand = true;
@@ -215,14 +220,17 @@ internal static class WitchSmoke
 
             await CreatureCmd.SetCurrentHp(creature, 68);
             await LeaveCompletedCombat(tree);
+            Check(state.OpeningCard == null && opening.HasBeenRemovedFromState && opening.Pile == null,
+                "completed combat removes the chosen battle instance from the game state");
             await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
             piles = player.PlayerCombatState!;
             await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "second real Witch battle");
             state = WitchCombatState.For(player);
-            Check(!state.MirrorForm && state.MirrorHp == 0 && !state.DesireDiscount, "next battle resets temporary state");
+            Check(!state.MirrorForm && state.MirrorHp == 0 && !state.DesireDiscount && creature.GetPower<PinnaclePower>() == null,
+                "next battle resets temporary state and removes native power icons");
             await Play<TheMirrorSelf>(player, choice);
             Check(creature.CurrentHp == 1 && state.MirrorHp == 0, "maximum-HP inversion cannot kill its owner");
-            await WitchContentSmoke.Exercise(tree, player, choice);
+            await WitchContentSmoke.Exercise(tree, player, choice, selector);
             LocManager.Instance.SetLanguage("zhs");
             WitchContentSmoke.ValidateCardText(witch);
             Check(witch.Title.GetRawText() == "魔女" && ModelDb.Card<AbyssOfGambling>().Title == "狂赌之渊", "Simplified Chinese names loaded");
@@ -328,6 +336,7 @@ internal static class WitchSmoke
     internal sealed class WitchSelector : ICardSelector
     {
         public bool SelectFirstHand { get; set; }
+        public string OpeningSpecId { get; set; } = "C02";
         public int DesireOptions { get; private set; }
         public CardModel? LastDesire { get; private set; }
         public int OpeningChoices { get; private set; }
@@ -341,7 +350,7 @@ internal static class WitchSmoke
                     && cards.All(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare),
                     "Fate Selection shows all 85 rewards including the five Desire cards");
                 OpeningChoices++;
-                return Task.FromResult<IEnumerable<CardModel>>([cards.OfType<PotionMist>().Single()]);
+                return Task.FromResult<IEnumerable<CardModel>>([cards.Cast<WitchCard>().Single(card => card.SpecId == OpeningSpecId)]);
             }
             if (cards.All(card => card.Pile == null && card is DesireCard))
             {

@@ -4,5 +4,7 @@
   "SPIRELAB-WITCH_OPENING_CHOICE": "命运选牌：选择1张卡牌加入本场战斗的抽牌堆",
   "SPIRELAB-WITCH_GREED_KEEP": "镜中欲望：选择至多1张其他手牌留在手中",
   "SPIRELAB-WITCH_SLOTH_RETAIN": "镜中欲望：选择至多1张其他手牌保留到下回合",
-  "SPIRELAB-WITCH_FATE_DRAW": "选择抽牌堆中的1张牌加入手牌"
+  "SPIRELAB-WITCH_FATE_DRAW": "选择抽牌堆中的1张牌加入手牌",
+  "SPIRELAB-WITCH_CONVERT_BLOCK": "选择此牌以消耗最多4点当前格挡，下回合获得两倍格挡，也可跳过。",
+  "SPIRELAB-WITCH_OVERLOAD_ALL": "选择此牌以额外支付1点能量，改为攻击全体敌人，也可跳过。"
 }

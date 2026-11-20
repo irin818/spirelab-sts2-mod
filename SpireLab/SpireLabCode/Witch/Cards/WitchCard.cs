@@ -92,6 +92,16 @@ public abstract class WitchCard(string specId, int cost, CardType type, CardRari
         return (await CardSelectCmd.FromHand(choice, Owner, prefs, card => card != this, this)).SingleOrDefault();
     }
 
+    protected async Task<bool> ConfirmOptionalEffect(PlayerChoiceContext choice, string prompt)
+    {
+        var prefs = new CardSelectorPrefs(new LocString("card_selection", prompt), 0, 1)
+        {
+            Cancelable = true,
+            RequireManualConfirmation = true
+        };
+        return (await CardSelectCmd.FromSimpleGrid(choice, [this], Owner, prefs)).Any();
+    }
+
     protected Task<decimal> Block(CardPlay play, int extra = 0) =>
         CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block.BaseValue + extra, ValueProp.Move, play);
 

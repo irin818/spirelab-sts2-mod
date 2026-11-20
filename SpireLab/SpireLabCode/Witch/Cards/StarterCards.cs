@@ -35,7 +35,7 @@ public sealed class ThinMirror() : WitchCard("B03", 1, CardType.Skill, CardRarit
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Block(play);
-        State.NextReflections.Add(Number("Reflection"));
+        State.DeferredReflections.Add(Number("Reflection"));
     }
 
     protected override void OnUpgrade()

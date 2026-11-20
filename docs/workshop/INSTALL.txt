@@ -1,4 +1,4 @@
-SpireLab v1.1.0 · 魔女 / The Witch
+SpireLab v1.6.0 · 魔女 / The Witch
 Verified for Slay the Spire 2 v0.111.1, Apple Silicon macOS.
 
 关闭游戏。将 SpireLab 放到本地 mods 目录，替换整个旧 SpireLab 文件夹前可把旧文件夹移到 mods 之外备份。已有 BaseLib 3.4.8 和配套兼容组件时，可沿用。每个 Mod 只使用一种安装方式。

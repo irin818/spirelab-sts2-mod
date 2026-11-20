@@ -1,6 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
-using MegaCrit.Sts2.Core.CardSelection;
+using MegaCrit.Sts2.Core.AutoSlay.Helpers;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -9,15 +9,21 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.TestSupport;
 using SpireLab.SpireLabCode.Witch;
 using SpireLab.SpireLabCode.Witch.Cards;
+using SpireLab.SpireLabCode.Witch.Mechanics;
 using static SpireLab.Smoke.WitchSmoke;
 
 namespace SpireLab.Smoke;
@@ -63,12 +69,27 @@ internal static class WitchVisualPreview
                 "Witch selection candidate loaded from PCK");
             await Capture(tree, "character-select-macos.png");
 
-            using var selection = CardSelectCmd.UseSelector(new WitchSelector());
             var run = await game.StartNewSingleplayerRun(witch, false, ActModel.GetDefaultList(), [], "WITCHART2", GameMode.Standard);
             var player = run.Players.Single();
             await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
+
+            await WaitFor(tree, () => NOverlayStack.Instance?.Peek() is NSimpleCardSelectScreen,
+                "actual Fate Selection overlay opens before the first draw");
+            var fate = (NSimpleCardSelectScreen)NOverlayStack.Instance!.Peek()!;
+            var grid = fate.GetNode<NCardGrid>("%CardGrid");
+            await WaitFor(tree, () => grid.CurrentlyDisplayedCardHolders.Any(), "Fate grid creates native card holders");
+            await Capture(tree, "fate-selection-macos.png");
+            var holder = grid.CurrentlyDisplayedCardHolders.First();
+            var fateId = holder.CardModel.Id;
+            grid.EmitSignal(NCardGrid.SignalName.HolderPressed, holder);
+            await UiHelper.Click(fate.GetNode<NConfirmButton>("%Confirm"));
+            await WaitFor(tree, () => NPlayerHand.Instance?.IsInCardSelection == true, "actual optional swap opens after drawing");
+            await UiHelper.Click(NPlayerHand.Instance!.GetNode<NConfirmButton>("%SelectModeConfirmButton"));
+
             var piles = player.PlayerCombatState!;
             await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "native combat hand ready");
+            Check(WitchCombatState.For(player).OpeningCard?.Id == fateId && player.Deck.Cards.Count == 10,
+                "native Fate selection matches the chosen combat-only card");
             foreach (var card in piles.Hand.Cards.ToArray())
             {
                 await CardCmd.Discard(new ThrowingPlayerChoiceContext(), card);
@@ -82,7 +103,34 @@ internal static class WitchVisualPreview
             await Capture(tree, "card-hand-macos.png");
             await CreatureCmd.SetCurrentHp(player.Creature, 20);
             await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[1], null);
+            await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[0], null);
+            await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[2], null);
+            var pinnacle = player.Creature.GetPower<PinnaclePower>();
+            Check(pinnacle is { IsVisible: true }
+                && player.Creature.GetPower<MirrorFormPower>()?.IsVisible == true
+                && player.Creature.GetPower<DesireDiscountPower>()?.IsVisible == true,
+                "three persistent powers appear on the real combat state");
+            if (System.Environment.GetEnvironmentVariable("SPIRELAB_ART_SYNC_TEST") == "1")
+            {
+                var relic = witch.StartingRelics[0];
+                Check(relic.Icon.GetSize() == new Vector2(94, 94)
+                    && pinnacle!.CustomPackedIconPath.EndsWith("/powers/pinnacle.png", StringComparison.Ordinal)
+                    && pinnacle.Icon.GetSize() == new Vector2(64, 64)
+                    && ResourceLoader.Load<Texture2D>(cards[0].PortraitPath).GetSize() == new Vector2(500, 380),
+                    "the shipped game UI can resolve replacement card, relic and power textures from the PCK");
+            }
             await Capture(tree, "mirror-form-macos.png");
+            var powers = player.Creature.GetCreatureNode()!.GetNode<Control>("%HealthBar")
+                .GetNode<NPowerContainer>("%PowerContainer");
+            var badge = powers.GetChildren().OfType<NPower>().Single(power => power.Model == pinnacle);
+            var tooltips = game.HoverTipsContainer ?? throw new InvalidOperationException("The native hover tips container is missing.");
+            badge.EmitSignal(Control.SignalName.MouseEntered);
+            await WaitFor(tree, () => tooltips.GetChildren().OfType<NHoverTipSet>()
+                .Where(tip => tip.IsVisibleInTree()).SelectMany(tip => tip.FindChildren("Description", "RichTextLabel", true, false))
+                .OfType<RichTextLabel>().Any(label => label.GetParsedText().Contains("回合结束保留全部未用能量")),
+                "native hover shows the Simplified Chinese Pinnacle power tooltip");
+            await Capture(tree, "power-tooltip-macos.png");
+            badge.EmitSignal(Control.SignalName.MouseExited);
             GD.Print("[SpireLabSmoke] PASS");
             game.Quit();
         }
