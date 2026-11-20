@@ -42,7 +42,7 @@ internal static class WitchVisualPreview
             }
             Check(NModalContainer.Instance?.OpenModal == null, "no modal obscures the screenshots");
             SaveManager.Instance.SetFtuesEnabled(false);
-            LocManager.Instance.SetLanguage("zhs");
+            LocManager.Instance.SetLanguage("eng");
             var witch = ModelDb.Character<TheWitch>();
             var menus = game.MainMenu!.SubmenuStack;
             var select = menus.GetSubmenuType<NCharacterSelectScreen>();
@@ -51,6 +51,14 @@ internal static class WitchVisualPreview
             var button = select.GetNode<NCharacterSelectButton>($"CharSelectButtons/ButtonContainer/{witch.Id.Entry}_button");
             Check(!button.IsLocked, "Witch character button selectable");
             select.SelectCharacter(button, witch);
+            CheckSelectionText(select, "Character Trait • Enlightenment", "may freely swap", "random card from your deck",
+                "Cracked Vanity Mirror", "first successful Enlightenment swap each combat", "keeps Enlightenment without this relic");
+            await Capture(tree, "character-select-eng-macos.png");
+
+            LocManager.Instance.SetLanguage("zhs");
+            select.SelectCharacter(button, witch);
+            CheckSelectionText(select, "角色特性 · 魔法启迪", "可以免费将1张手牌临时换成", "当前牌组中的随机牌",
+                "破损梳妆镜", "每场战斗第一次通过魔法启迪成功换牌", "失去此遗物后，魔法启迪仍然生效");
             Check(select.GetNode<TextureRect>($"AnimatedBg/{witch.Id.Entry}_bg").Texture.GetSize() == new Vector2(1600, 900),
                 "Witch selection candidate loaded from PCK");
             await Capture(tree, "character-select-macos.png");
@@ -83,6 +91,18 @@ internal static class WitchVisualPreview
             GD.PushError($"[SpireLabSmoke] FAIL {error}");
             tree.Quit(1);
         }
+    }
+
+    private static void CheckSelectionText(NCharacterSelectScreen select, string traitTitle, string optionalSwap,
+        string randomSource, string relicTitle, string relicTrigger, string keepsTrait)
+    {
+        var panel = select.GetNode<Control>("InfoPanel/VBoxContainer");
+        var trait = panel.GetNode<RichTextLabel>("DescriptionLabel").GetParsedText();
+        var relic = panel.GetNode<RichTextLabel>("Relic/Description").GetParsedText();
+        Check(trait.StartsWith(traitTitle + "\n", StringComparison.Ordinal) && trait.Contains(optionalSwap)
+            && trait.Contains(randomSource) && !trait.Contains("[gold]"), $"{traitTitle} uses the native character description");
+        Check(panel.GetNode<RichTextLabel>("Relic/Name/RichTextLabel").GetParsedText() == relicTitle
+            && relic.Contains(relicTrigger) && relic.Contains(keepsTrait), $"{relicTitle} explains its separate Block trigger");
     }
 
     private static async Task Capture(SceneTree tree, string fileName)

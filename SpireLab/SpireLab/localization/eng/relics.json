@@ -1,9 +1,9 @@
 {
   "SPIRELAB-CRACKED_VANITY_MIRROR.title": "Cracked Vanity Mirror",
-  "SPIRELAB-CRACKED_VANITY_MIRROR.description": "The first time you successfully use Enlightenment each combat, gain 3 Block.",
+  "SPIRELAB-CRACKED_VANITY_MIRROR.description": "Gain 3 Block after your first successful Enlightenment swap each combat. The Witch keeps Enlightenment without this relic.",
   "SPIRELAB-CRACKED_VANITY_MIRROR.flavor": "Her reflection never waits for her to speak.",
   "SPIRELAB-TWIN_STANDING_MIRROR.title": "Twin Standing Mirror",
-  "SPIRELAB-TWIN_STANDING_MIRROR.description": "The first time you successfully use Enlightenment each turn, gain 3 Block.",
+  "SPIRELAB-TWIN_STANDING_MIRROR.description": "Gain 3 Block after your first successful Enlightenment swap each turn.",
   "SPIRELAB-TWIN_STANDING_MIRROR.flavor": "Both silhouettes finally stood on the same side.",
   "SPIRELAB-CRACKED_PHIAL.title": "Cracked Phial",
   "SPIRELAB-CRACKED_PHIAL.description": "The first time each combat that a card grants you extra Energy, gain 3 Block.",
