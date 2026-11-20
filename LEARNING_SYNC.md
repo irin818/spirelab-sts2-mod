@@ -59,5 +59,5 @@
 
 - [角色母版与资源表](docs/art/witch-v2/README.md) 记录用户基准、人物比例、三视图和表情、提示词及来源索引。91 张卡图、27 个遗物纹理和 6 个药水纹理均与旧版逐文件比对，尺寸和唯一性通过检查。
 - [卡框和侧徽实现](SpireLab/SpireLabCode/Witch/Cards/WitchCardAppearance.cs) 使用 BaseLib 原有显示入口。着色器沿用原卡框的轮廓和透明通道，视觉分类不参与战斗逻辑。镜中人格是场景中的独立 Sprite，现有生命逆转只额外触发演出。
-- [截图测试](tests/SpireLab.Smoke/WitchVisualPreview.cs) 从原版界面取实际窗口帧。第一次截图发现选角背景缩放会裁掉帽尖，于是重新构图并回到同一场景验证。全量改版后通过 98 项实机回归。
+- [截图测试](tests/SpireLab.Smoke/WitchVisualPreview.cs) 从原版界面取实际窗口帧。第一次截图发现选角背景缩放会裁掉帽尖，于是重新构图并回到同一场景验证。全量改版后通过 100 项实机回归，包含假商人事件进入与离开。
 - [发布工作区](docs/workshop/README.md) 由已验证的游戏副本生成，封面和截图独立于运行文件。旧实验角色及第一版美术留在归档标签，工作版本只包含新版魔女。

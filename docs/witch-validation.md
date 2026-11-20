@@ -20,7 +20,7 @@
 .local/dotnet-10/dotnet run --project tests/SpireLab.Witch.Rules
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch
 SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-save
-SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
+SPIRELAB_SMOKE_WINDOWED=1 SPIRELAB_WITCH_CAMPAIGN_SAMPLE=1 ./scripts/smoke-macos.sh witch-campaign
 ./scripts/smoke-macos.sh witch-art
 ```
 
@@ -30,7 +30,8 @@ SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 - `witch-campaign` 在隔离副本使用原版 AutoSlay。以魔女走过三幕并返回主菜单时，记录实际种子和三幕首领结果。原版 AutoSlay 会施加防护和后期力量强化，用于验证跨幕流程。
 - `witch-art` 使用原版选角场景和真实战斗手牌。在指定副本的 `captures/` 中保存简中选角、三张样始牌与镜中形态截图。
 - 窗口实机确认独立卡面、魔女立绘、能量表以及真实／镜像生命条。自动模式保留引擎关闭时的 RID 与 Shader 回收诊断。早期无窗口预载曾出现引擎 dummy texture 和 worker task 诊断，窗口模式是本版完整回归的基准。
-- v1.1.0 全新工程目录完成无缓存构建与 PCK 导出。窗口完整回归 98 项通过。新版跨进程读档与 V1.0 魔女固定存档迁移均恢复了 41 点真实生命、角色、已升级古代牌、初始遗物和第六张手牌。
+- v1.1.0 全新工程目录完成无缓存构建与 PCK 导出。窗口完整回归 100 项通过。新版跨进程读档与 V1.0 魔女固定存档迁移均恢复了 41 点真实生命、角色、已升级古代牌、初始遗物和第六张手牌。
+- 原版 AutoSlay 在首次启动提示仍打开时，会在假商人事件等待继续按钮超时。隔离配置预先确认该提示后，定向测试实测假商人按钮可用并返回地图。生产 Mod 的事件代码和本机使用者的设置没有参与此修复。
 
 ## 平衡与待验收
 

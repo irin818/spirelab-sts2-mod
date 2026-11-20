@@ -1,5 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.AutoSlay.Helpers;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -11,9 +12,13 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
+using MegaCrit.Sts2.Core.Models.Events;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.Events.Custom;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
+using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Cards;
@@ -262,6 +267,14 @@ internal static class WitchSmoke
         using var selection = CardSelectCmd.UseSelector(new WitchSelector { SelectFirstHand = true });
         Check(await removal.OnTryPurchaseWrapper(inventory) && removal.Used
             && restarted.Deck.Cards.Count == 9 && restarted.Gold == gold - cost, "merchant removal updates the permanent deck and gold");
+
+        await RunManager.Instance.EnterRoomDebug(RoomType.Event, model: ModelDb.Event<FakeMerchant>(), showTransition: false);
+        var fakeMerchant = NEventRoom.Instance?.CustomEventNode as NFakeMerchant
+            ?? throw new InvalidOperationException("Expected the native Fake Merchant event.");
+        var proceed = fakeMerchant.GetNode<NProceedButton>("%ProceedButton");
+        await WaitFor(tree, () => proceed.IsEnabled && proceed.IsVisibleInTree(), "Fake Merchant offers the native exit");
+        await UiHelper.Click(proceed);
+        await WaitFor(tree, () => NMapScreen.Instance?.IsOpen == true, "Fake Merchant exits to the map");
     }
 
     internal static async Task<T> Add<T>(Player player, bool upgrade = false) where T : CardModel

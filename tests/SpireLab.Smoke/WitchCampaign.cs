@@ -30,12 +30,15 @@ internal static class WitchCampaign
 
             // Native AutoSlay reveals the original characters and its first RNG call selects a button.
             // Use a seed that selects the Witch both with and without the bonus Random Character button.
-            var seed = Enumerable.Range(10000, 10000).Select(value => $"WITCH{value}").First(candidate =>
+            var sampleText = OS.GetEnvironment("SPIRELAB_WITCH_CAMPAIGN_SAMPLE");
+            var sample = string.IsNullOrEmpty(sampleText) ? 0 : int.Parse(sampleText);
+            ArgumentOutOfRangeException.ThrowIfNegative(sample);
+            var seed = Enumerable.Range(10000, 10000).Select(value => $"WITCH{value}").Where(candidate =>
             {
                 var hash = StringHelper.GetDeterministicHashCode(candidate);
                 return new Rng(hash).NextInt(characters.Count) == witchIndex
                     && new Rng(hash).NextInt(characters.Count + 1) == witchIndex;
-            });
+            }).ElementAt(sample);
 
             GD.Print($"[WitchCampaign] Starting assisted game on seed {seed}");
             new AutoSlayer().Start(seed);

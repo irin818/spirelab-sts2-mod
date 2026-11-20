@@ -52,7 +52,7 @@ EOF_CONFIG
 profile="$HOME/Library/Application Support/$test_profile/default/1"
 mkdir -p "$profile"
 cat > "$profile/settings.save" <<'EOF_SETTINGS'
-{"language":"eng","mod_settings":{"mods_enabled":true}}
+{"language":"eng","seen_ea_disclaimer":true,"mod_settings":{"mods_enabled":true}}
 EOF_SETTINGS
 if [[ "$character" == witch-legacy-save ]]; then
     mkdir -p "$profile/modded/profile1/saves"
