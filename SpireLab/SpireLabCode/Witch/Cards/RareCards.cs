@@ -9,7 +9,7 @@ using SpireLab.SpireLabCode.Witch.Mechanics;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // R02
-public sealed class ManaDeluge() : WitchCard(0, CardType.Attack, CardRarity.Rare, TargetType.RandomEnemy, "potion")
+public sealed class ManaDeluge() : WitchCard("R02", 0, CardType.Attack, CardRarity.Rare, TargetType.RandomEnemy)
 {
     protected override bool HasEnergyCostX => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(5)];
@@ -27,7 +27,7 @@ public sealed class ManaDeluge() : WitchCard(0, CardType.Attack, CardRarity.Rare
 }
 
 // R03
-public sealed class PureMana() : WitchCard(3, CardType.Power, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class PureMana() : WitchCard("R03", 3, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(1)];
 
@@ -41,7 +41,7 @@ public sealed class PureMana() : WitchCard(3, CardType.Power, CardRarity.Rare, T
 }
 
 // R04
-public sealed class RedCatalyst() : WitchCard(2, CardType.Power, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class RedCatalyst() : WitchCard("R04", 2, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Ward", 3)];
 
@@ -55,7 +55,7 @@ public sealed class RedCatalyst() : WitchCard(2, CardType.Power, CardRarity.Rare
 }
 
 // R05
-public sealed class PotionTorrent() : WitchCard(2, CardType.Skill, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class PotionTorrent() : WitchCard("R05", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(2), new CardsVar(3)];
@@ -70,7 +70,7 @@ public sealed class PotionTorrent() : WitchCard(2, CardType.Skill, CardRarity.Ra
 }
 
 // R06
-public sealed class RefinedAbyss() : WitchCard(1, CardType.Power, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class RefinedAbyss() : WitchCard("R06", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Ward", 2)];
 
@@ -84,7 +84,7 @@ public sealed class RefinedAbyss() : WitchCard(1, CardType.Power, CardRarity.Rar
 }
 
 // R07
-public sealed class GildedPact() : WitchCard(1, CardType.Skill, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class GildedPact() : WitchCard("R07", 1, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     public override int LifeCost => Number("Life");
@@ -103,7 +103,7 @@ public sealed class GildedPact() : WitchCard(1, CardType.Skill, CardRarity.Rare,
 }
 
 // R08
-public sealed class FinalDistillation() : WitchCard(3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy, "potion")
+public sealed class FinalDistillation() : WitchCard("R08", 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(26), new DynamicVar("Bonus", 10)];
 
@@ -118,7 +118,7 @@ public sealed class FinalDistillation() : WitchCard(3, CardType.Attack, CardRari
 }
 
 // R09
-public sealed class DuskRefinement() : WitchCard(1, CardType.Power, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class DuskRefinement() : WitchCard("R09", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(1), new DynamicVar("Ward", 0)];
 
@@ -133,7 +133,7 @@ public sealed class DuskRefinement() : WitchCard(1, CardType.Power, CardRarity.R
 }
 
 // R11
-public sealed class HallOfAllMirrors() : WitchCard(3, CardType.Power, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class HallOfAllMirrors() : WitchCard("R11", 3, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Percent", 50)];
 
@@ -147,7 +147,7 @@ public sealed class HallOfAllMirrors() : WitchCard(3, CardType.Power, CardRarity
 }
 
 // R12
-public sealed class MoonInTheMirror() : WitchCard(2, CardType.Skill, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class MoonInTheMirror() : WitchCard("R12", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Retaliate", 12)];
@@ -162,7 +162,7 @@ public sealed class MoonInTheMirror() : WitchCard(2, CardType.Skill, CardRarity.
 }
 
 // R13
-public sealed class TenThousandShards() : WitchCard(2, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy, "mirror")
+public sealed class TenThousandShards() : WitchCard("R13", 2, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(12), new DynamicVar("Bonus", 4)];
 
@@ -177,7 +177,7 @@ public sealed class TenThousandShards() : WitchCard(2, CardType.Attack, CardRari
 }
 
 // R14
-public sealed class ShadowOfTheReal() : WitchCard(1, CardType.Power, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class ShadowOfTheReal() : WitchCard("R14", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Next", 1)];
 
@@ -191,7 +191,7 @@ public sealed class ShadowOfTheReal() : WitchCard(1, CardType.Power, CardRarity.
 }
 
 // R15
-public sealed class EmptyMirror() : WitchCard(2, CardType.Skill, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class EmptyMirror() : WitchCard("R15", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new DynamicVar("Percent", 50)];
@@ -210,7 +210,7 @@ public sealed class EmptyMirror() : WitchCard(2, CardType.Skill, CardRarity.Rare
 }
 
 // R16
-public sealed class MirrorCage() : WitchCard(3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy, "mirror")
+public sealed class MirrorCage() : WitchCard("R16", 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy)
 {
 
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
@@ -220,7 +220,7 @@ public sealed class MirrorCage() : WitchCard(3, CardType.Attack, CardRarity.Rare
 }
 
 // R17
-public sealed class MirrorBurial() : WitchCard(2, CardType.Skill, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class MirrorBurial() : WitchCard("R17", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(18)];
@@ -235,7 +235,7 @@ public sealed class MirrorBurial() : WitchCard(2, CardType.Skill, CardRarity.Rar
 }
 
 // R18
-public sealed class FracturedCrown() : WitchCard(1, CardType.Power, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class FracturedCrown() : WitchCard("R18", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Bonus", 3)];
 
@@ -249,7 +249,7 @@ public sealed class FracturedCrown() : WitchCard(1, CardType.Power, CardRarity.R
 }
 
 // R19
-public sealed class ForbiddenFinalChapter() : WitchCard(3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy, "book")
+public sealed class ForbiddenFinalChapter() : WitchCard("R19", 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(15), new DynamicVar("Bonus", 3)];
 
@@ -264,7 +264,7 @@ public sealed class ForbiddenFinalChapter() : WitchCard(3, CardType.Attack, Card
 }
 
 // R20
-public sealed class TurnThePageOfFate() : WitchCard(2, CardType.Skill, CardRarity.Rare, TargetType.Self, "book")
+public sealed class TurnThePageOfFate() : WitchCard("R20", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(2)];
@@ -279,7 +279,7 @@ public sealed class TurnThePageOfFate() : WitchCard(2, CardType.Skill, CardRarit
 }
 
 // R21
-public sealed class BloodstainedBookmark() : WitchCard(1, CardType.Power, CardRarity.Rare, TargetType.Self, "book")
+public sealed class BloodstainedBookmark() : WitchCard("R21", 1, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
 
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play)
@@ -292,7 +292,7 @@ public sealed class BloodstainedBookmark() : WitchCard(1, CardType.Power, CardRa
 }
 
 // R22
-public sealed class TemporalSeal() : WitchCard(2, CardType.Skill, CardRarity.Rare, TargetType.Self, "book")
+public sealed class TemporalSeal() : WitchCard("R22", 2, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(2), new DynamicVar("Next", 2)];
@@ -308,7 +308,7 @@ public sealed class TemporalSeal() : WitchCard(2, CardType.Skill, CardRarity.Rar
 }
 
 // R23
-public sealed class ReverseRite() : WitchCard(2, CardType.Power, CardRarity.Rare, TargetType.Self, "book")
+public sealed class ReverseRite() : WitchCard("R23", 2, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(1)];
 
@@ -322,7 +322,7 @@ public sealed class ReverseRite() : WitchCard(2, CardType.Power, CardRarity.Rare
 }
 
 // R24
-public sealed class PactEcho() : WitchCard(1, CardType.Skill, CardRarity.Rare, TargetType.Self, "book")
+public sealed class PactEcho() : WitchCard("R24", 1, CardType.Skill, CardRarity.Rare, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Surcharge", 1)];

@@ -6,7 +6,7 @@ using SpireLab.SpireLabCode.Witch.Mechanics;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // C01
-public sealed class PotionToss() : WitchCard(1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "potion")
+public sealed class PotionToss() : WitchCard("C01", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8), new DynamicVar("Bonus", 3)];
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
@@ -20,7 +20,7 @@ public sealed class PotionToss() : WitchCard(1, CardType.Attack, CardRarity.Comm
 }
 
 // C02
-public sealed class PotionMist() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "potion")
+public sealed class PotionMist() : WitchCard("C02", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new EnergyVar(1)];
@@ -35,7 +35,7 @@ public sealed class PotionMist() : WitchCard(1, CardType.Skill, CardRarity.Commo
 }
 
 // C11
-public sealed class SilverScreen() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "mirror")
+public sealed class SilverScreen() : WitchCard("C11", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(7)];
@@ -44,7 +44,7 @@ public sealed class SilverScreen() : WitchCard(1, CardType.Skill, CardRarity.Com
 }
 
 // C19
-public sealed class RazorPages() : WitchCard(1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "book")
+public sealed class RazorPages() : WitchCard("C19", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(7), new DynamicVar("Bonus", 3)];
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
@@ -58,7 +58,7 @@ public sealed class RazorPages() : WitchCard(1, CardType.Attack, CardRarity.Comm
 }
 
 // C20
-public sealed class BlackVeil() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "book")
+public sealed class BlackVeil() : WitchCard("C20", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new DynamicVar("Bonus", 2)];
@@ -73,7 +73,7 @@ public sealed class BlackVeil() : WitchCard(1, CardType.Skill, CardRarity.Common
 }
 
 // R01
-public sealed class PinnacleOfMana() : WitchCard(4, CardType.Power, CardRarity.Rare, TargetType.Self, "potion")
+public sealed class PinnacleOfMana() : WitchCard("R01", 4, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
@@ -85,7 +85,7 @@ public sealed class PinnacleOfMana() : WitchCard(4, CardType.Power, CardRarity.R
 }
 
 // R10
-public sealed class TheMirrorSelf() : WitchCard(3, CardType.Power, CardRarity.Rare, TargetType.Self, "mirror")
+public sealed class TheMirrorSelf() : WitchCard("R10", 3, CardType.Power, CardRarity.Rare, TargetType.Self)
 {
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) => WitchLife.EnterMirror(Owner);
     protected override void OnUpgrade() => EnergyCost.UpgradeBy(-1);

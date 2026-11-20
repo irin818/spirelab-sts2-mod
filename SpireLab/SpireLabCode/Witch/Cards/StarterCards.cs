@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // B01
-public sealed class WitchStrike() : WitchCard(1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy, "book")
+public sealed class WitchStrike() : WitchCard("B01", 1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy)
 {
     protected override HashSet<CardTag> CanonicalTags => [CardTag.Strike];
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(6)];
@@ -16,7 +16,7 @@ public sealed class WitchStrike() : WitchCard(1, CardType.Attack, CardRarity.Bas
 }
 
 // B02
-public sealed class WitchDefend() : WitchCard(1, CardType.Skill, CardRarity.Basic, TargetType.Self, "mirror")
+public sealed class WitchDefend() : WitchCard("B02", 1, CardType.Skill, CardRarity.Basic, TargetType.Self)
 {
     protected override HashSet<CardTag> CanonicalTags => [CardTag.Defend];
     public override bool GainsBlock => true;
@@ -26,7 +26,7 @@ public sealed class WitchDefend() : WitchCard(1, CardType.Skill, CardRarity.Basi
 }
 
 // B03
-public sealed class ThinMirror() : WitchCard(1, CardType.Skill, CardRarity.Basic, TargetType.Self, "mirror"), ITranscendenceCard
+public sealed class ThinMirror() : WitchCard("B03", 1, CardType.Skill, CardRarity.Basic, TargetType.Self), ITranscendenceCard
 {
     public CardModel GetTranscendenceTransformedCard() => ModelDb.Card<BeyondTheGlass>();
     public override bool GainsBlock => true;
@@ -46,7 +46,7 @@ public sealed class ThinMirror() : WitchCard(1, CardType.Skill, CardRarity.Basic
 }
 
 // B04
-public sealed class StarterDraught() : WitchCard(1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy, "potion")
+public sealed class StarterDraught() : WitchCard("B04", 1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(7), new EnergyVar(1)];
 

@@ -33,14 +33,16 @@ public sealed class TheWitch : PlaceholderCharacterModel
     public override RelicPoolModel RelicPool => ModelDb.RelicPool<WitchRelicPool>();
     public override PotionPoolModel PotionPool => ModelDb.PotionPool<WitchPotionPool>();
 
+    public override Color EnergyLabelOutlineColor => new("7f182b");
+    public override string CustomEnergyCounterPath => $"{Scenes}/energy.tscn";
     public override string CustomVisualPath => $"{Scenes}/combat.tscn";
     public override string CustomCharacterSelectBg => $"{Scenes}/select.tscn";
     public override string CustomRestSiteAnimPath => $"{Scenes}/rest.tscn";
     public override string CustomMerchantAnimPath => $"{Scenes}/merchant.tscn";
     public override string CustomIconTexturePath => $"{Art}/witch_icon.svg";
     public override string CustomIconOutlineTexturePath => CustomIconTexturePath;
-    public override string CustomCharacterSelectIconPath => CustomIconTexturePath;
-    public override string CustomCharacterSelectLockedIconPath => CustomIconTexturePath;
+    public override string CustomCharacterSelectIconPath => $"{Art}/witch_portrait.png";
+    public override string CustomCharacterSelectLockedIconPath => $"{Art}/witch_portrait_locked.png";
     public override string CustomMapMarkerPath => CustomIconTexturePath;
 
     public override Control CustomIcon

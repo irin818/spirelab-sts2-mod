@@ -1,7 +1,10 @@
 # SpireLab
 
-《杀戮尖塔 2》C# 角色 Mod。测试版 `v0.2.0` 的提灯测绘师拥有 72 点最大生命、专属起始牌组、辉印机制、原创美术、16 张新牌、2 件遗物和 2 种药水。测试目标是跑通角色、机制、战斗、资源制作与打包的完整流程。
+《杀戮尖塔 2》C# 角色 Mod。`v1.0.0` 新增原创角色「魔女」，实现规格书的 91 种卡牌、9 件遗物和 3 种药水。提灯测绘师仍作为独立角色可选。
 
+- [魔女 V1.0 规格书](SpireLab_The_Witch_GDD_v1.0.md)
+- [魔女构建、验证与已知边界](docs/witch-validation.md)
+- [魔女内容索引](docs/witch-content.tsv)
 - [测试版内容、改动位置和美术记录](docs/surveyor-preview.md)
 - [学习同步](LEARNING_SYNC.md)
 - [早期原版机制与角色候选](docs/character-design.md)
@@ -65,6 +68,9 @@ git switch -c codex/your-task
 
 ```sh
 ./scripts/smoke-macos.sh
+SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch
+SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-save
+SPIRELAB_SMOKE_WINDOWED=1 ./scripts/smoke-macos.sh witch-campaign
 ```
 
 脚本构建 DLL 和 PCK，使用 APFS 克隆创建独立游戏副本，关闭 Steam 集成，并在单独的 Application Support 子目录写入测试配置。它把测试 DLL 放在副本内，启动实际游戏的无窗口模式，验证内容注册、资源、卡牌与药水结算、回合钩子、战斗奖励、存档序列化、商店、休息点和简中本地化。成功时日志会打印 `[SpireLabSmoke] PASS`，脚本也会检查运行期间的错误。脚本输出具体日志路径，测试副本和产物放在 `.local/`。
@@ -73,7 +79,7 @@ git switch -c codex/your-task
 
 ## 本机安装与回退
 
-关闭游戏后，将 `SpireLab/` 与匹配的 `BaseLib/` 放入游戏的本地 Mod 目录。Mac 目录在 `SlayTheSpire2.app/Contents/MacOS/mods/`，Windows 目录在游戏安装目录下的 `mods/`。已有相同版本 BaseLib 和 Compatibility Helper 时可复用。打开游戏并按提示启用 Mod，在单人模式新开一局并选择提灯测绘师。
+关闭游戏后，将 `SpireLab/` 与匹配的 `BaseLib/` 放入游戏的本地 Mod 目录。Mac 目录在 `SlayTheSpire2.app/Contents/MacOS/mods/`，Windows 目录在游戏安装目录下的 `mods/`。已有相同版本 BaseLib 和 Compatibility Helper 时可复用。打开游戏并按提示启用 Mod，在单人模式新开一局并选择「魔女」。
 
 卸载时把新增的 Mod 文件夹移出本地 Mod 目录。创建的测试存档可以保留。原版游戏二进制和 Steam 存档由游戏自己管理。
 

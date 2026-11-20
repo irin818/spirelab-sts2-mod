@@ -6,6 +6,8 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
+using Finesse = MegaCrit.Sts2.Core.Models.Cards.Finesse;
+using FlashOfSteel = MegaCrit.Sts2.Core.Models.Cards.FlashOfSteel;
 using MegaCrit.Sts2.Core.Models.Enchantments;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
@@ -173,5 +175,52 @@ internal static class WitchContentSmoke
         var deluge = await Add<ManaDeluge>(player, upgrade: true);
         Check(deluge.TryManualPlay(null), "X-cost attack spends retained energy through game queue");
         await WaitFor(tree, () => !CombatManager.Instance.IsInProgress, "X-cost uses high energy and stops on victory");
+        await RunManager.Instance.ProceedFromTerminalRewardsScreen();
+        NOverlayStack.Instance?.Clear();
+        for (var frame = 0; frame < 3; frame++)
+        {
+            await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+        }
+
+        // Confirm the Witch rules still permit a proven two-card draw cycle with base-game colorless cards.
+        var run = player.RunState;
+        var finesse = run.CreateCard(ModelDb.Card<Finesse>(), player);
+        var flash = run.CreateCard(ModelDb.Card<FlashOfSteel>(), player);
+        await CardPileCmd.Add(finesse, PileType.Deck);
+        await CardPileCmd.Add(flash, PileType.Deck);
+        await CardPileCmd.RemoveFromDeck([source], showPreview: false);
+        await RelicCmd.Remove(player.Relics.Single(relic => relic is CrackedVanityMirror));
+        await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
+        piles = player.PlayerCombatState!;
+        await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "fourth Witch battle with two-card deck");
+        state = WitchCombatState.For(player);
+        Check(state.CombatEnlightenments == 1 && creature.Block == 0 && piles.Hand.Cards.Count == 2,
+            "intrinsic Enlightenment still works without the starter relic");
+        await Enlightenment.ReleaseAll(player, state);
+        await CardPileCmd.Draw(choice, player);
+        enemy = creature.CombatState!.HittableEnemies.First();
+        var originalFinesse = piles.Hand.Cards.OfType<Finesse>().Single();
+        var originalFlash = piles.Hand.Cards.OfType<FlashOfSteel>().Single();
+        var cycleMana = piles.Energy;
+        var cycleHp = creature.CurrentHp;
+        var cycleTurn = piles.TurnNumber;
+        var startEnemyHp = enemy.CurrentHp;
+        for (var i = 0; i < 8; i++)
+        {
+            var blockStep = i % 2 == 0;
+            var played = blockStep ? (CardModel)originalFinesse : originalFlash;
+            var next = blockStep ? (CardModel)originalFlash : originalFinesse;
+            if (!played.TryManualPlay(blockStep ? null : enemy))
+            {
+                throw new InvalidOperationException("The next card in the two-card cycle was not playable.");
+            }
+
+            await WaitFor(tree, () => played.Pile?.Type == PileType.Discard && next.Pile?.Type == PileType.Hand,
+                $"two-card loop step {i + 1} returns the other card");
+        }
+
+        Check(piles.Energy == cycleMana && creature.CurrentHp == cycleHp && piles.TurnNumber == cycleTurn
+            && creature.Block == 16 && enemy.CurrentHp == startEnemyHp - 20 && state.CombatEnlightenments == 1,
+            "same-turn cycle gains Block and deals damage without depleting energy or real HP");
     }
 }

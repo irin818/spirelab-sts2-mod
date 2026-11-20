@@ -30,7 +30,15 @@ public static class SurveyorSmoke
 {
     public static void Initialize()
     {
-        if (OS.GetCmdlineArgs().Contains("--witch-campaign"))
+        if (OS.GetCmdlineArgs().Contains("--witch-save-probe"))
+        {
+            Callable.From(() => { _ = WitchSaveProbe.Run(resume: false); }).CallDeferred();
+        }
+        else if (OS.GetCmdlineArgs().Contains("--witch-resume-probe"))
+        {
+            Callable.From(() => { _ = WitchSaveProbe.Run(resume: true); }).CallDeferred();
+        }
+        else if (OS.GetCmdlineArgs().Contains("--witch-campaign"))
         {
             Callable.From(() => { _ = WitchCampaign.Start(); }).CallDeferred();
         }

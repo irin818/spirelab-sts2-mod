@@ -1,9 +1,9 @@
 {
   "id": "SpireLab",
-  "name": "SpireLab — Lantern Surveyor",
+  "name": "SpireLab — The Witch",
   "author": "irin",
-  "description": "Lantern Surveyor playable character preview.",
-  "version": "v0.2.0",
+  "description": "The Witch V1.0 character and the Lantern Surveyor preview.",
+  "version": "v1.0.0",
   "min_game_version": "0.111.1",
   "has_pck": true,
   "has_dll": true,

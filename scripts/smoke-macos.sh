@@ -7,8 +7,9 @@ quit_after=15000
 case "${1:-surveyor}" in
     surveyor) character=surveyor; smoke_flag=--spirelab-smoke ;;
     witch) character=witch; smoke_flag=--witch-smoke ;;
+    witch-save) character=witch-save; smoke_flag=--witch-save-probe ;;
     witch-campaign) character=witch-campaign; smoke_flag=--witch-campaign; quit_after=200000 ;;
-    *) printf 'Usage: %s [surveyor|witch|witch-campaign]\n' "$0" >&2; exit 2 ;;
+    *) printf 'Usage: %s [surveyor|witch|witch-save|witch-campaign]\n' "$0" >&2; exit 2 ;;
 esac
 mkdir -p .local/logs
 ./scripts/dev-macos.sh build
@@ -55,20 +56,26 @@ if [[ "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
 fi
 log="$test_dir/game.log"
 printf 'Smoke test log: %s\n' "$log"
-if ! "$bin/Slay the Spire 2" "${render_args[@]}" --force-steam=off "$smoke_flag" --quit-after "$quit_after" \
-    --max-fps 120 --log-file "$log" > "$test_dir/console.log" 2>&1; then
-    tail -n 40 "$test_dir/console.log" >&2
-    exit 1
-fi
+run_game() {
+    local flag="$1" target_log="$2"
+    if ! "$bin/Slay the Spire 2" "${render_args[@]}" --force-steam=off "$flag" --quit-after "$quit_after" \
+        --max-fps 120 --log-file "$target_log" > "$target_log.console" 2>&1; then
+        tail -n 40 "$target_log.console" >&2
+        return 1
+    fi
+}
+run_game "$smoke_flag" "$log"
 if [[ "$character" == witch-campaign ]]; then
     awk '/Selecting character:|Entering Boss|Victory!|Run failed/ { print }' "$log"
     awk '/Selecting character: .*SPIRELAB-THE_WITCH/ { witch = 1 }
          /Victory! Run completed/ { win = 1 }
-         END { exit !(witch && win) }' "$log"
+         !win && (/^\[ERROR\]/ || /^ERROR:/ || /^SCRIPT ERROR:/) { failed = 1 }
+         END { exit !(witch && win && !failed) }' "$log"
     exit $?
 fi
 
-if ! awk '
+validate_log() {
+    if ! awk '
     /^\[SpireLabSmoke\] / { print }
     /^\[ERROR\]/ || /^ERROR:/ || /^SCRIPT ERROR:/ {
         if (passed && /were leaked at exit\.$|resources still in use at exit|shaders of type .* were never freed$/) next
@@ -77,7 +84,16 @@ if ! awk '
     }
     $0 == "[SpireLabSmoke] PASS" { passed = 1 }
     END { exit (!passed || failed) }
-' "$log"; then
-    printf 'Game errors or incomplete smoke test in %s\n' "$log" >&2
-    exit 1
+' "$1"; then
+        printf 'Game errors or incomplete smoke test in %s\n' "$1" >&2
+        return 1
+    fi
+}
+
+validate_log "$log"
+if [[ "$character" == witch-save ]]; then
+    resume_log="$test_dir/resume.log"
+    printf 'Cold resume log: %s\n' "$resume_log"
+    run_game --witch-resume-probe "$resume_log"
+    validate_log "$resume_log"
 fi

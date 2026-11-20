@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // U01
-public sealed class Craving() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class Craving() : WitchCard("U01", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(3), new DynamicVar("Vulnerable", 1)];
 
@@ -22,7 +22,7 @@ public sealed class Craving() : WitchCard(1, CardType.Skill, CardRarity.Uncommon
 }
 
 // U02
-public sealed class Recovery() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class Recovery() : WitchCard("U02", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     public override bool GainsBlock => true;
@@ -42,7 +42,7 @@ public sealed class Recovery() : WitchCard(2, CardType.Skill, CardRarity.Uncommo
 }
 
 // U03
-public sealed class ManaSeal() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class ManaSeal() : WitchCard("U03", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(8), new DynamicVar("Next", 1)];
@@ -60,7 +60,7 @@ public sealed class ManaSeal() : WitchCard(1, CardType.Skill, CardRarity.Uncommo
 }
 
 // U04
-public sealed class ForbiddenRefinement() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class ForbiddenRefinement() : WitchCard("U04", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(3)];
@@ -72,7 +72,7 @@ public sealed class ForbiddenRefinement() : WitchCard(2, CardType.Skill, CardRar
 }
 
 // U05
-public sealed class Purification() : WitchCard(0, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class Purification() : WitchCard("U05", 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(1), new CardsVar(0)];
@@ -93,7 +93,7 @@ public sealed class Purification() : WitchCard(0, CardType.Skill, CardRarity.Unc
 }
 
 // U06
-public sealed class OverloadFormula() : WitchCard(1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "potion")
+public sealed class OverloadFormula() : WitchCard("U06", 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(9), new DynamicVar("Bonus", 3)];
 
@@ -108,7 +108,7 @@ public sealed class OverloadFormula() : WitchCard(1, CardType.Attack, CardRarity
 }
 
 // U07
-public sealed class ElixirPhial() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class ElixirPhial() : WitchCard("U07", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Heal", 2)];
@@ -120,7 +120,7 @@ public sealed class ElixirPhial() : WitchCard(1, CardType.Skill, CardRarity.Unco
 }
 
 // U08
-public sealed class ManaPump() : WitchCard(1, CardType.Power, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class ManaPump() : WitchCard("U08", 1, CardType.Power, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Turns", 2)];
 
@@ -134,7 +134,7 @@ public sealed class ManaPump() : WitchCard(1, CardType.Power, CardRarity.Uncommo
 }
 
 // U09
-public sealed class BottledLightning() : WitchCard(0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "potion")
+public sealed class BottledLightning() : WitchCard("U09", 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(5), new CardsVar(1)];
@@ -152,7 +152,7 @@ public sealed class BottledLightning() : WitchCard(0, CardType.Attack, CardRarit
 }
 
 // U10
-public sealed class BoilingEcho() : WitchCard(2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "potion")
+public sealed class BoilingEcho() : WitchCard("U10", 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8)];
 
@@ -163,7 +163,7 @@ public sealed class BoilingEcho() : WitchCard(2, CardType.Attack, CardRarity.Unc
 }
 
 // U11
-public sealed class RefineTheRemainder() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class RefineTheRemainder() : WitchCard("U11", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Per", 3), new DynamicVar("Cap", 12)];
@@ -182,7 +182,7 @@ public sealed class RefineTheRemainder() : WitchCard(1, CardType.Skill, CardRari
 }
 
 // U12
-public sealed class VacuumDraught() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy, "potion")
+public sealed class VacuumDraught() : WitchCard("U12", 1, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Weak", 2), new CardsVar(1)];
 
@@ -202,7 +202,7 @@ public sealed class VacuumDraught() : WitchCard(1, CardType.Skill, CardRarity.Un
 }
 
 // U13
-public sealed class AlienExtract() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class AlienExtract() : WitchCard("U13", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(2), new CardsVar(2)];
@@ -217,7 +217,7 @@ public sealed class AlienExtract() : WitchCard(2, CardType.Skill, CardRarity.Unc
 }
 
 // U14
-public sealed class BlueFlameFormula() : WitchCard(1, CardType.Power, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class BlueFlameFormula() : WitchCard("U14", 1, CardType.Power, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Flame", 4)];
 
@@ -231,7 +231,7 @@ public sealed class BlueFlameFormula() : WitchCard(1, CardType.Power, CardRarity
 }
 
 // U15
-public sealed class BackflowDraught() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "potion")
+public sealed class BackflowDraught() : WitchCard("U15", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(1), new EnergyVar(1)];
 
@@ -248,7 +248,7 @@ public sealed class BackflowDraught() : WitchCard(1, CardType.Skill, CardRarity.
 }
 
 // U16
-public sealed class MirrorBlade() : WitchCard(1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "mirror")
+public sealed class MirrorBlade() : WitchCard("U16", 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8)];
@@ -267,7 +267,7 @@ public sealed class MirrorBlade() : WitchCard(1, CardType.Attack, CardRarity.Unc
 }
 
 // U17
-public sealed class Afterimage() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class Afterimage() : WitchCard("U17", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6)];
@@ -282,7 +282,7 @@ public sealed class Afterimage() : WitchCard(1, CardType.Skill, CardRarity.Uncom
 }
 
 // U18
-public sealed class MirrorMaze() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class MirrorMaze() : WitchCard("U18", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(10)];
@@ -297,7 +297,7 @@ public sealed class MirrorMaze() : WitchCard(2, CardType.Skill, CardRarity.Uncom
 }
 
 // U19
-public sealed class ReturnReflection() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class ReturnReflection() : WitchCard("U19", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(7), new CardsVar(1)];
@@ -315,7 +315,7 @@ public sealed class ReturnReflection() : WitchCard(1, CardType.Skill, CardRarity
 }
 
 // U20
-public sealed class BreakTheMirror() : WitchCard(1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "mirror")
+public sealed class BreakTheMirror() : WitchCard("U20", 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8), new DynamicVar("Cap", 6)];
 
@@ -337,7 +337,7 @@ public sealed class BreakTheMirror() : WitchCard(1, CardType.Attack, CardRarity.
 }
 
 // U21
-public sealed class ReflectiveInscription() : WitchCard(1, CardType.Power, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class ReflectiveInscription() : WitchCard("U21", 1, CardType.Power, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Reflection", 3)];
 
@@ -351,7 +351,7 @@ public sealed class ReflectiveInscription() : WitchCard(1, CardType.Power, CardR
 }
 
 // U22
-public sealed class HallOfGlass() : WitchCard(2, CardType.Power, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class HallOfGlass() : WitchCard("U22", 2, CardType.Power, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Next", 3)];
 
@@ -365,7 +365,7 @@ public sealed class HallOfGlass() : WitchCard(2, CardType.Power, CardRarity.Unco
 }
 
 // U23
-public sealed class BrittleGlass() : WitchCard(1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "mirror")
+public sealed class BrittleGlass() : WitchCard("U23", 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(9), Guard(3)];
@@ -387,7 +387,7 @@ public sealed class BrittleGlass() : WitchCard(1, CardType.Attack, CardRarity.Un
 }
 
 // U24
-public sealed class DoubleSidedMirror() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class DoubleSidedMirror() : WitchCard("U24", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(12), new DynamicVar("Bonus", 4)];
@@ -406,7 +406,7 @@ public sealed class DoubleSidedMirror() : WitchCard(2, CardType.Skill, CardRarit
 }
 
 // U25
-public sealed class RearSilhouette() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class RearSilhouette() : WitchCard("U25", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(7), new DynamicVar("Low", 13)];
@@ -422,7 +422,7 @@ public sealed class RearSilhouette() : WitchCard(1, CardType.Skill, CardRarity.U
 }
 
 // U26
-public sealed class MirrorPrison() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy, "mirror")
+public sealed class MirrorPrison() : WitchCard("U26", 2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(14), new DynamicVar("Weak", 1)];
@@ -440,7 +440,7 @@ public sealed class MirrorPrison() : WitchCard(2, CardType.Skill, CardRarity.Unc
 }
 
 // U27
-public sealed class TurnInward() : WitchCard(0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "mirror")
+public sealed class TurnInward() : WitchCard("U27", 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(3), new CardsVar(1)];
@@ -459,7 +459,7 @@ public sealed class TurnInward() : WitchCard(0, CardType.Attack, CardRarity.Unco
 }
 
 // U28
-public sealed class VirtualImage() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class VirtualImage() : WitchCard("U28", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Reduce", 6)];
 
@@ -473,7 +473,7 @@ public sealed class VirtualImage() : WitchCard(1, CardType.Skill, CardRarity.Unc
 }
 
 // U29
-public sealed class RefractionPrism() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "mirror")
+public sealed class RefractionPrism() : WitchCard("U29", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new CardsVar(1)];
@@ -491,7 +491,7 @@ public sealed class RefractionPrism() : WitchCard(1, CardType.Skill, CardRarity.
 }
 
 // U30
-public sealed class PageExchange() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "book")
+public sealed class PageExchange() : WitchCard("U30", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(2)];
 
@@ -505,7 +505,7 @@ public sealed class PageExchange() : WitchCard(1, CardType.Skill, CardRarity.Unc
 }
 
 // U31
-public sealed class ForbiddenFrontispiece() : WitchCard(1, CardType.Power, CardRarity.Uncommon, TargetType.Self, "book")
+public sealed class ForbiddenFrontispiece() : WitchCard("U31", 1, CardType.Power, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Ward", 2)];
 
@@ -519,7 +519,7 @@ public sealed class ForbiddenFrontispiece() : WitchCard(1, CardType.Power, CardR
 }
 
 // U32
-public sealed class SigilBlade() : WitchCard(1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "book")
+public sealed class SigilBlade() : WitchCard("U32", 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(7), new DynamicVar("Bonus", 7)];
 
@@ -534,7 +534,7 @@ public sealed class SigilBlade() : WitchCard(1, CardType.Attack, CardRarity.Unco
 }
 
 // U33
-public sealed class SilentVow() : WitchCard(2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy, "book")
+public sealed class SilentVow() : WitchCard("U33", 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(18)];
 
@@ -545,7 +545,7 @@ public sealed class SilentVow() : WitchCard(2, CardType.Attack, CardRarity.Uncom
 }
 
 // U34
-public sealed class HalfMoonLedger() : WitchCard(1, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "book")
+public sealed class HalfMoonLedger() : WitchCard("U34", 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Next", 2)];
 
@@ -559,7 +559,7 @@ public sealed class HalfMoonLedger() : WitchCard(1, CardType.Skill, CardRarity.U
 }
 
 // U35
-public sealed class DarkVeilWard() : WitchCard(2, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "book")
+public sealed class DarkVeilWard() : WitchCard("U35", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(12), new CardsVar(1)];
@@ -574,7 +574,7 @@ public sealed class DarkVeilWard() : WitchCard(2, CardType.Skill, CardRarity.Unc
 }
 
 // U36
-public sealed class BlankPactPage() : WitchCard(0, CardType.Skill, CardRarity.Uncommon, TargetType.Self, "book")
+public sealed class BlankPactPage() : WitchCard("U36", 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(1)];

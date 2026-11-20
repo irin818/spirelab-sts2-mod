@@ -48,7 +48,15 @@ internal static class WitchSmoke
             Check(player.Relics.Single() is CrackedVanityMirror, "Witch starting relic");
             Check(witch.CardPool.AllCards.Count(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare) == 85
                 && witch.CardPool.AllCards.Count(card => card.Tags.Contains(WitchCard.Desire)) == 5, "85 reward cards and exactly five Desire cards");
-            Check(witch.CardPool.AllCards.All(card => ResourceLoader.Exists(card.PortraitPath)), "Witch card portraits");
+            var portraits = witch.CardPool.AllCards.Cast<WitchCard>().ToArray();
+            Check(portraits.Select(card => card.SpecId).Distinct().Count() == 91
+                && portraits.Select(card => card.PortraitPath).Distinct().Count() == 91
+                && portraits.All(card =>
+                {
+                    var art = ResourceLoader.Load<Texture2D>(card.PortraitPath);
+                    return art != null && (card.Rarity == CardRarity.Ancient
+                        ? art.GetSize() == new Vector2(606, 852) : art.GetSize() == new Vector2(500, 380));
+                }), "91 unique card assets load at their expected normal and ancient sizes");
 
             WitchContentSmoke.ValidateDefinitions(witch, player);
             var selector = new WitchSelector();
@@ -201,7 +209,7 @@ internal static class WitchSmoke
         GD.Print($"[SpireLabSmoke] OK {check}");
     }
 
-    private sealed class WitchSelector : ICardSelector
+    internal sealed class WitchSelector : ICardSelector
     {
         public bool SelectFirstHand { get; set; }
         public int DesireOptions { get; private set; }

@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // C03
-public sealed class Distillation() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "potion")
+public sealed class Distillation() : WitchCard("C03", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(1), new EnergyVar(1)];
 
@@ -19,7 +19,7 @@ public sealed class Distillation() : WitchCard(1, CardType.Skill, CardRarity.Com
 }
 
 // C04
-public sealed class ShatterPhial() : WitchCard(2, CardType.Attack, CardRarity.Common, TargetType.AllEnemies, "potion")
+public sealed class ShatterPhial() : WitchCard("C04", 2, CardType.Attack, CardRarity.Common, TargetType.AllEnemies)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(10)];
 
@@ -30,7 +30,7 @@ public sealed class ShatterPhial() : WitchCard(2, CardType.Attack, CardRarity.Co
 }
 
 // C05
-public sealed class Residue() : WitchCard(0, CardType.Skill, CardRarity.Common, TargetType.Self, "potion")
+public sealed class Residue() : WitchCard("C05", 0, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     public override int LifeCost => Number("Life");
@@ -48,7 +48,7 @@ public sealed class Residue() : WitchCard(0, CardType.Skill, CardRarity.Common, 
 }
 
 // C06
-public sealed class ConcentratedFlame() : WitchCard(2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "potion")
+public sealed class ConcentratedFlame() : WitchCard("C06", 2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(14), new DynamicVar("Bonus", 3)];
 
@@ -63,7 +63,7 @@ public sealed class ConcentratedFlame() : WitchCard(2, CardType.Attack, CardRari
 }
 
 // C07
-public sealed class VolatileSteam() : WitchCard(1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "potion")
+public sealed class VolatileSteam() : WitchCard("C07", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(6), new DynamicVar("Weak", 1)];
 
@@ -80,7 +80,7 @@ public sealed class VolatileSteam() : WitchCard(1, CardType.Attack, CardRarity.C
 }
 
 // C08
-public sealed class Sediment() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "potion")
+public sealed class Sediment() : WitchCard("C08", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(8), new CardsVar(1)];
@@ -98,7 +98,7 @@ public sealed class Sediment() : WitchCard(1, CardType.Skill, CardRarity.Common,
 }
 
 // C09
-public sealed class EmberTrace() : WitchCard(0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "potion")
+public sealed class EmberTrace() : WitchCard("C09", 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(3), new DynamicVar("Bonus", 3)];
 
@@ -119,7 +119,7 @@ public sealed class EmberTrace() : WitchCard(0, CardType.Attack, CardRarity.Comm
 }
 
 // C10
-public sealed class MirrorChip() : WitchCard(0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "mirror")
+public sealed class MirrorChip() : WitchCard("C10", 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(4), new DynamicVar("Bonus", 2)];
 
@@ -134,7 +134,7 @@ public sealed class MirrorChip() : WitchCard(0, CardType.Attack, CardRarity.Comm
 }
 
 // C12
-public sealed class EtchedMirrorSlash() : WitchCard(1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "mirror")
+public sealed class EtchedMirrorSlash() : WitchCard("C12", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8), new DynamicVar("Bonus", 3)];
 
@@ -149,7 +149,7 @@ public sealed class EtchedMirrorSlash() : WitchCard(1, CardType.Attack, CardRari
 }
 
 // C13
-public sealed class SplitFace() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "mirror")
+public sealed class SplitFace() : WitchCard("C13", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new DynamicVar("Reflection", 3)];
@@ -168,7 +168,7 @@ public sealed class SplitFace() : WitchCard(1, CardType.Skill, CardRarity.Common
 }
 
 // C14
-public sealed class ColdMirrorBarrier() : WitchCard(2, CardType.Skill, CardRarity.Common, TargetType.Self, "mirror")
+public sealed class ColdMirrorBarrier() : WitchCard("C14", 2, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(14)];
@@ -180,7 +180,7 @@ public sealed class ColdMirrorBarrier() : WitchCard(2, CardType.Skill, CardRarit
 }
 
 // C15
-public sealed class MirrorTransfer() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "mirror")
+public sealed class MirrorTransfer() : WitchCard("C15", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(5), new DynamicVar("Next", 3)];
@@ -199,7 +199,7 @@ public sealed class MirrorTransfer() : WitchCard(1, CardType.Skill, CardRarity.C
 }
 
 // C16
-public sealed class SeveredShadow() : WitchCard(1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "mirror")
+public sealed class SeveredShadow() : WitchCard("C16", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(7), new DynamicVar("Bonus", 4)];
 
@@ -214,7 +214,7 @@ public sealed class SeveredShadow() : WitchCard(1, CardType.Attack, CardRarity.C
 }
 
 // C17
-public sealed class ReflectedLight() : WitchCard(1, CardType.Skill, CardRarity.Common, TargetType.Self, "mirror")
+public sealed class ReflectedLight() : WitchCard("C17", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(4), new CardsVar(1)];
@@ -232,7 +232,7 @@ public sealed class ReflectedLight() : WitchCard(1, CardType.Skill, CardRarity.C
 }
 
 // C18
-public sealed class Refraction() : WitchCard(2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy, "mirror")
+public sealed class Refraction() : WitchCard("C18", 2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
     protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(13), new DynamicVar("Bonus", 4)];
 

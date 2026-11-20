@@ -14,6 +14,6 @@ public partial class MainFile : Node
     public static void Initialize()
     {
         Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(typeof(MainFile).Assembly);
-        Logger.Info("Lantern Surveyor preview initialized.");
+        Logger.Info("The Witch and Lantern Surveyor initialized.");
     }
 }

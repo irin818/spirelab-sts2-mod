@@ -15,15 +15,16 @@ using SpireLab.SpireLabCode.Witch.Mechanics;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 [Pool(typeof(WitchCardPool))]
-public abstract class WitchCard(int cost, CardType type, CardRarity rarity, TargetType target, string theme)
+public abstract class WitchCard(string specId, int cost, CardType type, CardRarity rarity, TargetType target)
     : CustomCardModel(cost, type, rarity, target)
 {
     [CustomEnum]
     public static CardTag Desire;
 
+    public string SpecId { get; } = specId;
     public virtual bool IsDesire => false;
     public virtual int LifeCost => 0;
-    public override string CustomPortraitPath => $"{TheWitch.Art}/cards/{theme}.png";
+    public override string CustomPortraitPath => $"{TheWitch.Art}/cards/{SpecId.ToLowerInvariant()}.png";
     public override string PortraitPath => CustomPortraitPath;
     public override string BetaPortraitPath => CustomPortraitPath;
 
@@ -85,8 +86,8 @@ public abstract class WitchCard(int cost, CardType type, CardRarity rarity, Targ
     protected static BlockVar Guard(int value) => new(value, ValueProp.Move);
 }
 
-public abstract class DesireCard(int cost, CardType type, CardRarity rarity)
-    : WitchCard(cost, type, rarity, TargetType.Self, "desire")
+public abstract class DesireCard(string specId, int cost, CardType type, CardRarity rarity)
+    : WitchCard(specId, cost, type, rarity, TargetType.Self)
 {
     public sealed override bool IsDesire => true;
     protected sealed override HashSet<CardTag> CanonicalTags => [Desire];

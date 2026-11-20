@@ -10,7 +10,7 @@ using SpireLab.SpireLabCode.Witch.Mechanics;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // U37
-public sealed class PrimalGreed() : DesireCard(2, CardType.Skill, CardRarity.Uncommon)
+public sealed class PrimalGreed() : DesireCard("U37", 2, CardType.Skill, CardRarity.Uncommon)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(5)];
@@ -43,7 +43,7 @@ public sealed class PrimalGreed() : DesireCard(2, CardType.Skill, CardRarity.Unc
 }
 
 // U38
-public sealed class Sloth() : DesireCard(2, CardType.Skill, CardRarity.Uncommon)
+public sealed class Sloth() : DesireCard("U38", 2, CardType.Skill, CardRarity.Uncommon)
 {
     public override bool GainsBlock => true;
     protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(10)];
@@ -66,7 +66,7 @@ public sealed class Sloth() : DesireCard(2, CardType.Skill, CardRarity.Uncommon)
 }
 
 // R25
-public sealed class FallenConfidence() : DesireCard(3, CardType.Power, CardRarity.Rare)
+public sealed class FallenConfidence() : DesireCard("R25", 3, CardType.Power, CardRarity.Rare)
 {
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
@@ -86,7 +86,7 @@ public sealed class FallenConfidence() : DesireCard(3, CardType.Power, CardRarit
 }
 
 // R26
-public sealed class SourceOfCalamity() : DesireCard(2, CardType.Skill, CardRarity.Rare)
+public sealed class SourceOfCalamity() : DesireCard("R26", 2, CardType.Skill, CardRarity.Rare)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Options", 2)];
@@ -131,7 +131,7 @@ public sealed class SourceOfCalamity() : DesireCard(2, CardType.Skill, CardRarit
 }
 
 // R27
-public sealed class AbyssOfGambling() : DesireCard(1, CardType.Skill, CardRarity.Rare)
+public sealed class AbyssOfGambling() : DesireCard("R27", 1, CardType.Skill, CardRarity.Rare)
 {
     public override int LifeCost => WitchRules.GambleCost(Owner.Creature.CurrentHp, Number("Percent"));
     protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Percent", 50), new CardsVar(1), new EnergyVar(2)];

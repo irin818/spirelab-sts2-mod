@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Models;
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // A01
-public sealed class BeyondTheGlass() : WitchCard(1, CardType.Skill, CardRarity.Ancient, TargetType.Self, "mirror")
+public sealed class BeyondTheGlass() : WitchCard("A01", 1, CardType.Skill, CardRarity.Ancient, TargetType.Self)
 {
     public override bool GainsBlock => true;
     // Ancient sources may apply the native + upgrade flag. D5 keeps the effect values fixed.
@@ -23,7 +23,7 @@ public sealed class BeyondTheGlass() : WitchCard(1, CardType.Skill, CardRarity.A
 }
 
 // A02
-public sealed class SevenfoldDistillation() : WitchCard(2, CardType.Power, CardRarity.Ancient, TargetType.Self, "potion"), ITomeCard
+public sealed class SevenfoldDistillation() : WitchCard("A02", 2, CardType.Power, CardRarity.Ancient, TargetType.Self), ITomeCard
 {
     // Ancient sources may apply the native + upgrade flag. D5 keeps the effect values fixed.
 
