@@ -20,7 +20,6 @@ megadot_version=4.5.1-m.14
 template_version=2.5.3
 baselib_version=3.4.8
 godot="$tool_dir/megadot/MegaDot.app/Contents/MacOS/Godot"
-artifact_dir=SpireLab/bin/mods/ExportRelease/SpireLab
 
 export DOTNET_ROOT="$tool_dir/dotnet-10"
 export DOTNET_CLI_HOME="$tool_dir"
@@ -105,14 +104,15 @@ pack() {
         "$godot" --headless --editor --path "$root/SpireLab" --import
     fi
     dotnet publish "$project" -c ExportRelease -p:GodotPath="$godot"
-    local extension
-    for extension in dll json pck; do
-        [[ -s "$artifact_dir/SpireLab.$extension" ]] || fail "Missing package file SpireLab.$extension"
-    done
+    python3 "$root/scripts/verify-witch-release.py" pack
 }
 
 case "${1:-}" in
     setup) setup ;;
+    witch-test)
+        shift
+        exec "$root/scripts/witch-test-macos.sh" "$@"
+        ;;
     art-sync)
         shift
         python3 "$root/scripts/sync-art.py" "$@"
@@ -141,5 +141,5 @@ case "${1:-}" in
                 ;;
         esac
         ;;
-    *) fail "Usage: $0 {setup|check|build|pack|art-sync|ilspy|code|editor}" ;;
+    *) fail "Usage: $0 {setup|check|build|pack|art-sync|witch-test|ilspy|code|editor}" ;;
 esac

@@ -1,6 +1,16 @@
-# 魔女 v1.6.0 创意工坊发布准备
+# 魔女创意工坊发布准备
 
 这个工作区供确认后使用。包含上传所需的 `workshop.json`、`content/`、`image.png` 和 macOS 实机截图。包内声明 BaseLib 的工坊依赖，手动安装 ZIP 则附带验收用的锁定版本与许可证。
+
+## 正式包校验
+
+从仓库根目录运行 `./scripts/dev-macos.sh pack` 生成带正式标记的 `ExportRelease` 包，再用该包跑隔离实机检查。将这次实机的 `mods` 目录和截图目录传给 `./scripts/stage-witch-release.sh`。它会逐文件核对实测产物，拒绝实验室会话与非正式包。工坊 `content/` 只允许 `SpireLab.dll`、`SpireLab.pck` 和 `SpireLab.json`，三件文件须与本地正式构建完全一致。
+
+实际上传前须复跑校验，直接上传已有工作区和仅提交 `SetItemContent` 的路径都用同一条命令。校验失败时停止上传。
+
+```sh
+python3 ./scripts/verify-witch-release.py workshop "/absolute/path/to/SteamWorkshop"
+```
 
 ## 更新现有私密测试条目
 
@@ -14,10 +24,12 @@ Mega Crit 0.2.0 上传器会同时写入游戏分支限制、主预览并同步�
 
 1. 在 Steam 客户端登录拥有游戏的账号。确认 Steam Workshop 条款和选定的可见性。
 2. 使用 [Mega Crit 官方 Mod Uploader](https://github.com/megacrit/sts2-mod-uploader/releases/tag/v0.2.0) 的 macOS arm64 构建，进入解压后的上传工具目录。
-3. 将命令中的路径替换成解压出的 `SteamWorkshop` 目录。模板为 `private`。官方工具给首次上传分配项目 ID，后续更新保留工具写出的 `mod_id.txt`。
+3. 从仓库根目录将命令中的路径替换成官方工具和经过本机打包核验的 `SteamWorkshop` 目录。模板为 `private`。官方工具给首次上传分配项目 ID，后续更新保留工具写出的 `mod_id.txt`。
 
 ```sh
-./ModUploader upload -w "/absolute/path/to/SteamWorkshop"
+workshop="/absolute/path/to/SteamWorkshop"
+python3 ./scripts/verify-witch-release.py workshop "$workshop" &&
+    "/absolute/path/to/ModUploader" upload -w "$workshop"
 ```
 
 工坊依赖为 [BaseLib #3737335127](https://steamcommunity.com/sharedfiles/filedetails/?id=3737335127)。正式发布前可通过 Steam 客户端确认依赖可订阅，并用无本地重复安装的环境订阅一次。上游格式、预览图和可见性以 [Mega Crit 工作区文档](https://github.com/megacrit/sts2-mod-uploader/blob/v0.2.0/template/README.md) 为准。

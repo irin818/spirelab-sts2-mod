@@ -26,6 +26,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch;
 using SpireLab.SpireLabCode.Witch.Cards;
 using SpireLab.SpireLabCode.Witch.Mechanics;
+using SpireLab.SpireLabCode.Witch.UI;
 using static SpireLab.Smoke.WitchSmoke;
 
 namespace SpireLab.Smoke;
@@ -74,15 +75,37 @@ internal static class WitchVisualPreview
             var player = run.Players.Single();
             await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
 
-            await WaitFor(tree, () => NOverlayStack.Instance?.Peek() is NSimpleCardSelectScreen,
+            await WaitFor(tree, () => NOverlayStack.Instance?.Peek() is WitchFateScreen,
                 "actual Fate Selection overlay opens before the first draw");
-            var fate = (NSimpleCardSelectScreen)NOverlayStack.Instance!.Peek()!;
+            var fate = (WitchFateScreen)NOverlayStack.Instance!.Peek()!;
             var grid = fate.GetNode<NCardGrid>("%CardGrid");
             await WaitFor(tree, () => grid.CurrentlyDisplayedCardHolders.Any(), "Fate grid creates native card holders");
+            Check(grid.CurrentlyDisplayedCardHolders.Count() < 85, "native grid only builds holders for visible rows");
             await Capture(tree, "fate-selection-macos.png");
-            var holder = grid.CurrentlyDisplayedCardHolders.First();
+            var first = grid.CurrentlyDisplayedCardHolders.First();
+            Check(first.CardModel.IsCanonical, "picker renders definitions with no temporary combat instances");
+            grid.EmitSignal(NCardGrid.SignalName.HolderPressed, first);
+            var costs = fate.GetNode<OptionButton>("FateFilters/CostFilter");
+            var suits = fate.GetNode<OptionButton>("FateFilters/SuitFilter");
+            var types = fate.GetNode<OptionButton>("FateFilters/TypeFilter");
+            costs.Select(6);
+            costs.EmitSignal(OptionButton.SignalName.ItemSelected, 6);
+            suits.Select(1);
+            suits.EmitSignal(OptionButton.SignalName.ItemSelected, 1);
+            await WaitFor(tree, () => grid.CurrentlyDisplayedCards.Take(2).Select(card => card.Id).SequenceEqual([ModelDb.Card<ManaDeluge>().Id]),
+                "X cost plus Alchemy yields only Mana Deluge");
+            var holder = grid.CurrentlyDisplayedCardHolders.Single();
             var fateId = holder.CardModel.Id;
             grid.EmitSignal(NCardGrid.SignalName.HolderPressed, holder);
+            types.Select(holder.CardModel.Type == CardType.Attack ? 2 : 1);
+            types.EmitSignal(OptionButton.SignalName.ItemSelected, types.Selected);
+            await WaitFor(tree, () => !grid.CurrentlyDisplayedCardHolders.Any(),
+                "a zero-match filter does not silently replace the selected card");
+            await Capture(tree, "fate-filtered-macos.png");
+            var reset = fate.GetNode<Button>("FateFilters/ResetFilters");
+            reset.EmitSignal(Button.SignalName.Pressed);
+            await WaitFor(tree, () => costs.Selected == 0 && suits.Selected == 0 && types.Selected == 0 && grid.CurrentlyDisplayedCardHolders.Any(),
+                "reset restores the unfiltered grid");
             await UiHelper.Click(fate.GetNode<NConfirmButton>("%Confirm"));
             await WaitFor(tree, () => NPlayerHand.Instance?.IsInCardSelection == true, "actual optional swap opens after drawing");
             await UiHelper.Click(NPlayerHand.Instance!.GetNode<NConfirmButton>("%SelectModeConfirmButton"));
@@ -102,6 +125,14 @@ internal static class WitchVisualPreview
                 card.Pile?.Type == PileType.Hand &&
                 ResourceLoader.Load<Texture2D>(card.PortraitPath)?.GetSize() == new Vector2(500, 380)),
                 "native hand shows the four themed card portraits including the integrated U31 art");
+            var pool = (WitchCardPool)witch.CardPool;
+            var inline = ResourceLoader.Load<Texture2D>(pool.TextEnergyIconPath);
+            var big = ResourceLoader.Load<Texture2D>(pool.BigEnergyIconPath);
+            Check(inline.GetSize() == new Vector2(28, 28) && big.GetSize() == new Vector2(96, 96)
+                && ModelDb.Card<AbyssOfGambling>().GetDescriptionForPile(PileType.None).Contains(pool.TextEnergyIconPath)
+                && ModelDb.Card<ForbiddenRefinement>().GetDescriptionForUpgradePreview().Contains(pool.TextEnergyIconPath),
+                "base and upgraded descriptions use the 28px inline glyph while cost uses the 96px texture");
+            await Add<AbyssOfGambling>(player);
             await Capture(tree, "card-hand-macos.png");
             await Capture(tree, "status-before-macos.png");
             await CreatureCmd.SetCurrentHp(player.Creature, 20);
@@ -210,7 +241,7 @@ internal static class WitchVisualPreview
     {
         // Selection panel, hand layout and battle entrance animate for several frames.
         await tree.ToSignal(tree.CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);
-        await tree.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
         var destination = System.Environment.GetEnvironmentVariable("SPIRELAB_WITCH_ART_SCREENSHOTS")
             ?? throw new InvalidOperationException("Missing screenshot directory.");
         using var image = tree.Root.GetTexture().GetImage();

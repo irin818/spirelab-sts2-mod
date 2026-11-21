@@ -17,6 +17,13 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override async Task BeforeSideTurnStart(PlayerChoiceContext choice, CombatSide side,
         IReadOnlyList<Creature> participants, ICombatState combatState)
     {
+        foreach (var player in combatState.Players)
+        {
+            if (WitchCombatState.Find(player) is { } state)
+            {
+                state.GamblePaidThisTurn = 0;
+            }
+        }
         if (side == CombatSide.Player)
         {
             foreach (var creature in participants)
@@ -316,6 +323,19 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 continue;
             }
 
+            // The engine calls AfterCombatEnd only on victory, before writing the finished-room save.
+            var paid = state.GamblePaidThisTurn;
+            state.GamblePaidThisTurn = 0;
+            if (paid > 0 && player.Creature.IsAlive)
+            {
+                var creature = player.Creature;
+                var realBefore = creature.CurrentHp;
+                await CreatureCmd.SetCurrentHp(creature, WitchRules.RefundLife(realBefore, creature.MaxHp, paid));
+#if SPIRELAB_TEST_LAB
+                WitchCombatState.Trace($"狂赌之渊胜利返还 {creature.CurrentHp - realBefore} 点，本段支付 {paid} 点。");
+#endif
+            }
+
             if (state.OpeningCard is { Pile.IsCombatPile: true } card)
             {
                 await CardPileCmd.RemoveFromCombat(card, skipVisuals: true);
@@ -347,13 +367,18 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         dealer?.Side == CombatSide.Enemy && props.IsCardOrMonsterMove() && !props.HasFlag(ValueProp.Unblockable);
 
     public override decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? play) =>
-        EnemyAttack(dealer, props) && WitchCombatState.Find(target?.Player)?.Immunity != null ? 0 : decimal.MaxValue;
+        WitchCombatState.Find(target?.Player) is { } state &&
+        (state.SlothImmunity || (EnemyAttack(dealer, props) && state.Immunity.HasValue)) ? 0 : decimal.MaxValue;
 
     public override Task BeforeDamageReceived(PlayerChoiceContext choice, Creature target, decimal amount,
         ValueProp props, Creature? dealer, CardModel? cardSource)
     {
         if (EnemyAttack(dealer, props) && WitchCombatState.Find(target.Player) is { } state)
         {
+            if (state.SlothImmunity)
+            {
+                return Task.CompletedTask;
+            }
             if (state.Immunity is int retaliation)
             {
                 state.SpentImmunity = retaliation;
@@ -446,45 +471,34 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
         WitchFeedback.Block(target);
         state.BlockedDuringEnemyTurn |= target.CombatState?.CurrentSide == CombatSide.Enemy;
-        var reflect = new List<int>();
-        if (state.MirrorForm)
-        {
-            reflect.Add(WitchRules.Reflect(result.BlockedDamage, 50, state.ReflectMultiplier));
-        }
-
-        reflect.AddRange(state.DeferredReflections.Select(value => WitchRules.Reflect(value, 100, state.ReflectMultiplier)));
+        var mirrorSelf = state.MirrorForm ? 100 : 0;
+        var burial = state.NextReflectPercent;
+        var percent = mirrorSelf + state.MazeReflectPercent + burial;
+        var fixedDamage = state.DeferredReflections.Sum();
         state.DeferredReflections.Clear();
+        state.NextReflectPercent = 0;
 
+        if (!state.FirstCombatBlockTriggered && target.Player!.Relics.OfType<SilverMirrorFrame>().FirstOrDefault() is { } frame)
+        {
+            state.FirstCombatBlockTriggered = true;
+            frame.Flash();
+            fixedDamage += 5;
+        }
         if (state.WeakOnBlock > 0)
         {
             var weak = state.WeakOnBlock;
             state.WeakOnBlock = 0;
             await PowerCmd.Apply<MegaCrit.Sts2.Core.Models.Powers.WeakPower>(choice, dealer, weak, target, null);
         }
-        if (state.NextReflectPercent > 0)
-        {
-            reflect.Add(WitchRules.Reflect(result.BlockedDamage, state.NextReflectPercent, state.ReflectMultiplier));
-            state.NextReflectPercent = 0;
-        }
-        if (!state.FirstCombatBlockTriggered && target.Player!.Relics.OfType<SilverMirrorFrame>().FirstOrDefault() is { } frame)
-        {
-            state.FirstCombatBlockTriggered = true;
-            frame.Flash();
-            reflect.Add(WitchRules.Reflect(5, 100, state.ReflectMultiplier));
-        }
 
-        if (reflect.Any(amount => amount > 0))
+        // One response per native DamageResult. An unpowered response has no Move flag.
+        var reflection = WitchRules.Reflect(result.BlockedDamage, percent, fixedDamage);
+#if SPIRELAB_TEST_LAB
+        WitchCombatState.Trace($"反射 · {dealer.Name} · 实际格挡 {result.BlockedDamage} · 镜中人 {mirrorSelf}% + 迷宫 {state.MazeReflectPercent}% + 镜葬 {burial}% · 固定 {fixedDamage} · 最终 {reflection}");
+#endif
+        if (reflection > 0 && dealer.IsAlive)
         {
             WitchFeedback.Reflect(dealer);
-        }
-
-        foreach (var reflection in reflect)
-        {
-            if (reflection <= 0 || !dealer.IsAlive)
-            {
-                continue;
-            }
-
             var hits = await CreatureCmd.Damage(choice, dealer, reflection, ValueProp.Unpowered, target);
             if (hits.Any(hit => hit.TotalDamage > 0))
             {

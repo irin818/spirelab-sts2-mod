@@ -12,7 +12,6 @@ namespace SpireLab.SpireLabCode.Witch.Cards;
 // U37
 public sealed class PrimalGreed() : DesireCard("U37", 2, CardType.Skill, CardRarity.Uncommon)
 {
-    public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
     protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(5)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
@@ -45,7 +44,7 @@ public sealed class Sloth() : DesireCard("U38", 2, CardType.Skill, CardRarity.Un
     {
         if (State.Plays == 1)
         {
-            State.Immunity ??= 0;
+            State.SlothImmunity = true;
         }
         else
         {
@@ -136,7 +135,7 @@ public sealed class AbyssOfGambling() : DesireCard("R27", 1, CardType.Skill, Car
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        if (await PayLife(choice))
+        if (await WitchLife.Pay(choice, Owner, LifeCost, fromCard: true, refundOnVictory: true))
         {
             // At hand capacity, reserve the return slot before asking the engine to draw.
             if (Owner.PlayerCombatState!.Hand.Cards.Count >= CardPile.MaxCardsInHand - 1)

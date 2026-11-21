@@ -12,7 +12,7 @@ internal static class WitchLife
     private const string DisplayName = "SpireLabMirrorHp";
     private const float MeterWidth = 154;
 
-    public static async Task<bool> Pay(PlayerChoiceContext choice, Player player, int cost, bool fromCard)
+    public static async Task<bool> Pay(PlayerChoiceContext choice, Player player, int cost, bool fromCard, bool refundOnVictory = false)
     {
         var creature = player.Creature;
         if (!WitchRules.CanPayLife(creature.CurrentHp, cost))
@@ -26,7 +26,14 @@ internal static class WitchLife
             state.RecordCardLifeLoss(cost);
         }
 
+        if (refundOnVictory)
+        {
+            state.GamblePaidThisTurn = (int)Math.Min(int.MaxValue, (long)state.GamblePaidThisTurn + cost);
+        }
         await CreatureCmd.SetCurrentHp(creature, creature.CurrentHp - cost);
+#if SPIRELAB_TEST_LAB
+        WitchCombatState.Trace($"支付真实生命 {cost}，剩余 {creature.CurrentHp}。");
+#endif
         await AfterPayment(choice, player, state);
         return true;
     }

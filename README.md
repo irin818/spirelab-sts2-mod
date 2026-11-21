@@ -1,9 +1,10 @@
 # SpireLab
 
-《杀戮尖塔 2》C# 原创角色 Mod。`v1.6.0` 的魔女拥有命运选牌、战斗牌交换、91 种卡牌、9 件遗物和 3 种药水。
+《杀戮尖塔 2》C# 原创角色 Mod。魔女拥有命运选牌、战斗牌交换、91 种卡牌、9 件遗物和 3 种药水。当前开发版本为 `v1.6.2`，Steam 创意工坊仍使用此前的 `v1.6.0`。
 
 - [魔女 V1.6 规格书](SpireLab_The_Witch_GDD_v1.6.md)
 - [魔女 V1.6 实机验证](docs/witch-v1.6-validation.md)
+- [Witch Test Lab 与 V1.6.2 验证](docs/TEST_LAB.md)
 - [外部美术资源包规范与导入](artwork/README.md)
 - [V1.6 美术集成与私密测试记录](docs/witch-v1.6-integration.md)
 - [归档的魔女 V1.0 规格书](docs/archive/SpireLab_The_Witch_GDD_v1.0.md)
@@ -67,6 +68,13 @@ git switch -c codex/your-task
 ```
 
 ## 隔离实机与自动化验证
+
+双击仓库根目录的 [启动魔女测试实验室.command](启动魔女测试实验室.command)，即可从当前工程构建 Debug 版并打开独立游戏副本。[Witch Test Lab 使用说明](docs/TEST_LAB.md)
+
+```sh
+./scripts/dev-macos.sh witch-test
+./scripts/dev-macos.sh witch-test --scenario mirror-reflect
+```
 
 关闭现有的隔离测试实例后，在仓库根目录执行。
 

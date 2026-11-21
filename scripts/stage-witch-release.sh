@@ -8,8 +8,8 @@ if [[ "$#" != 2 && "$#" != 3 ]]; then
 fi
 tested="$(cd "$1" && pwd -P)"
 captures="$(cd "$2" && pwd -P)"
+python3 scripts/verify-witch-release.py tested-mods "$tested"
 version="$(plutil -extract version raw -o - "$tested/SpireLab/SpireLab.json")"
-[[ "$version" == "$(plutil -extract version raw -o - SpireLab/SpireLab.json)" ]]
 mkdir -p .local/release
 stage="$(mktemp -d ".local/release/Witch-$version.XXXXXX")"
 install="$stage/install"
@@ -19,6 +19,7 @@ for name in SpireLab.dll SpireLab.pck SpireLab.json; do
     cp "$tested/SpireLab/$name" "$install/SpireLab/"
     cp "$tested/SpireLab/$name" "$workshop/content/"
 done
+python3 scripts/verify-witch-release.py workshop "$workshop"
 for name in BaseLib.dll BaseLib.pck BaseLib.json BaseLibCompatibilityHelper.dll BaseLibCompatibilityHelper.json; do
     cp "$tested/BaseLib/$name" "$install/BaseLib/"
 done
