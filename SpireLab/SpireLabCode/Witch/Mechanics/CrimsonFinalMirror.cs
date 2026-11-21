@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
+using static SpireLab.SpireLabCode.Witch.Mechanics.CrimsonMirrorCamera;
 
 namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
@@ -16,33 +17,86 @@ internal static class CrimsonFinalMirror
 {
     private const string Art = TheWitch.Art + "/finisher/";
     private const string Audio = MainFile.ResPath + "/audio/witch/finisher/";
-    private const float Duration = 2.4f;
-    private const float ShatterTime = 1.6f;
+    internal const float Duration = 2.7f;
+    internal const float ShatterTime = 1.95f;
     private static readonly Vector2 Design = new(1920, 1080);
-    private static readonly Vector2 MirrorCenter = new(960, 543);
-    private static readonly Vector2 WitchCenter = new(535, 550);
-    private static readonly Vector2 Palm = new(651, 394);
+    private static readonly Vector2 MirrorCenter = new(1248, 578);
+    private static readonly Vector2 WitchCenter = new(365, 641);
     private static readonly string[] PosePaths = ["gaze", "raise", "open", "grasp", "fist", "rest"];
     private static readonly ConditionalWeakTable<ICombatState, RoomCue> Cues = new();
+    private static bool _materialsWarmed;
 
     private sealed class RoomCue
     {
         public Creature? Candidate;
         public Texture2D? Silhouette;
+        public Rect2? Framing;
         public bool Played;
     }
 
     internal static IEnumerable<string> Assets =>
         PosePaths.Select(pose => Art + pose + ".webp").Concat(
         [
-            Art + "theatre.jpg", Art + "mirror.webp", Art + "moon.webp", Art + "soul.webp",
-            Art + "mirror_drape.gdshader", Art + "soul.gdshader", Art + "lunar_eclipse.gdshader",
+            Art + "theatre.jpg", Art + "mirror.webp", Art + "soul.webp",
+            Art + "mirror_drape.gdshader", Art + "soul.gdshader",
             Audio + "ritual-swell.wav", Audio + "mirror-shatter.wav"
-        ]);
+        ]).Concat(CrimsonMirrorPortrait.Assets);
 
     private static bool CanPresent(ICombatState state) =>
         DisplayServer.GetName() != "headless" && RunManager.Instance.NetService.Type == NetGameType.Singleplayer &&
         state.Players.Any(player => player.Character is TheWitch && LocalContext.IsMe(player));
+
+    internal static void WarmMaterials(ICombatState state)
+    {
+        if (_materialsWarmed || !CanPresent(state) || NCombatRoom.Instance is not { } room)
+        {
+            return;
+        }
+        _materialsWarmed = true;
+        var warm = new CanvasLayer { Layer = 1 };
+        try
+        {
+            // Shader resources are preloaded at run start. Submit tiny draws before the first
+            // hand so the renderer can prepare their canvas pipelines before the fatal hit.
+            var samples = new (string Texture, string Shader, bool Drape)[]
+            {
+                ("theatre.jpg", "mirror_drape.gdshader", true),
+                ("soul.webp", "soul.gdshader", false),
+                ("v2/portrait.webp", "v2/portrait.gdshader", false)
+            };
+            room.AddChild(warm);
+            foreach (var sample in samples)
+            {
+                var texture = PreloadManager.Cache.GetTexture2D(Art + sample.Texture);
+                var material = new ShaderMaterial { Shader = PreloadManager.Cache.GetAsset<Shader>(Art + sample.Shader) };
+                if (sample.Drape)
+                {
+                    material.SetShaderParameter("fade", 0f);
+                    warm.AddChild(new TextureRect
+                    {
+                        Size = Vector2.One * 2, Texture = texture, Material = material,
+                        ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore
+                    });
+                }
+                else
+                {
+                    warm.AddChild(new Sprite2D
+                    {
+                        Texture = texture, Material = material, Centered = false,
+                        SelfModulate = new Color(1f, 1f, 1f, 0.01f), Scale = Vector2.One * 0.002f
+                    });
+                }
+            }
+            var dispose = warm.CreateTween();
+            dispose.TweenInterval(0.1);
+            dispose.TweenCallback(Callable.From(warm.QueueFree));
+        }
+        catch (Exception error)
+        {
+            GD.PushWarning($"[The Witch] Finisher shader warmup skipped: {error.Message}");
+            warm.QueueFree();
+        }
+    }
 
     internal static void RememberDefeat(Creature creature)
     {
@@ -55,7 +109,9 @@ internal static class CrimsonFinalMirror
         // to an existing static texture. Animated Spine enemies use the painted apparition.
         var cue = Cues.GetOrCreateValue(state);
         cue.Candidate = creature;
-        var body = creature.GetCreatureNode()?.Body;
+        var node = creature.GetCreatureNode();
+        cue.Framing = ReadSubject(node?.Hitbox);
+        var body = node?.Body;
         cue.Silhouette = body is Sprite2D { RegionEnabled: false, Hframes: 1, Vframes: 1 } sprite
             ? sprite.Texture
             : null;
@@ -77,14 +133,19 @@ internal static class CrimsonFinalMirror
         cue.Played = true;
 
         var layer = new CanvasLayer { Name = "WitchCrimsonFinalMirror", Layer = 1 };
+        var last = cue.Candidate is { IsDead: true } ? cue.Candidate : null;
+        var ally = room.CombatState.Players.FirstOrDefault(player => player.Character is TheWitch && LocalContext.IsMe(player));
+        var framing = last == null ? null : cue.Framing;
+        var camera = new CrimsonMirrorCamera(host, framing, ReadSubject(ally?.Creature.GetCreatureNode()?.Hitbox));
         try
         {
             if (Assets.Any(path => !ResourceLoader.Exists(path)))
             {
                 throw new InvalidOperationException("The finisher's resource pack is incomplete.");
             }
-            var spirit = cue.Candidate is { IsDead: true } ? cue.Silhouette : null;
-            var presentation = new Presentation(layer, spirit);
+            var spirit = last == null ? null : cue.Silhouette;
+            var corpse = host.RemovingCreatureNodes.FirstOrDefault(node => node.Entity == last)?.Body;
+            var presentation = new Presentation(layer, camera, framing, corpse, spirit);
             host.AddChild(layer);
             await presentation.Play();
         }
@@ -95,6 +156,7 @@ internal static class CrimsonFinalMirror
         }
         finally
         {
+            camera.Restore();
             if (GodotObject.IsInstanceValid(layer))
             {
                 if (layer.IsInsideTree())
@@ -113,6 +175,15 @@ internal static class CrimsonFinalMirror
     private sealed class Presentation
     {
         private readonly CanvasLayer _layer;
+        private readonly CrimsonMirrorCamera _camera;
+        private readonly Rect2? _target;
+        private readonly Node2D? _corpse;
+        private readonly Node2D _opening = new();
+        private readonly Node2D _enemyCracks;
+        private readonly Sprite2D _enemyEcho;
+        private readonly Line2D _turnRibbon;
+        private readonly CrimsonMirrorPortrait _portrait;
+        private readonly Polygon2D[] _embers;
         private readonly Control _layout = new() { MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
         private readonly ColorRect _shade = new() { MouseFilter = Control.MouseFilterEnum.Ignore };
         private readonly TextureRect _theatre = new()
@@ -123,20 +194,17 @@ internal static class CrimsonFinalMirror
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         private readonly ShaderMaterial _drape = new() { Shader = Load<Shader>(Art + "mirror_drape.gdshader") };
-        private readonly ShaderMaterial _eclipse = new() { Shader = Load<Shader>(Art + "lunar_eclipse.gdshader") };
         private readonly ShaderMaterial _spiritInk = new() { Shader = Load<Shader>(Art + "soul.gdshader") };
-        private readonly Node2D _shot = new();
+        private readonly Node2D _shot = new() { Name = "StageShot" };
         private readonly Node2D _stage = new();
-        private readonly Sprite2D _moon;
         private readonly Sprite2D _mirror;
         private readonly Sprite2D _witch;
         private readonly Sprite2D _soul;
         private readonly Texture2D[] _poses = PosePaths.Select(pose => Load<Texture2D>(Art + pose + ".webp")).ToArray();
         private readonly Node2D _cracks;
         private readonly Node2D _sigil;
-        private readonly Node2D _filaments;
+        private readonly Line2D[] _filaments;
         private readonly Polygon2D _spark;
-        private readonly Node2D _eyeGlow;
         private readonly Node2D _wingCracks;
         private readonly Shard[] _shards;
         private readonly AudioStreamPlayer _swell = LoadSound("ritual-swell", -8);
@@ -145,9 +213,12 @@ internal static class CrimsonFinalMirror
 
         private readonly record struct Shard(Polygon2D Node, Vector2 From, Vector2 Travel, float Spin);
 
-        internal Presentation(CanvasLayer layer, Texture2D? spirit)
+        internal Presentation(CanvasLayer layer, CrimsonMirrorCamera camera, Rect2? target, Node2D? corpse, Texture2D? spirit)
         {
             _layer = layer;
+            _camera = camera;
+            _target = target;
+            _corpse = corpse;
             if (_theatre.Texture == null || _poses.Any(pose => pose == null) || _drape.Shader == null || _spiritInk.Shader == null)
             {
                 throw new InvalidOperationException("The theatre or cast art is missing.");
@@ -160,32 +231,43 @@ internal static class CrimsonFinalMirror
             _shade.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
             _theatre.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
             _theatre.Material = _drape;
+            _layout.AddChild(_opening);
+            _enemyEcho = new Sprite2D { Texture = spirit ?? Load<Texture2D>(Art + "soul.webp") };
+            _opening.AddChild(_enemyEcho);
+            _enemyCracks = MakeCracks(_opening, Vector2.Zero);
+            _enemyCracks.Name = "ActualTargetCracks";
+            _turnRibbon = MakeThread(_opening, new Color(0.98f, 0.24f, 0.43f, 0.8f), 1.9f);
             _layout.AddChild(_stage);
             _stage.AddChild(_shot);
             _layout.Resized += Fit;
-            _moon = Painted(Load<Texture2D>(Art + "moon.webp"), 472, new Vector2(960, 338));
-            _moon.Material = _eclipse;
-            _mirror = Painted(Load<Texture2D>(Art + "mirror.webp"), 557, MirrorCenter);
+            _portrait = new CrimsonMirrorPortrait(_shot);
+            _mirror = Painted(Load<Texture2D>(Art + "mirror.webp"), 552, MirrorCenter);
+            _mirror.Name = "SoulMirror";
             _soul = Painted(spirit ?? Load<Texture2D>(Art + "soul.webp"), 322, MirrorCenter);
             _soul.Material = _spiritInk;
-            _cracks = MakeCracks();
+            _cracks = MakeCracks(_shot, MirrorCenter);
             _wingCracks = MakeWingCracks();
-            _witch = Painted(_poses[0], 561, WitchCenter);
-            _eyeGlow = new Node2D { Position = WitchCenter + new Vector2(7, -172) };
-            _shot.AddChild(_eyeGlow);
-            Stroke(_eyeGlow, new Color("ee416b"), 2.7f, new(-3, 1), new(1, -0.5f), new(4, -2));
-            Stroke(_eyeGlow, new Color("ff9bb1"), 1f, new(-2, 0), new(2, -1));
+            _witch = Painted(_poses[0], 462, WitchCenter);
             _sigil = MakeSigil();
-            _filaments = MakeFilaments();
+            _filaments =
+            [
+                MakeThread(_shot, new Color(0.99f, 0.53f, 0.67f, 0.67f), 1.65f),
+                MakeThread(_shot, new Color(0.90f, 0.25f, 0.48f, 0.60f), 1.15f),
+                MakeThread(_shot, new Color(0.95f, 0.24f, 0.41f, 0.40f), 1.25f)
+            ];
+            _embers = MakeEmbers();
             _spark = new Polygon2D
             {
                 Position = MirrorCenter,
+                ZIndex = 2,
                 Color = new Color("f8c4d9"),
                 Polygon = [new(-137, 0), new(-9, -7), new(0, -39), new(9, -7), new(137, 0),
                            new(9, 7), new(0, 39), new(-9, 7)]
             };
             _shot.AddChild(_spark);
             _shards = MakeShards();
+            _swell.PitchScale = 0.83f;
+            _shatter.Name = "MirrorImpact";
             layer.AddChild(_swell);
             layer.AddChild(_shatter);
         }
@@ -227,74 +309,148 @@ internal static class CrimsonFinalMirror
 
         private void Render(float time)
         {
-            var dissolve = Ease(time, 1.85f, Duration);
-            var fade = 1 - dissolve;
-            var seam = Ease(time, 0.04f, 0.24f) * (1 - Ease(time, 0.72f, 0.83f));
-            var release = Ease(time, ShatterTime, 1.74f);
-            var flare = Mathf.Sin(release * Mathf.Pi) * fade;
-            _shade.Color = new Color(0.018f, 0.012f, 0.041f, 0.76f * Ease(time, 0, 0.28f) * fade);
-            _drape.SetShaderParameter("aperture", 0.535f * Ease(time, 0.25f, 0.80f));
+            var fade = 1 - Smooth(time, 2.18f, Duration);
+            var framer = _camera.Frame(time);
+            _camera.Apply(framer);
+            RenderOpening(time, framer);
+
+            var aperture = Smooth(time, 0.43f, 0.97f);
+            var seam = Smooth(time, 0.30f, 0.47f) * (1 - Smooth(time, 0.80f, 1.00f));
+            var release = Smooth(time, ShatterTime, 2.15f);
+            var snap = Mathf.Sin(release * Mathf.Pi);
+            var compression = Smooth(time, 1.50f, 1.92f);
+            var portraitArrival = Smooth(time, 0.59f, 1.28f);
+            var portraitToMirror = Smooth(time, 1.47f, 1.98f);
+            var cameraAim = new Vector2(950, 508).Lerp(CrimsonMirrorPortrait.Face.Lerp(CrimsonMirrorPortrait.ExpectedPalm, 0.40f), portraitArrival)
+                .Lerp(MirrorCenter - new Vector2(38, 38), portraitToMirror);
+            var cameraZoom = 1f + (0.17f * portraitArrival + 0.09f * portraitToMirror) * fade;
+            var screenCenter = new Vector2(960, 515);
+            var aim = screenCenter.Lerp(cameraAim, portraitArrival * fade);
+            var kickPhase = Mathf.Clamp((time - ShatterTime) / 0.23f, 0, 1);
+            var kick = Mathf.Sin(kickPhase * Mathf.Tau) * (1 - kickPhase) * (1 - kickPhase);
+            _shot.Scale = Vector2.One * cameraZoom;
+            _shot.Position = screenCenter - aim * cameraZoom + new Vector2(-24, 13) * kick;
+            _shade.Color = new Color(0.016f, 0.010f, 0.041f,
+                Mathf.Lerp(0.32f, 0.67f, aperture) * Smooth(time, 0, 0.39f) * fade);
+            _drape.SetShaderParameter("aperture", 0.548f * aperture);
             _drape.SetShaderParameter("curtain", seam);
             _drape.SetShaderParameter("fade", fade);
             _drape.SetShaderParameter("elapsed", time);
-            _drape.SetShaderParameter("impact", flare);
-            _drape.SetShaderParameter("contraction", Ease(time, 1.19f, 1.565f) * (1 - release));
-            // An impulse moves only the staged artwork. The game's camera and HUD are untouched.
-            _shot.Position = new Vector2(8, -4) * flare;
-            var contraction = Ease(time, 1.19f, 1.565f);
-            var eclipse = 0.79f * contraction * (1 - Ease(time, 1.68f, 1.98f));
-            _eclipse.SetShaderParameter("eclipse", eclipse);
-            _moon.Modulate = Colors.White with { A = Ease(time, 0.55f, 0.89f) * fade };
-            _moon.Position = new Vector2(960, 338 - 24 * dissolve + 5 * Mathf.Sin(time * 1.6f));
+            _drape.SetShaderParameter("impact", snap);
+            _drape.SetShaderParameter("contraction", compression * (1 - release));
+            _drape.SetShaderParameter("parallax", (aim - screenCenter) / Design * -0.29f);
+            _drape.SetShaderParameter("depth_zoom", Mathf.Lerp(1f, cameraZoom, 0.34f));
+            var palm = _portrait.Render(time, fade, compression, snap, ShatterTime, aim.X - screenCenter.X);
+
             _mirror.Visible = time < ShatterTime;
-            var reveal = Ease(time, 0.58f, 0.92f);
-            _mirror.Modulate = Colors.White with { A = reveal };
+            var reveal = Smooth(time, 0.73f, 1.15f);
+            _mirror.Modulate = Colors.White with { A = reveal * fade };
             _soul.Modulate = Colors.White with { A = reveal * (1 - release) * fade };
-            _soul.Position = MirrorCenter + new Vector2(0, Mathf.Sin(time * 6f) * 9 * (1 - contraction));
-            _soul.Scale = Vector2.One * FitSprite(_soul.Texture, 217, 307) * Mathf.Lerp(1, 0.08f, contraction);
-            _spiritInk.SetShaderParameter("fracture", contraction);
-            _wingCracks.Modulate = Colors.White with { A = flare * 0.84f };
-            _eyeGlow.Modulate = Colors.White with { A = Ease(time, 0.15f, 0.23f) * (1 - Ease(time, 0.25f, 0.41f)) };
+            _soul.Position = MirrorCenter + new Vector2(0, Mathf.Sin(time * 6f) * 10 * (1 - compression));
+            _soul.Scale = Vector2.One * FitSprite(_soul.Texture, 216, 305) * Mathf.Lerp(1, 0.065f, compression);
+            _spiritInk.SetShaderParameter("fracture", compression);
+            _wingCracks.Modulate = Colors.White with { A = (0.31f * compression * (1 - release) + snap * 0.82f) * fade };
+            _wingCracks.Scale = Vector2.One * Mathf.Lerp(1.43f, 1f, compression);
             _cracks.Visible = time < ShatterTime;
-            _cracks.Modulate = Colors.White with { A = Ease(time, 1.30f, 1.58f) };
-            _cracks.Scale = Vector2.One * Mathf.Lerp(0.15f, 1f, contraction);
+            _cracks.Modulate = Colors.White with { A = Smooth(time, 1.43f, 1.91f) };
+            _cracks.Scale = Vector2.One * Mathf.Lerp(0.2f, 1f, compression);
             var pose = time switch
             {
-                < 0.25f => 0,
-                < 0.80f => 1,
-                < 1.22f => 2,
+                < 0.5f => 0,
+                < 1.03f => 1,
+                < 1.53f => 2,
                 < ShatterTime => 3,
-                < 1.86f => 4,
+                < 2.18f => 4,
                 _ => 5
             };
             if (_witch.Texture != _poses[pose])
             {
                 _witch.Texture = _poses[pose];
             }
-            _witch.Modulate = Colors.White.Lerp(new Color("ffd3dd"), flare * 0.68f) with
-                { A = Mathf.Max(0.12f * seam, Ease(time, 0.41f, 0.61f)) * fade };
-            var thread = Ease(time, 0.70f, 0.95f) * (1 - Ease(time, 1.55f, 1.71f));
+            _witch.Modulate = new Color(0.70f, 0.64f, 0.81f, 0.79f * aperture * fade);
+            var thread = Smooth(time, 0.98f, 1.28f) * (1 - Smooth(time, 1.91f, 2.08f));
+            _sigil.Position = palm;
             _sigil.Modulate = Colors.White with { A = thread };
-            _sigil.Rotation = time * -0.72f;
-            _sigil.Scale = Vector2.One * Mathf.Lerp(1.06f, 0.42f, contraction);
-            _filaments.Modulate = Colors.White with { A = thread * (1 - contraction * 0.44f) };
-            _filaments.Scale = new Vector2(1f, 1f - contraction * 0.45f);
-            _filaments.Position = MirrorCenter + new Vector2(0, (Palm.Y - MirrorCenter.Y) * contraction * 0.45f);
-            _spark.Modulate = Colors.White with { A = Mathf.Max(flare * 0.75f, contraction * 0.55f * (1 - release)) };
-            _spark.Scale = Vector2.One * Mathf.Lerp(0.13f, 1.4f, release);
+            _sigil.Rotation = time * -0.86f;
+            _sigil.Scale = Vector2.One * Mathf.Lerp(1.42f, 0.60f, compression);
+            for (var i = 0; i < _filaments.Length; i++)
+            {
+                var bend = (i - 1) * 35 * (1 - 0.68f * compression);
+                Bend(_filaments[i], palm, MirrorCenter + new Vector2(-29, (i - 1) * 30 * (1 - compression)),
+                    bend, thread, time);
+            }
+            RenderEmbers(palm, time, aperture * fade, compression);
+            _spark.Modulate = Colors.White with { A = Mathf.Max(snap * 0.81f, compression * 0.64f * (1 - release)) };
+            _spark.Scale = Vector2.One * Mathf.Lerp(0.14f, 1.48f, release);
             if (time >= ShatterTime && !_impactPlayed)
             {
                 _impactPlayed = true;
                 _shatter.Play();
             }
 
-            var burst = Ease(time, ShatterTime, 2.29f);
+            var burst = 1 - Mathf.Pow(1 - Mathf.Clamp((time - ShatterTime) / (Duration - ShatterTime), 0, 1), 2.6f);
             foreach (var shard in _shards)
             {
                 shard.Node.Visible = _impactPlayed;
-                shard.Node.Position = shard.From + shard.Travel * burst + new Vector2(0, 66 * burst * burst);
+                shard.Node.Position = shard.From + shard.Travel * (1.35f * burst) + new Vector2(0, 83 * burst * burst);
                 shard.Node.Rotation = burst * shard.Spin;
-                shard.Node.Modulate = Colors.White with { A = fade * (1 - 0.30f * burst) };
+                shard.Node.Modulate = Colors.White with { A = fade * (1 - 0.31f * burst) };
+            }
+        }
+
+        private void RenderOpening(float time, Framing camera)
+        {
+            _opening.Visible = time < 0.95f;
+            if (!_opening.Visible)
+            {
+                return;
+            }
+
+            var layout = _layout.Size;
+            var foe = _target?.GetCenter() ?? camera.Focus;
+            var focus = camera.Project(foe) * layout;
+            var envelope = Smooth(time, 0.04f, 0.36f) * (1 - Smooth(time, 0.46f, 0.76f));
+            var size = Mathf.Clamp((_target?.Size.Y ?? 0.24f) / 0.24f, 0.63f, 1.35f);
+            _enemyCracks.Position = focus;
+            _enemyCracks.Scale = Vector2.One * (layout.Y / Design.Y) * size * Mathf.Lerp(0.63f, 1.25f, envelope);
+            _enemyCracks.Modulate = Colors.White with { A = envelope * 0.67f };
+            var stillVisible = GodotObject.IsInstanceValid(_corpse) && _corpse!.IsVisibleInTree();
+            _enemyEcho.Position = focus;
+            _enemyEcho.Scale = Vector2.One * (layout.Y / Design.Y) * size * 0.63f * camera.Zoom;
+            _enemyEcho.Modulate = new Color("a098c3") with { A = stillVisible ? 0.05f * envelope : 0.40f * envelope };
+            var follow = Smooth(time, 0.35f, 0.87f);
+            Bend(_turnRibbon, focus, camera.Project(camera.Focus) * layout,
+                -layout.Y * (0.02f + 0.059f * follow),
+                Smooth(time, 0.37f, 0.58f) * (1 - Smooth(time, 0.71f, 0.94f)), time);
+        }
+
+        private Polygon2D[] MakeEmbers()
+        {
+            var embers = new Polygon2D[15];
+            for (var i = 0; i < embers.Length; i++)
+            {
+                var radius = 1.3f + (i % 4) * 0.53f;
+                var ember = new Polygon2D
+                {
+                    Color = new Color(i % 3 == 0 ? "f6becb" : "f55578"),
+                    Polygon = [new(-radius, 0), new(0, -radius * 1.6f), new(radius, 0), new(0, radius * 1.6f)]
+                };
+                _shot.AddChild(ember);
+                embers[i] = ember;
+            }
+            return embers;
+        }
+
+        private void RenderEmbers(Vector2 palm, float time, float opacity, float compression)
+        {
+            for (var i = 0; i < _embers.Length; i++)
+            {
+                var travel = Mathf.PosMod(time * (0.26f + i % 3 * 0.049f) + i * 0.203f, 1);
+                var curve = Mathf.Sin(travel * Mathf.Pi);
+                var start = i % 3 == 0 ? palm : new Vector2(i % 2 == 0 ? 410 : 1580, 613 - i * 11);
+                var end = MirrorCenter + new Vector2((i - 7) * 9, (i % 4) * 24) * (1 - compression);
+                _embers[i].Position = start.Lerp(end, travel) + new Vector2(0, -(44 + i * 4) * curve);
+                _embers[i].Modulate = Colors.White with { A = curve * opacity * (0.28f + compression * 0.39f) };
             }
         }
 
@@ -314,10 +470,10 @@ internal static class CrimsonFinalMirror
             return sprite;
         }
 
-        private Node2D MakeCracks()
+        private static Node2D MakeCracks(Node parent, Vector2 origin)
         {
-            var node = new Node2D { Position = MirrorCenter };
-            _shot.AddChild(node);
+            var node = new Node2D { Position = origin };
+            parent.AddChild(node);
             Stroke(node, new Color("eb547a"), 2.2f, new(-155, -97), new(-76, -59), new(-55, -13),
                 Vector2.Zero, new(23, 64), new(76, 71), new(116, 149));
             Stroke(node, new Color("ffb5d6"), 1.5f, new(-97, 160), new(-72, 58), new(-14, 24),
@@ -347,7 +503,7 @@ internal static class CrimsonFinalMirror
 
         private Node2D MakeSigil()
         {
-            var ring = new Node2D { Position = Palm };
+            var ring = new Node2D { ZIndex = 2 };
             _shot.AddChild(ring);
             var ink = new Color("ee6a90");
             var points = Enumerable.Range(0, 33).Select(i => Vector2.FromAngle(Mathf.Tau * i / 32) * 19).ToArray();
@@ -361,23 +517,27 @@ internal static class CrimsonFinalMirror
             return ring;
         }
 
-        private Node2D MakeFilaments()
+        private static Line2D MakeThread(Node parent, Color ink, float width)
         {
-            var threads = new Node2D { Position = MirrorCenter };
-            _shot.AddChild(threads);
-            for (var strand = -1; strand <= 1; strand++)
+            var line = new Line2D { DefaultColor = ink, Width = width, Antialiased = true, Points = new Vector2[15] };
+            parent.AddChild(line);
+            return line;
+        }
+
+        private static void Bend(Line2D line, Vector2 start, Vector2 end, float bow, float alpha, float time)
+        {
+            line.Visible = alpha > 0.004f;
+            if (!line.Visible)
             {
-                var offset = strand * 27;
-                var start = Palm - MirrorCenter;
-                var line = Enumerable.Range(0, 17).Select(i =>
-                {
-                    var t = i / 16f;
-                    return start.Lerp(new Vector2(-26, offset * 1.3f), t)
-                        + new Vector2(0, Mathf.Sin(t * Mathf.Pi) * (28 + offset));
-                }).ToArray();
-                Stroke(threads, new Color(1f, 0.4f, 0.58f, strand == 0 ? 0.8f : 0.38f), 1.4f, line);
+                return;
             }
-            return threads;
+            line.Modulate = Colors.White with { A = alpha };
+            for (var i = 0; i < 15; i++)
+            {
+                var t = i / 14f;
+                var curve = Mathf.Sin(t * Mathf.Pi);
+                line.SetPointPosition(i, start.Lerp(end, t) + new Vector2(0, curve * (bow + 5f * Mathf.Sin(t * 9 - time * 11))));
+            }
         }
 
         private Shard[] MakeShards()
@@ -439,9 +599,6 @@ internal static class CrimsonFinalMirror
                 VolumeDb = volume + Mathf.LinearToDb(Mathf.Max(0.0001f, settings.VolumeMaster * settings.VolumeSfx))
             };
         }
-
-        private static float Ease(float time, float start, float end) =>
-            Mathf.SmoothStep(0, 1, Mathf.Clamp((time - start) / (end - start), 0, 1));
 
         private static float FitSprite(Texture2D texture, float width, float height) =>
             Mathf.Min(width / texture.GetWidth(), height / texture.GetHeight());

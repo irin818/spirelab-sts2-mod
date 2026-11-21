@@ -68,6 +68,8 @@ git switch -c codex/your-task
 
 ## 隔离实机与自动化验证
 
+双击项目根目录的 `启动魔女本地测试.command` 可编译并进入独立的手动游戏。它复用本地测试副本和专用存档。详见 [血色终镜 V2 与手动启动器](docs/art/crimson-final-mirror-v2.md)。
+
 关闭现有的隔离测试实例后，在仓库根目录执行。
 
 ```sh

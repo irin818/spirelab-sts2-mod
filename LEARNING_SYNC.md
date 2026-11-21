@@ -109,3 +109,10 @@
 - 建议读三处。[胜利钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs#L317)展示玩法与视觉的先后顺序。[演出时间轴](SpireLab/SpireLabCode/Witch/Mechanics/CrimsonFinalMirror.cs#L228)由一个时间值计算揭幕、坍缩、碎片和余韵，碎镜的顶点与 UV 来自同一张纹理。[实机测试](tests/SpireLab.Smoke/WitchFinisherSmoke.cs)通过真实出牌和伤害指令触发胜利，测试绘图和奖励完成状态。
 - 实机验证普通攻击、反伤、AOE、多段攻击、毒伤、Boss、战败、连续战斗、缩放、中断清理与奖励。截图采集时先保留帧，退出演出再编码 PNG；帧时间以关闭截图的战斗为准。运行命令为 `./scripts/smoke-macos.sh witch-finisher`，日志与截图保留在本机 `.local/witch-finisher-smoke.*/`。
 - 六个角色关键姿态目前是对齐的合层图。后续可细化手指、发束和衣袖的次级运动，并扩大实际敌人轮廓覆盖面。联网多人、回放与 Windows 尚未上机验证。
+
+## 2026-11-22 · 血色终镜 V2 与手动测试入口
+
+- `CrimsonMirrorCamera.cs` 使用真实受击框的归一化坐标、五次缓动与临时镜头变换。原版 `NCombatRoom.SceneContainer`、`BgContainer` 和 `NCombatUi` 的层级通过目标程序集和实机确认。镜界自己的 `StageShot` 接管中后段，并利用材质采样与特写层做视差。
+- `CrimsonMirrorPortrait.cs` 管理上半身画面、前后发束、红眼、透视和四个手势。最值得读的是 `Lens.Apply／Restore` 的坐标变换、`Render` 的六段节奏，以及 `Observe` 里对真实游戏镜头、握拳和恢复的断言。真实伤害、死亡、奖励和存档仍由原版负责。
+- 首轮带截图时出现冷渲染尖峰并越过镜头探针窗口。纹理仍沿用原版预载，新增首场发牌前的小画布材质预热。实机从首播和重复播放记录帧时间，并用左右槽位与 Boss 检查不同受击位置。
+- 根目录 `启动魔女本地测试.command` 调用 `scripts/play-witch-local-macos.sh`。Finder 双击启动真实游戏主菜单，验证 App 副本文件编号和测试用户目录复用。运行时日志与归档截图保留在 `.local/`，详细操作与限制见 [V2 分镜](docs/art/crimson-final-mirror-v2.md)。

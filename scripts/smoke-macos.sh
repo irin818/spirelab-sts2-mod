@@ -63,8 +63,10 @@ config/custom_user_dir_name="$test_profile"
 EOF_CONFIG
 profile="$HOME/Library/Application Support/$test_profile/default/1"
 mkdir -p "$profile"
-cat > "$profile/settings.save" <<'EOF_SETTINGS'
-{"language":"eng","seen_ea_disclaimer":true,"mod_settings":{"mods_enabled":true}}
+limit_background=true
+if [[ "$character" == witch-finisher ]]; then limit_background=false; fi
+cat > "$profile/settings.save" <<EOF_SETTINGS
+{"language":"eng","seen_ea_disclaimer":true,"limit_fps_in_background":$limit_background,"mod_settings":{"mods_enabled":true}}
 EOF_SETTINGS
 if [[ "$character" == witch-legacy-save ]]; then
     mkdir -p "$profile/modded/profile1/saves"
