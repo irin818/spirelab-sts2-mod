@@ -95,4 +95,4 @@
 - 修改欲望牌、反射结算、双语说明、能量小图标和开场选牌。开场网格只显示卡牌定义，按钮确认后才创建一张战斗牌。筛选沿用原版可见行渲染，费用、体系和类型可以组合。
 - [战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 使用原版 `DamageResult.BlockedDamage` 做单次反射；加算比例和固定量的先后次序影响取整。[真实生命](SpireLab/SpireLabCode/Witch/Mechanics/WitchLife.cs) 区分伤害和直接支付，胜利清算只读取当前回合的实际支出。
 - [实机断言](tests/SpireLab.TestLab/LabVerification.cs) 展示纯函数测试和集成测试的差别。用原版命令发出三段伤害，读取敌人实际掉血以核对 4、4、2。先审查本机程序集，再用高生命测试敌人消除回归夹具中提前击杀带来的干扰。
-- Release 构建与资源扫描通过，129 项实验室、116 项机制、40 项界面、双进程保存与恢复通过。最初界面测试命中过载入诊断 `Invalid Task ID`，隔离重跑通过。Steam 订阅文件的三项 SHA-256 仍与备份一致。命令、反射实测矩阵和复现边界见 [Witch Test Lab](docs/TEST_LAB.md)。
+- Release 构建与资源扫描通过，130 项实验室、116 项机制、40 项界面、双进程保存与恢复通过。实验室内的脚本木桩通过原版敌方回合再次复现了三段反射。最初界面测试命中过载入诊断 `Invalid Task ID`，隔离重跑通过。Steam 订阅文件的三项 SHA-256 仍与备份一致。命令、反射实测矩阵和复现边界见 [Witch Test Lab](docs/TEST_LAB.md)。

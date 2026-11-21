@@ -110,7 +110,7 @@ pack() {
         [[ -s "$artifact_dir/SpireLab.$extension" ]] || fail "Missing package file SpireLab.$extension"
     done
     local scan_status=0
-    LC_ALL=C grep -aE 'SpireLab\.TestLab|DebugTrace|LabEndTurnHit|witch-test-lab' "$artifact_dir"/SpireLab.{dll,json,pck} >/dev/null || scan_status=$?
+    LC_ALL=C grep -aE 'SpireLab\.TestLab|DebugTrace|LabEndTurnHit|LabDummy|witch-test-lab' "$artifact_dir"/SpireLab.{dll,json,pck} >/dev/null || scan_status=$?
     [[ "$scan_status" == 1 ]] || fail "Release package scan failed or found Test Lab code or paths."
     printf 'Release package excludes the Witch Test Lab.\n'
 }

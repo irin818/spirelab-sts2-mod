@@ -108,7 +108,14 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
         var run = await NGame.Instance!.StartNewSingleplayerRun(_witch, false, ActModel.GetDefaultList(), [], _seed, GameMode.Standard);
         _player = run.Players.Single();
         using var selector = scenario == "arcane-insight" ? null : CardSelectCmd.PushSelector(new InitialChoice());
-        await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: _encounter.ToMutable(), showTransition: false);
+        var encounter = _encounter.ToMutable();
+        if (encounter is LabDummyEncounter scripted)
+        {
+            scripted.Dummies = (int)_dummyCount.Value;
+            scripted.Hits = ParseHits();
+            scripted.NonAttack = _nonAttack.ButtonPressed;
+        }
+        await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounter, showTransition: false);
         await Wait(() => _player.PlayerCombatState?.Phase == PlayerTurnPhase.Play);
         await CreatureCmd.SetCurrentHp(Witch, scenario is "early-game" or "arcane-insight" ? 68 : scenario is "mirror-hp" or "desire-sloth" ? 20 : 34);
         if (scenario is "mirror-basic" or "mirror-stacking" or "mirror-multihit" or "mirror-hp")
@@ -228,7 +235,7 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
     private sealed record SavedFight(string Scenario, string Encounter, string Seed, int Real, int Max, int Mirror,
         int Energy, int Block, SavedCard[] Cards, string[] Relics, string[] Potions, SavedPower[] Powers,
         Dictionary<string, int> States, string Hits, int[] EnemyHealth, bool NonAttack, int EnemySlot,
-        int[] DeferredReflections, int[] ManaPumps);
+        int[] DeferredReflections, int[] ManaPumps, int DummyCount);
 
     private async Task Save()
     {
@@ -240,7 +247,8 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
             Witch.Powers.Where(power => power is not WitchVisiblePower).Select(power => new SavedPower(power.Id.Entry, power.Amount)).ToArray(),
             Statuses.ToDictionary(status => status.Name, status => status.Read(State)),
             _hits.Text, Witch.CombatState!.HittableEnemies.Select(enemy => enemy.CurrentHp).ToArray(),
-            _nonAttack.ButtonPressed, (int)_enemySlot.Value, State.DeferredReflections.ToArray(), State.ManaPumpDurations.ToArray());
+            _nonAttack.ButtonPressed, (int)_enemySlot.Value, State.DeferredReflections.ToArray(), State.ManaPumpDurations.ToArray(),
+            (int)_dummyCount.Value);
         var temporary = _snapshotPath + ".tmp";
         await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
         File.Move(temporary, _snapshotPath, overwrite: true);
@@ -251,6 +259,9 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
     {
         var data = JsonSerializer.Deserialize<SavedFight>(await File.ReadAllTextAsync(_snapshotPath))!;
         _encounter = _encounters.Single(encounter => encounter.Id.Entry == data.Encounter);
+        _hits.Text = data.Hits;
+        _nonAttack.ButtonPressed = data.NonAttack;
+        _dummyCount.Value = data.DummyCount;
         await Start("early-game", data.Seed);
         _scenario = data.Scenario;
         _scenarioSelect.Select(Array.IndexOf(Scenarios, _scenario));
@@ -274,8 +285,6 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
         State.DeferredReflections.AddRange(data.DeferredReflections);
         State.ManaPumpDurations.Clear();
         State.ManaPumpDurations.AddRange(data.ManaPumps);
-        _hits.Text = data.Hits;
-        _nonAttack.ButtonPressed = data.NonAttack;
         _enemySlot.Value = data.EnemySlot;
         foreach (var (enemy, health) in Witch.CombatState!.HittableEnemies.Zip(data.EnemyHealth))
         {

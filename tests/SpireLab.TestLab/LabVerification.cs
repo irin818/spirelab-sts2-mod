@@ -207,6 +207,24 @@ internal sealed partial class Lab
         await Wait(() => !CombatManager.Instance.IsInProgress);
         Check(Witch.CurrentHp == 0, "defeat grants no refund");
 
+        _encounter = ModelDb.Encounter<LabDummyEncounter>();
+        _hits.Text = "4,4,4";
+        _nonAttack.ButtonPressed = false;
+        await Start("mirror-basic");
+        var scripted = Witch.CombatState!.HittableEnemies.Single();
+        var scriptedHp = scripted.CurrentHp;
+        var nextTurn = Combat.TurnNumber;
+        var traceAtStart = _records.Count;
+        using (CardSelectCmd.PushSelector(new InitialChoice()))
+        {
+            PlayerCmd.EndTurn(_player, canBackOut: false);
+            await Wait(() => Combat.TurnNumber > nextTurn && Combat.Phase == PlayerTurnPhase.Play);
+        }
+        var results = _records.Skip(traceAtStart).Where(line => line.StartsWith("反射 · ", StringComparison.Ordinal))
+            .Select(line => int.Parse(line.Split(" · 最终 ")[1])).ToArray();
+        Check(scriptedHp - scripted.CurrentHp == 10 && results.SequenceEqual([4, 4, 2]),
+            "scripted dummy executes 4/4/4 in the native enemy turn, reflections 4/4/2");
+
         await File.WriteAllLinesAsync(Path.Combine(_root, "combat-events.log"), _records);
         GD.Print("[WitchTestLab] PASS");
         tree.Quit();

@@ -48,6 +48,7 @@ internal sealed partial class Lab
     private TextEdit _log = null!;
     private LineEdit _hits = null!;
     private SpinBox _enemySlot = null!;
+    private SpinBox _dummyCount = null!;
     private CheckBox _nonAttack = null!;
     private OptionButton _scenarioSelect = null!;
     private OptionButton _encounterSelect = null!;
@@ -61,7 +62,7 @@ internal sealed partial class Lab
         _potions = _witch.PotionPool.AllPotions.ToArray();
         _nativePowers = ModelDb.AllPowers.Where(power => power is not WitchVisiblePower).OrderBy(power => power.Id.Entry).ToArray();
         _encounters = ModelDb.AllEncounters.Where(encounter => encounter.RoomType == MegaCrit.Sts2.Core.Rooms.RoomType.Monster)
-            .Append(_encounter).Distinct().OrderBy(encounter => encounter.Id.Entry).ToArray();
+            .Append(_encounter).Append(ModelDb.Encounter<LabDummyEncounter>()).Distinct().OrderBy(encounter => encounter.Id.Entry).ToArray();
 
         var layer = new CanvasLayer { Layer = 40 };
         tree.Root.AddChild(layer);
@@ -164,7 +165,7 @@ internal sealed partial class Lab
         Label(right, "战斗与场景");
         _scenarioSelect = Menu(right, Scenarios);
         _scenarioSelect.Select(Array.IndexOf(Scenarios, _scenario));
-        _encounterSelect = Menu(right, _encounters.Select(encounter => encounter.Id.Entry));
+        _encounterSelect = Menu(right, _encounters.Select(encounter => encounter is LabDummyEncounter ? "脚本木桩（仅实验室）" : encounter.Id.Entry));
         _encounterSelect.Select(Array.IndexOf(_encounters, _encounter));
         Button(right, "启动场景 / 重新开始", () => Action(() =>
         {
@@ -234,10 +235,10 @@ internal sealed partial class Lab
         right.AddChild(_hits);
         _nonAttack = new CheckBox { Text = "非攻击伤害（绕过格挡）" };
         right.AddChild(_nonAttack);
+        _dummyCount = Number(right, "木桩数量（重开时生效）", 1, 1, 3);
         Button(right, "由指定敌人执行伤害序列", () => Action(async () =>
         {
-            var hits = _hits.Text.Split([',', '，'], StringSplitOptions.RemoveEmptyEntries)
-                .Select(text => Math.Clamp(int.Parse(text), 0, 9999)).Take(30).ToArray();
+            var hits = ParseHits();
             var enemy = SelectedEnemy();
             foreach (var hit in hits)
             {
@@ -262,6 +263,9 @@ internal sealed partial class Lab
             Report($"日志已导出 · {path}");
         });
     }
+
+    private int[] ParseHits() => _hits.Text.Split([',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(text => Math.Clamp(int.Parse(text), 0, 9999)).Take(30).ToArray();
 
     private Creature SelectedEnemy()
     {
