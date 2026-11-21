@@ -122,6 +122,9 @@ internal static class WitchContentSmoke
         var enemy = creature.CombatState!.HittableEnemies.First();
         var state = WitchCombatState.For(player);
         var piles = player.PlayerCombatState!;
+        // The same foe is needed later for several independent reflection and damage checks.
+        await CreatureCmd.SetMaxHp(enemy, 100);
+        await CreatureCmd.SetCurrentHp(enemy, 100);
         await CreatureCmd.SetCurrentHp(creature, 30);
         await Play<ReflectiveInscription>(player, choice, upgrade: true);
         await Play<MirrorBurial>(player, choice);
@@ -130,10 +133,10 @@ internal static class WitchContentSmoke
         var enemyHp = enemy.CurrentHp;
         await CreatureCmd.Damage(choice, creature, 7, ValueProp.Move, enemy);
         await CreatureCmd.Damage(choice, creature, 7, ValueProp.Move, enemy);
-        Check(enemy.CurrentHp == enemyHp - 13 && creature.Block == 0 && creature.CurrentHp == 30
+        Check(enemy.CurrentHp == enemyHp - 21 && creature.Block == 0 && creature.CurrentHp == 30
             && state.NextSkillDiscount == 1 && state.NextSkillWard == 3
             && creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<InscribedSkillPower>()?.Amount == 1,
-            "two hits reflect per-hit 50%, consume Burial once and schedule the upgraded Inscription");
+            "two hits reflect per-hit 100%, consume Burial once and schedule the upgraded Inscription");
         await Play<SplitFace>(player, choice);
         await CreatureCmd.Damage(choice, creature, 6, ValueProp.Move, enemy);
         Check(enemy.GetPower<WeakPower>()?.Amount == 1 && creature.GetPower<SplitFacePower>() == null,
@@ -153,7 +156,7 @@ internal static class WitchContentSmoke
         state.BlockGains = 0;
         await CreatureCmd.LoseBlock(choice, creature, creature.Block, null);
         await Play<EmptyMirror>(player, choice);
-        Check(creature.Block == 13, "Empty Mirror and Hall combine then round 13.5 down");
+        Check(creature.Block == 13, $"Empty Mirror and Hall combine then round 13.5 down (actual {creature.Block})");
 
         await RelicCmd.Obtain<CrackedPhial>(player);
         await RelicCmd.Obtain<ObsidianDistiller>(player);
@@ -235,8 +238,8 @@ internal static class WitchContentSmoke
         Check(sloth.TryManualPlay(null), "Sloth enters the native action queue as first play");
         await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play, "Sloth ends turn through game queue");
         Check(creature.CurrentHp == 33 && WitchCombatState.For(player).RetainedCards.Contains(keptBySloth)
-            && creature.GetPower<WitchImmunityPower>() == null,
-            "low-health first-card Sloth both retains the chosen card and negates the next attack");
+            && creature.GetPower<SlothImmunityPower>() == null,
+            "low-health first-card Sloth both retains a card and clears its full immunity at the next turn");
 
         await Play<ForbiddenFrontispiece>(player, choice);
         await Play<BloodstainedBookmark>(player, choice);

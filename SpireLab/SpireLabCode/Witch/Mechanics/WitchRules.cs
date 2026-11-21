@@ -21,6 +21,9 @@ public static class WitchRules
     public static decimal FlatReductionFactor(decimal amount, int reduction) =>
         amount > reduction ? decimal.Round((amount - reduction) / amount, 20, MidpointRounding.ToPositiveInfinity) : 0;
 
-    public static int Reflect(int blocked, int percent, decimal multiplier = 1) =>
-        (int)Math.Floor((decimal)blocked * percent / 100 * multiplier);
+    public static int Reflect(int blocked, int totalPercent, int fixedDamage = 0) =>
+        blocked <= 0 ? 0 : (int)Math.Min(int.MaxValue, (long)blocked * totalPercent / 100 + fixedDamage);
+
+    public static int RefundLife(int realHp, int maxHp, int paid) =>
+        (int)Math.Min((long)realHp + paid, maxHp);
 }

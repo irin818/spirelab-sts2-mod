@@ -30,7 +30,7 @@ public sealed class ThinMirror() : WitchCard("B03", 1, CardType.Skill, CardRarit
 {
     public CardModel GetTranscendenceTransformedCard() => ModelDb.Card<BeyondTheGlass>();
     public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(7), new DynamicVar("Reflection", 2)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(9), new DynamicVar("Reflection", 5)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
@@ -41,7 +41,7 @@ public sealed class ThinMirror() : WitchCard("B03", 1, CardType.Skill, CardRarit
     protected override void OnUpgrade()
     {
         DynamicVars.Block.UpgradeValueBy(3);
-        DynamicVars["Reflection"].UpgradeValueBy(1);
+        DynamicVars["Reflection"].UpgradeValueBy(2);
     }
 }
 

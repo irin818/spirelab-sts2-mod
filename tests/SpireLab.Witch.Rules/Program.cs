@@ -14,8 +14,19 @@ Expect(WitchRules.Invert(70, 70) == (1, 0), "full HP does not invert to zero");
 Expect(WitchRules.Invert(35, 70) == (35, 0), "midpoint is fixed");
 Expect(WitchRules.MirrorCapacity(68, 68) == 0 && WitchRules.MirrorCapacity(20, 68) == 48, "effective HP cap");
 Expect(!WitchRules.IsBelowHalf(34, 68) && WitchRules.IsBelowHalf(33, 68) && WitchRules.IsBelowHalf(34, 69), "strict half boundary");
-Expect(WitchRules.Reflect(1, 50) == 0 && WitchRules.Reflect(7, 50) == 3
-    && WitchRules.Reflect(7, 50, 1.5m) == 5, "reflection rounds down after source modifiers");
+foreach (var (block, percent, fixedDamage, expected) in new[]
+{
+    (6, 100, 0, 6), (10, 100, 0, 10), (4, 100, 0, 4), (2, 100, 0, 2),
+    (6, 150, 0, 9), (6, 200, 0, 12), (6, 300, 0, 18),
+    (3, 250, 5, 12), (0, 300, 5, 0), (1, 150, 7, 8)
+})
+{
+    var actual = WitchRules.Reflect(block, percent, fixedDamage);
+    Expect(actual == expected, $"reflection expected {expected}, got {actual}");
+    Console.WriteLine($"Block {block}, {percent}%, fixed {fixedDamage}: expected {expected}, actual {actual}, PASS");
+}
+Expect(WitchRules.RefundLife(63, 68, 10) == 68 && WitchRules.RefundLife(22, 68, 10) == 32,
+    "victory refund caps at max HP and preserves unrelated damage");
 Expect(decimal.Truncate(9 * WitchRules.FlatReductionFactor(9, 6)) == 3, "flat reduction survives engine truncation");
 Expect(!WitchRules.CanPayLife(1, 1) && !WitchRules.CanPayLife(4, 0)
     && WitchRules.CanPayLife(2, 1), "payment requires a positive cost and leaves at least one HP");

@@ -1,6 +1,6 @@
 # 魔女视觉设定与资源
 
-适用于 SpireLab v1.1.0。角色外观以[用户确认的原始参考](reference/user-visual-reference.png)为准，制作时统一引用[角色母版](source/character-bible.png)。参考图里的文字和卡牌数字仅用于理解视觉布局。卡名、卡牌费用、牌池、五张欲望牌、事件和战斗规则来自 [GDD V1.0](../../../SpireLab_The_Witch_GDD_v1.0.md) 及其双语实现。
+适用于 SpireLab v1.1.0。角色外观以[用户确认的原始参考](reference/user-visual-reference.png)为准，制作时统一引用[角色母版](source/character-bible.png)。参考图里的文字和卡牌数字仅用于理解视觉布局。卡名、卡牌费用、牌池、五张欲望牌、事件和战斗规则来自 [GDD V1.0](../../archive/SpireLab_The_Witch_GDD_v1.0.md) 及其双语实现。
 
 ## 角色设定
 

@@ -1,5 +1,13 @@
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Multiplayer;
+using MegaCrit.Sts2.Core.GameActions;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
+using MegaCrit.Sts2.Core.Runs;
+using SpireLab.SpireLabCode.Witch.UI;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -23,34 +31,60 @@ internal static class Enlightenment
         state.OpeningChoiceResolved = true;
         var rewards = player.Character.CardPool.AllCards.OfType<WitchCard>()
             .Where(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare)
-            .OrderBy(card => card.SpecId, StringComparer.Ordinal).Select(card => combat.CreateCard(card, player)).ToArray();
-        var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_OPENING_CHOICE"), 1)
+            .OrderBy(card => card.SpecId, StringComparer.Ordinal).Cast<CardModel>().ToArray();
+        var model = await PickOpeningModel(choice, player, rewards);
+        if (model == null || CombatManager.Instance.IsOverOrEnding)
         {
-            RequireManualConfirmation = true
-        };
+            return;
+        }
+
+        // The grid previews canonical definitions. Only the confirmed model enters combat.
+        var selected = combat.CreateCard(model, player);
+        var added = await CardPileCmd.Add(selected, PileType.Draw, CardPilePosition.Random, skipVisuals: true);
+        if (added.success && selected.Pile?.Type == PileType.Draw)
+        {
+            state.OpeningCard = selected;
+            WitchFeedback.Enlighten(player.Creature);
+        }
+        else if (selected.Pile == null && !selected.HasBeenRemovedFromState)
+        {
+            selected.RemoveFromState();
+        }
+    }
+
+    private static async Task<CardModel?> PickOpeningModel(PlayerChoiceContext choice, Player player, CardModel[] rewards)
+    {
+        if (CardSelectCmd.Selector != null || CardSelectCmd.LocalSelector != null)
+        {
+            var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_OPENING_CHOICE"), 1)
+            {
+                RequireManualConfirmation = true
+            };
+            return (await CardSelectCmd.FromSimpleGrid(choice, rewards, player, prefs)).SingleOrDefault();
+        }
+
+        // Follow CardSelectCmd.FromSimpleGrid's synchronized index protocol. Filtering is local display only.
+        var sync = RunManager.Instance.PlayerChoiceSynchronizer;
+        var choiceId = sync.ReserveChoiceId(player);
+        await choice.SignalPlayerChoiceBegun(player, PlayerChoiceOptions.None);
         try
         {
-            var selected = (await CardSelectCmd.FromSimpleGrid(choice, rewards, player, prefs)).SingleOrDefault();
-            if (selected == null || CombatManager.Instance.IsOverOrEnding)
+            if (!LocalContext.IsMe(player) || RunManager.Instance.NetService.Type == NetGameType.Replay)
             {
-                return;
+                var indexes = (await sync.WaitForRemoteChoice(player, choiceId)).AsIndexes();
+                return indexes.Select(index => rewards[index]).SingleOrDefault();
             }
 
-            // A uniform slot in the already shuffled deck includes this card in the initial permutation.
-            var added = await CardPileCmd.Add(selected, PileType.Draw, CardPilePosition.Random, skipVisuals: true);
-            if (added.success && selected.Pile?.Type == PileType.Draw)
-            {
-                state.OpeningCard = selected;
-                WitchFeedback.Enlighten(player.Creature);
-            }
+            NPlayerHand.Instance?.CancelAllCardPlay();
+            var screen = WitchFateScreen.Create(rewards, player);
+            (NOverlayStack.Instance ?? throw new InvalidOperationException("Missing Fate overlay stack.")).Push(screen);
+            var model = (await screen.CardsSelected()).Single();
+            sync.SyncLocalChoice(player, choiceId, PlayerChoiceResult.FromIndexes([Array.IndexOf(rewards, model)]));
+            return model;
         }
         finally
         {
-            // The grid needs an owner on each display instance. Unchosen cards never enter a pile.
-            foreach (var candidate in rewards.Where(card => card.Pile == null && !card.HasBeenRemovedFromState))
-            {
-                candidate.RemoveFromState();
-            }
+            await choice.SignalPlayerChoiceEnded();
         }
     }
 

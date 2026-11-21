@@ -291,15 +291,19 @@ public sealed class Afterimage() : WitchCard("U17", 1, CardType.Skill, CardRarit
 public sealed class MirrorMaze() : WitchCard("U18", 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
 {
     public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(10)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(10), new DynamicVar("Reflection", 100)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Block(play);
-        State.ReflectMultiplier *= 1.5m;
+        State.MazeReflectPercent += Number("Reflection");
     }
 
-    protected override void OnUpgrade() => DynamicVars.Block.UpgradeValueBy(4);
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Block.UpgradeValueBy(4);
+        DynamicVars["Reflection"].UpgradeValueBy(50);
+    }
 }
 
 // U19

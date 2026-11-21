@@ -60,7 +60,7 @@ public sealed class WitchCardPool : CustomCardPoolModel
 {
     public override string Title => "TheWitch";
     public override string BigEnergyIconPath => $"{TheWitch.Art}/witch_energy.svg";
-    public override string TextEnergyIconPath => BigEnergyIconPath;
+    public override string TextEnergyIconPath => $"{TheWitch.Art}/witch_energy_inline.svg";
     public override Color DeckEntryCardColor => TheWitch.Crimson;
     public override float H => 0.975f;
     public override float S => 0.76f;
@@ -76,12 +76,12 @@ public sealed class WitchRelicPool : CustomRelicPoolModel
 {
     public override Color LabOutlineColor => TheWitch.Crimson;
     public override string BigEnergyIconPath => $"{TheWitch.Art}/witch_energy.svg";
-    public override string TextEnergyIconPath => BigEnergyIconPath;
+    public override string TextEnergyIconPath => $"{TheWitch.Art}/witch_energy_inline.svg";
 }
 
 public sealed class WitchPotionPool : CustomPotionPoolModel
 {
     public override Color LabOutlineColor => TheWitch.Crimson;
     public override string BigEnergyIconPath => $"{TheWitch.Art}/witch_energy.svg";
-    public override string TextEnergyIconPath => BigEnergyIconPath;
+    public override string TextEnergyIconPath => $"{TheWitch.Art}/witch_energy_inline.svg";
 }

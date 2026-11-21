@@ -118,7 +118,8 @@ def load_manifest():
             raise ValueError(f"invalid or duplicate asset or target: {asset}")
         if (row["crop_mode"] not in CROPS or row["alpha_required"] not in {"true", "false"}
                 or int(row["required_width"]) <= 0 or int(row["required_height"]) <= 0
-                or not row["game_object_id"] or not row["license"] or not row["status"]):
+                or not row["game_object_id"] or not row["license"] or not row["current_status"]
+                or not row["quality_status"] or not row["source_information"]):
             raise ValueError(f"invalid mapping: {asset}")
         if row["fallback_path"]:
             inside(GAME_ART, ROOT / row["fallback_path"])
