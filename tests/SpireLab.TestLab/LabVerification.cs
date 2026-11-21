@@ -1,5 +1,6 @@
 using BaseLib.Abstracts;
 using Godot;
+using MegaCrit.Sts2.Core.AutoSlay.Helpers;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -8,9 +9,16 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch.Cards;
 using SpireLab.SpireLabCode.Witch.Mechanics;
+using SpireLab.SpireLabCode.Witch.UI;
 
 namespace SpireLab.TestLab;
 
@@ -30,6 +38,35 @@ public sealed class LabEndTurnHit() : CustomSingletonModel(HookType.Combat)
 
 internal sealed partial class Lab
 {
+    private void VerifyStartupInputGuard()
+    {
+        var button = NGame.Instance!.MainMenu!.GetNode<NButton>("MainMenuTextButtons/SingleplayerButton");
+        var position = button.GetGlobalTransformWithCanvas() * (button.Size / 2);
+        var released = false;
+        var observe = Callable.From<NButton>(_ => released = true);
+        button.Connect(NClickableControl.SignalName.Released, observe);
+        using var click = new InputEventMouseButton
+        {
+            ButtonIndex = MouseButton.Left,
+            Position = position,
+            GlobalPosition = position,
+            Pressed = true
+        };
+        try
+        {
+            tree.Root.PushInput(click, inLocalCoords: true);
+            click.Pressed = false;
+            tree.Root.PushInput(click, inLocalCoords: true);
+        }
+        finally
+        {
+            button.Disconnect(NClickableControl.SignalName.Released, observe);
+        }
+        if (!tree.Root.GuiDisableInput || released)
+            throw new InvalidOperationException($"Native Singleplayer input was available during Lab startup (button released: {released}).");
+        GD.Print("[WitchTestLab] PASS native Singleplayer input is blocked while preparing the Lab");
+    }
+
     private async Task Verify()
     {
         void Check(bool passed, string description)
@@ -38,6 +75,7 @@ internal sealed partial class Lab
             Report($"PASS {description}");
         }
 
+        Check(!tree.Root.GuiDisableInput, "initial Lab combat restores window input");
         Check(_cards.Length == 91 && _relics.Length == 9 && _potions.Length == 3, "91 registered cards, 9 relics, 3 potions");
         var native = (CombatState)Witch.CombatState!;
         foreach (var definition in _cards)
@@ -224,6 +262,23 @@ internal sealed partial class Lab
             .Select(line => int.Parse(line.Split(" · 最终 ")[1])).ToArray();
         Check(scriptedHp - scripted.CurrentHp == 10 && results.SequenceEqual([4, 4, 2]),
             "scripted dummy executes 4/4/4 in the native enemy turn, reflections 4/4/2");
+
+        _encounter = ModelDb.Encounter<NibbitsWeak>();
+        var manual = Start("arcane-insight");
+        await Wait(() => manual.IsFaulted || (!tree.Root.GuiDisableInput && NOverlayStack.Instance?.Peek() is WitchFateScreen));
+        if (manual.IsFaulted) await manual;
+        var picker = (WitchFateScreen)NOverlayStack.Instance!.Peek()!;
+        var grid = picker.GetNode<NCardGrid>("%CardGrid");
+        await Wait(() => grid.CurrentlyDisplayedCardHolders.Any());
+        var selected = grid.CurrentlyDisplayedCardHolders.First();
+        var selectedId = selected.CardModel.Id;
+        grid.EmitSignal(NCardGrid.SignalName.HolderPressed, selected);
+        await UiHelper.Click(picker.GetNode<NConfirmButton>("%Confirm"));
+        await Wait(() => NPlayerHand.Instance?.IsInCardSelection == true);
+        await UiHelper.Click(NPlayerHand.Instance!.GetNode<NConfirmButton>("%SelectModeConfirmButton"));
+        await manual;
+        Check(!tree.Root.GuiDisableInput && State.OpeningCard?.Id == selectedId,
+            "Lab restart restores input for manual Arcane Insight and enters combat");
 
         await File.WriteAllLinesAsync(Path.Combine(_root, "combat-events.log"), _records);
         GD.Print("[WitchTestLab] PASS");

@@ -114,3 +114,8 @@
 - [实机脚本](scripts/smoke-macos.sh) 与 [实验室脚本](scripts/witch-test-macos.sh) 将整套编译中间产物放在单次会话目录。两场并行实机编译原会争用共享的 `obj` 文件，隔离后重新构建并运行成功。
 - 在 `v0.111.1` 上通过 116 项战斗、40 项界面、130 项实验室、8 项发布防混包检查，以及新档跨进程与 V1.0 旧档恢复。种子 `WITCH10051` 在 AutoSlay 辅助下打完三幕并返回主菜单。首次个别引擎预载报错的项目按原严格规则单独复跑，保留原始失败日志。
 - 复核本地工坊 ZIP，下载内容恰有三件正式 Mod 文件，实验室会话仍被拒绝。Steam 已订阅文件校验值一致。
+
+## 2026-11-21 · 实验室启动输入修复
+
+- 两次用户启动日志显示实验室正在自动开局时，原版选角也调用了 `RunManager.SetUpNewSingleplayer`，随后弹出 `State is already set` 的反馈窗口。[加载遮罩](tests/SpireLab.TestLab/LabLoadingOverlay.cs) 在启动和重开期间锁住测试窗口输入，在战斗就绪或命运选牌开放时恢复。[Godot 窗口输入属性](https://docs.godotengine.org/en/4.5/classes/class_viewport.html#class-viewport-property-gui-disable-input)
+- 实机回归向原版单人按钮注入点击，旧实现会触发按钮，修复后事件被拦截。随后验证战斗操作恢复和魔法启迪手动选牌。133 项实验室断言通过。

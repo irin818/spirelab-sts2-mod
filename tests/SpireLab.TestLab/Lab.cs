@@ -15,6 +15,7 @@ using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
@@ -23,6 +24,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch;
 using SpireLab.SpireLabCode.Witch.Cards;
 using SpireLab.SpireLabCode.Witch.Mechanics;
+using SpireLab.SpireLabCode.Witch.UI;
 
 namespace SpireLab.TestLab;
 
@@ -83,9 +85,12 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
 
     public async Task Run(string scenario)
     {
+        // The game displays its main menu before the deferred startup preload finishes.
+        using var loading = new LabLoadingOverlay(tree.Root);
         await NGame.Instance!.GameStartupComplete;
         var assets = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet).Where(path => ResourceLoader.Exists(path)).Distinct().ToArray();
         await Wait(() => PreloadManager.Cache.GetLoadedCacheAssets().IsSupersetOf(assets));
+        if (_verify) VerifyStartupInputGuard();
         SaveManager.Instance.SetFtuesEnabled(false);
         GD.Print($"[WitchTestLab] ISOLATED {OS.GetUserDataDir()}");
         DrawControls();
@@ -93,13 +98,14 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
         CombatManager.Instance.CombatWon += _ => Report($"胜利 · 真实生命 {Witch.CurrentHp}/{Witch.MaxHp}");
         CombatManager.Instance.TurnEnded += state => Report($"第 {state.RoundNumber} 轮 · {state.CurrentSide} 回合结束");
         WitchCombatState.DebugTrace += Report;
-        await Start(scenario == "mirror-reflect" ? "mirror-basic" : scenario);
+        await Start(scenario == "mirror-reflect" ? "mirror-basic" : scenario, startupOverlay: loading);
         if (_verify)
             await Verify();
     }
 
-    private async Task Start(string scenario, string? seed = null)
+    private async Task Start(string scenario, string? seed = null, LabLoadingOverlay? startupOverlay = null)
     {
+        using var loading = startupOverlay ?? new LabLoadingOverlay(tree.Root);
         _scenario = scenario;
         _scenarioSelect.Select(Array.IndexOf(Scenarios, scenario));
         _seed = seed ?? "WITCHLAB";
@@ -107,7 +113,8 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
             await NGame.Instance!.ReturnToMainMenuAfterRun();
         var run = await NGame.Instance!.StartNewSingleplayerRun(_witch, false, ActModel.GetDefaultList(), [], _seed, GameMode.Standard);
         _player = run.Players.Single();
-        using var selector = scenario == "arcane-insight" ? null : CardSelectCmd.PushSelector(new InitialChoice());
+        var manualOpening = scenario == "arcane-insight";
+        using var selector = manualOpening ? null : CardSelectCmd.PushSelector(new InitialChoice());
         var encounter = _encounter.ToMutable();
         if (encounter is LabDummyEncounter scripted)
         {
@@ -115,7 +122,14 @@ internal sealed partial class Lab(SceneTree tree, string root, bool verify)
             scripted.Hits = ParseHits();
             scripted.NonAttack = _nonAttack.ButtonPressed;
         }
-        await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounter, showTransition: false);
+        var entering = RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: encounter, showTransition: false);
+        if (manualOpening)
+        {
+            // Let the player use the native picker even if the first turn is still waiting on their choice.
+            await Wait(() => entering.IsCompleted || NOverlayStack.Instance?.Peek() is WitchFateScreen);
+            loading.Dispose();
+        }
+        await entering;
         await Wait(() => _player.PlayerCombatState?.Phase == PlayerTurnPhase.Play);
         await CreatureCmd.SetCurrentHp(Witch, scenario is "early-game" or "arcane-insight" ? 68 : scenario is "mirror-hp" or "desire-sloth" ? 20 : 34);
         if (scenario is "mirror-basic" or "mirror-stacking" or "mirror-multihit" or "mirror-hp")
