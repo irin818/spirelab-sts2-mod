@@ -29,6 +29,8 @@
 
 在测试窗口退出，或在启动该实例的终端按 Ctrl+C。若要回收空间，退出后可以把终端打印的单次 `session.*` 目录及同后缀测试档案移到废纸篓；保留想复用的 `last-scenario.json`。正式发布包由 `pack` 在项目构建目录生成，并检查 DLL、PCK、manifest 中的实验室入口和调试符号。
 
+实验室扩展是单独的 Debug 程序集，正式 Mod 的实验室追踪接口也只在专用 Debug 构建中编译。Steam 发布步骤会拒绝实验室会话，并要求工作区中的三个 Mod 文件与正式构建逐字节一致。[创意工坊发布校验](workshop/README.md)
+
 ## V1.6.2 结算与前期观察
 
 - 参考本机游戏 `v0.111.1` 的 `CreatureCmd.Damage`、`CombatManager.EndCombatInternal`、`CardSelectCmd.FromSimpleGrid` 及 BaseLib 3.4.8 的 `CustomEnergyIconPatches`。反射用每段原版 `DamageResult.BlockedDamage`，所有有效比例合并取整后加固定伤害。迷宫每次打出加 100%（升级 150%），下个玩家回合开始一起清除。镜花水月继续用单独的免疫反击。

@@ -43,7 +43,7 @@ done
 mkdir -p "$mods"/{BaseLib,SpireLab,SpireLab.TestLab}
 cp .local/baselib/BaseLib{.dll,.pck,.json,CompatibilityHelper.dll,CompatibilityHelper.json} "$mods/BaseLib/"
 {
-    dotnet build "$cache/SpireLab.csproj" -c Debug -p:ModOutputDir="$lab/output"
+    dotnet build "$cache/SpireLab.csproj" -c Debug -p:WitchTestLab=true -p:ModOutputDir="$lab/output"
     "$godot" --headless --editor --path "$cache" --import
     "$godot" --headless --path "$cache" --export-pack BasicExport "$lab/output/SpireLab.pck"
     dotnet build tests/SpireLab.TestLab/SpireLab.TestLab.csproj -c Debug -o "$lab/launcher" -p:SpireLabTestAssembly="$lab/output/SpireLab.dll"

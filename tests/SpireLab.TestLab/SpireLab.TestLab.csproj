@@ -12,4 +12,7 @@
         <Reference Include="BaseLib" HintPath="../../.local/baselib/BaseLib.dll" Private="false" />
         <Reference Include="SpireLab" HintPath="$(SpireLabTestAssembly)" Private="false" />
     </ItemGroup>
+    <Target Name="CheckTestLabConfiguration" BeforeTargets="PrepareForBuild">
+        <Error Condition="'$(Configuration)' != 'Debug'" Text="Witch Test Lab cannot be built as Release." />
+    </Target>
 </Project>

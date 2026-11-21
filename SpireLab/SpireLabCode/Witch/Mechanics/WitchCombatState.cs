@@ -6,7 +6,7 @@ namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 internal sealed class WitchCombatState
 {
-#if DEBUG
+#if SPIRELAB_TEST_LAB
     internal static event Action<string>? DebugTrace;
     internal static void Trace(string message) => DebugTrace?.Invoke(message);
 #endif
