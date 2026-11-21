@@ -4,7 +4,7 @@
 
 ## 正式包校验
 
-从仓库根目录运行 `./scripts/dev-macos.sh pack` 生成带正式标记的 `ExportRelease` 包，再用该包跑隔离实机检查。将这次实机的 `mods` 目录和截图目录传给 `./scripts/stage-witch-release.sh`。它会逐文件核对实测产物，拒绝实验室会话与非正式包。工坊 `content/` 只允许 `SpireLab.dll`、`SpireLab.pck` 和 `SpireLab.json`，三件文件须与本地正式构建完全一致。
+从仓库根目录运行 `./scripts/dev-macos.sh pack` 生成带正式标记的 `ExportRelease` 包，再用该包跑隔离实机检查。将这次实机的 `mods` 目录和截图目录传给 `./scripts/stage-witch-release.sh`。它会逐文件核对实测产物，拒绝非正式包。工坊 `content/` 只允许 `SpireLab.dll`、`SpireLab.pck` 和 `SpireLab.json`，三件文件须与本地正式构建完全一致。
 
 实际上传前须复跑校验，直接上传已有工作区和仅提交 `SetItemContent` 的路径都用同一条命令。校验失败时停止上传。
 

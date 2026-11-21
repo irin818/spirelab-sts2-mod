@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / "SpireLab/bin/mods/ExportRelease/SpireLab"
 FILES = {"SpireLab.dll", "SpireLab.pck", "SpireLab.json"}
+# Reject retired development builds that may still exist outside the current checkout.
 TEST_LAB_MARKERS = re.compile(
     rb"SpireLab[._-]?TestLab|DebugTrace|LabEndTurnHit|LabDummy|WITCH_LAB_SCRIPT|witch-test-lab|/testlab/",
     re.IGNORECASE,

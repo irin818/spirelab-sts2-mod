@@ -19,18 +19,9 @@
         <ModOutputDir Condition="'$(ModOutputDir)' == ''">$(MSBuildProjectDirectory)/bin/mods/$(Configuration)/$(AssemblyName)</ModOutputDir>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(WitchTestLab)' == 'true'">
-        <DefineConstants>$(DefineConstants);SPIRELAB_TEST_LAB</DefineConstants>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(Configuration)' == 'ExportRelease'">
         <AssemblyMetadata Include="SpireLab.PackageKind" Value="WorkshopRelease" />
     </ItemGroup>
-
-    <Target Name="CheckTestLabConfiguration" BeforeTargets="PrepareForBuild">
-        <Error Condition="'$(WitchTestLab)' == 'true' and '$(Configuration)' != 'Debug'"
-               Text="Witch Test Lab requires a separate Debug build." />
-    </Target>
 
     <ItemGroup Condition="Exists('$(Sts2DataDir)')" >
         <Reference Include="sts2">

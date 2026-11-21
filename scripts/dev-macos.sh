@@ -109,10 +109,6 @@ pack() {
 
 case "${1:-}" in
     setup) setup ;;
-    witch-test)
-        shift
-        exec "$root/scripts/witch-test-macos.sh" "$@"
-        ;;
     art-sync)
         shift
         python3 "$root/scripts/sync-art.py" "$@"
@@ -141,5 +137,5 @@ case "${1:-}" in
                 ;;
         esac
         ;;
-    *) fail "Usage: $0 {setup|check|build|pack|art-sync|witch-test|ilspy|code|editor}" ;;
+    *) fail "Usage: $0 {setup|check|build|pack|art-sync|ilspy|code|editor}" ;;
 esac
