@@ -6,6 +6,11 @@ namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 internal sealed class WitchCombatState
 {
+#if DEBUG
+    internal static event Action<string>? DebugTrace;
+    internal static void Trace(string message) => DebugTrace?.Invoke(message);
+#endif
+
     private static readonly ConditionalWeakTable<PlayerCombatState, WitchCombatState> States = new();
 
     public static WitchCombatState? Find(Player? player) =>
@@ -61,7 +66,9 @@ internal sealed class WitchCombatState
     public int NextSkillWard { get; set; }
     public int SkillDiscount { get; set; }
     public int SkillWard { get; set; }
-    public decimal ReflectMultiplier { get; set; } = 1;
+    public int MazeReflectPercent { get; set; }
+    public bool SlothImmunity { get; set; }
+    public int GamblePaidThisTurn { get; set; }
     public int ShadowDraw { get; set; }
     public int BlockReduction { get; set; }
     public int BlockBeforeAttack { get; set; }
@@ -128,7 +135,8 @@ internal sealed class WitchCombatState
         SkillWard = NextSkillWard;
         NextSkillDiscount = 0;
         NextSkillWard = 0;
-        ReflectMultiplier = 1;
+        MazeReflectPercent = 0;
+        SlothImmunity = false;
         ActiveAttackBonus = 0;
         ResolvingCard = false;
         EnergyTriggered = false;

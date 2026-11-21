@@ -196,3 +196,4 @@ VFX_RESERVE,vfx,WITCH_FEEDBACK,source/vfx/reserve.svg,SpireLab/SpireLab/images/w
 UI_WITCH_ICON,ui,SPIRELAB-THE_WITCH,source/ui/witch_icon.svg,SpireLab/SpireLab/images/witch/witch_icon.svg,128,128,svg,false,SpireLab project assets,,shipped,existing,Existing SpireLab art
 UI_WITCH_ENERGY,ui,SPIRELAB-THE_WITCH,source/ui/witch_energy.svg,SpireLab/SpireLab/images/witch/witch_energy.svg,96,96,svg,false,SpireLab project assets,,shipped,existing,Existing SpireLab art
 UI_WITCH_METER,ui,SPIRELAB-THE_WITCH,source/ui/witch_meter.svg,SpireLab/SpireLab/images/witch/witch_meter.svg,128,128,svg,false,SpireLab project assets,,shipped,existing,Existing SpireLab art
+UI_WITCH_ENERGY_INLINE,ui,SPIRELAB-THE_WITCH,source/ui/witch_energy_inline.svg,SpireLab/SpireLab/images/witch/witch_energy_inline.svg,28,28,svg,false,SpireLab project assets,,shipped,existing,Existing SpireLab art

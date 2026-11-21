@@ -89,3 +89,10 @@
 - [战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 在能量和格挡结算及起手抽牌后刷新状态。下一次可操作窗口看到的是本回合真实数值。原生状态持续由结算状态驱动。
 - 工程通过 116 项机制回归、33 项界面测试、新旧档恢复和一次三幕整局 AutoSlay。记录了战败种子与后续通关种子的区别。能力图导入测试覆盖 64 与 256 两种输出，以及透明度错误时的拒绝路径。[集成验收](docs/witch-v1.6-integration.md)
 - Steam 作者会话单独确认原条目已设为 Private，再更新三件运行文件。下载后逐字节比对，并在独立游戏副本中复跑 34 项界面和状态检查。预载诊断的失败记录保留，最终严格复测通过。
+
+## 2026-11-21 · V1.6.2 平衡与测试实验室
+
+- 修改欲望牌、反射结算、双语说明、能量小图标和开场选牌。开场网格只显示卡牌定义，按钮确认后才创建一张战斗牌。筛选沿用原版可见行渲染，费用、体系和类型可以组合。
+- [战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 使用原版 `DamageResult.BlockedDamage` 做单次反射；加算比例和固定量的先后次序影响取整。[真实生命](SpireLab/SpireLabCode/Witch/Mechanics/WitchLife.cs) 区分伤害和直接支付，胜利清算只读取当前回合的实际支出。
+- [实机断言](tests/SpireLab.TestLab/LabVerification.cs) 展示纯函数测试和集成测试的差别。用原版命令发出三段伤害，读取敌人实际掉血以核对 4、4、2。先审查本机程序集，再用高生命测试敌人消除回归夹具中提前击杀带来的干扰。
+- Release 构建与资源扫描通过，129 项实验室、116 项机制、40 项界面、双进程保存与恢复通过。最初界面测试命中过载入诊断 `Invalid Task ID`，隔离重跑通过。Steam 订阅文件的三项 SHA-256 仍与备份一致。命令、反射实测矩阵和复现边界见 [Witch Test Lab](docs/TEST_LAB.md)。

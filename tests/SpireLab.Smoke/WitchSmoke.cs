@@ -150,11 +150,11 @@ internal static class WitchSmoke
             var hit = (await CreatureCmd.Damage(choice, creature, 12, ValueProp.Move, enemy)).Single();
             effects.ChildEnteredTree -= DetectBlockFlash;
             Check(blockFlash, "blocking an attack shows the Witch block flash");
-            Check(hit.BlockedDamage == 7 && creature.CurrentHp == 20 && state.MirrorHp == 23 && enemy.CurrentHp == foe - 5,
-                "7 Block absorbs attack, 5 mirror HP absorbs overflow, 3+2 reflection");
+            Check(hit.BlockedDamage == 9 && creature.CurrentHp == 20 && state.MirrorHp == 25 && enemy.CurrentHp == foe - 14,
+                "9 Block absorbs attack, 3 mirror HP absorbs overflow, 9+5 reflection");
             var poisonLike = (await CreatureCmd.Damage(choice, creature, 4, ValueProp.Unblockable | ValueProp.Unpowered,
                 dealer: null, cardSource: null, cardPlay: null)).Single();
-            Check(poisonLike.BlockedDamage == 0 && creature.CurrentHp == 20 && state.MirrorHp == 19,
+            Check(poisonLike.BlockedDamage == 0 && creature.CurrentHp == 20 && state.MirrorHp == 21,
                 "unblockable status damage still consumes mirror HP without counting as Block");
             await CreatureCmd.Heal(creature, 100);
             Check(creature.CurrentHp + state.MirrorHp == 68, "healing and mirror HP obey effective cap");
@@ -216,7 +216,7 @@ internal static class WitchSmoke
             await reward.GenerateWithoutOffering();
             Check(reward.Rewards.OfType<CardReward>().Single().Cards.All(card => card.Pool == witch.CardPool), "Witch rewards belong to her pool");
             var restored = RunState.FromSerializable(RunManager.Instance.ToSave(null)).Players.Single();
-            Check(restored.Character.Id == witch.Id && restored.Creature.CurrentHp == 1 && restored.Deck.Cards.Count == 10, "save carries real HP and permanent deck only");
+            Check(restored.Character.Id == witch.Id && restored.Creature.CurrentHp == 11 && restored.Deck.Cards.Count == 10 && state.GamblePaidThisTurn == 0, "victory refunds all four payments before saving real HP and the permanent deck");
 
             await CreatureCmd.SetCurrentHp(creature, 68);
             await LeaveCompletedCombat(tree);
