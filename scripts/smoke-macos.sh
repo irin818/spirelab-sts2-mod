@@ -10,7 +10,8 @@ case "${1:-witch}" in
     witch-legacy-save) character=witch-legacy-save; smoke_flag=--witch-resume-probe ;;
     witch-campaign) character=witch-campaign; smoke_flag=--witch-campaign; quit_after=200000 ;;
     witch-art) character=witch-art; smoke_flag=--witch-art ;;
-    *) printf 'Usage: %s [witch|witch-save|witch-legacy-save|witch-campaign|witch-art]\n' "$0" >&2; exit 2 ;;
+    witch-finisher) character=witch-finisher; smoke_flag=--witch-finisher ;;
+    *) printf 'Usage: %s [witch|witch-save|witch-legacy-save|witch-campaign|witch-art|witch-finisher]\n' "$0" >&2; exit 2 ;;
 esac
 if [[ "$character" == witch-legacy-save && ! -f "${SPIRELAB_WITCH_LEGACY_SAVE:-}" ]]; then
     printf 'Set SPIRELAB_WITCH_LEGACY_SAVE to a Witch v1.0 save probe fixture.\n' >&2
@@ -71,13 +72,18 @@ if [[ "$character" == witch-legacy-save ]]; then
 fi
 
 render_args=(--headless)
-if [[ "$character" == witch-art || "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
+if [[ "$character" == witch-art || "$character" == witch-finisher || "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
     render_args=(--windowed --resolution "${SPIRELAB_SMOKE_RESOLUTION:-1200x675}")
 fi
 if [[ "$character" == witch-art ]]; then
     export SPIRELAB_WITCH_ART_SCREENSHOTS="$test_dir/captures"
     mkdir -p "$SPIRELAB_WITCH_ART_SCREENSHOTS"
     printf 'Screenshots: %s\n' "$SPIRELAB_WITCH_ART_SCREENSHOTS"
+fi
+if [[ "$character" == witch-finisher ]]; then
+    export SPIRELAB_WITCH_FINISHER_CAPTURES="$test_dir/captures"
+    mkdir -p "$SPIRELAB_WITCH_FINISHER_CAPTURES"
+    printf 'Finisher screenshots: %s\n' "$SPIRELAB_WITCH_FINISHER_CAPTURES"
 fi
 log="$test_dir/game.log"
 printf 'Smoke test log: %s\n' "$log"

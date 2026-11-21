@@ -314,6 +314,14 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             ? CreatureCmd.LoseBlock(new BlockingPlayerChoiceContext(), creature, creature.Block - state.RetainedBlockCap, null)
             : Task.CompletedTask;
 
+    public override Task BeforeDeath(Creature creature)
+    {
+        CrimsonFinalMirror.RememberDefeat(creature);
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCombatVictory(CombatRoom room) => CrimsonFinalMirror.Play(room);
+
     public override async Task AfterCombatEnd(CombatRoom room)
     {
         foreach (var player in room.CombatState.Players)

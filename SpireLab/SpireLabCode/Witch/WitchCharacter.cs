@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Characters;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Unlocks;
 using SpireLab.SpireLabCode.Witch.Cards;
+using SpireLab.SpireLabCode.Witch.Mechanics;
 
 namespace SpireLab.SpireLabCode.Witch;
 
@@ -20,6 +21,7 @@ public sealed class TheWitch : PlaceholderCharacterModel
     public override CharacterGender Gender => CharacterGender.Feminine;
     public override int StartingHp => 68;
     public override float DeathAnimTime => 0.5f;
+    protected override IEnumerable<string> ExtraAssetPaths => base.ExtraAssetPaths.Concat(CrimsonFinalMirror.Assets);
 
     public override IEnumerable<CardModel> StartingDeck =>
     [

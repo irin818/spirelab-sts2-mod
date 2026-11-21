@@ -101,3 +101,11 @@
 
 - 移除实验室启动入口、专用项目和正式代码中的调试追踪。卡牌、资源和版本清单保持原样，保留现有自动化回归及正式发布校验。
 - 重新构建 V1.6.2，116 项战斗、40 项界面、8 项发布校验及 500 条狂赌生命路径通过。界面首轮遇到引擎预载诊断，复跑通过。Steam 订阅文件校验值一致。
+
+## 2026-11-22 · 血色终镜 V1
+
+- 在 `WitchCombatHooks.cs` 接入本机 STS2 `v0.111.1` 的 `BeforeDeath` 和 `AfterCombatVictory`，并通过 `TheWitch.ExtraAssetPaths` 提前加载 `finisher/` 的美术、Shader 与音效。`CrimsonFinalMirror.cs` 实现 2.4 秒演出，详细分镜和素材来源见 [镜月剧场笔记](docs/art/crimson-final-mirror.md)。
+- 在反编译的 `CombatManager.EndCombatInternal` 中确认 `AfterCombatEnd` 先于胜利演出和存档。《狂赌之渊》在原位置返还真实生命。房间退出时结束演出任务并销毁局部画布。多人和回放跳过本地动画等待。
+- 建议读三处。[胜利钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs#L317)展示玩法与视觉的先后顺序。[演出时间轴](SpireLab/SpireLabCode/Witch/Mechanics/CrimsonFinalMirror.cs#L228)由一个时间值计算揭幕、坍缩、碎片和余韵，碎镜的顶点与 UV 来自同一张纹理。[实机测试](tests/SpireLab.Smoke/WitchFinisherSmoke.cs)通过真实出牌和伤害指令触发胜利，测试绘图和奖励完成状态。
+- 实机验证普通攻击、反伤、AOE、多段攻击、毒伤、Boss、战败、连续战斗、缩放、中断清理与奖励。截图采集时先保留帧，退出演出再编码 PNG；帧时间以关闭截图的战斗为准。运行命令为 `./scripts/smoke-macos.sh witch-finisher`，日志与截图保留在本机 `.local/witch-finisher-smoke.*/`。
+- 六个角色关键姿态目前是对齐的合层图。后续可细化手指、发束和衣袖的次级运动，并扩大实际敌人轮廓覆盖面。联网多人、回放与 Windows 尚未上机验证。
