@@ -46,7 +46,8 @@ cp .local/baselib/BaseLib{.dll,.pck,.json,CompatibilityHelper.dll,CompatibilityH
     dotnet build "$cache/SpireLab.csproj" -c Debug -p:WitchTestLab=true -p:ModOutputDir="$lab/output"
     "$godot" --headless --editor --path "$cache" --import
     "$godot" --headless --path "$cache" --export-pack BasicExport "$lab/output/SpireLab.pck"
-    dotnet build tests/SpireLab.TestLab/SpireLab.TestLab.csproj -c Debug -o "$lab/launcher" -p:SpireLabTestAssembly="$lab/output/SpireLab.dll"
+    dotnet build tests/SpireLab.TestLab/SpireLab.TestLab.csproj -c Debug \
+        --artifacts-path "$lab/launcher-artifacts" -o "$lab/launcher" -p:SpireLabTestAssembly="$lab/output/SpireLab.dll"
 } > "$lab/build.log" 2>&1 || { tail -45 "$lab/build.log" >&2; exit 1; }
 cp "$lab/output"/SpireLab{.dll,.pck,.json} "$mods/SpireLab/"
 cp "$lab/launcher/SpireLab.TestLab.dll" tests/SpireLab.TestLab/SpireLab.TestLab.json "$mods/SpireLab.TestLab/"

@@ -51,7 +51,8 @@ mkdir -p "$mods/BaseLib" "$mods/SpireLab" "$mods/SpireLabSmoke"
 baselib_payload="${SPIRELAB_SMOKE_BASELIB_SOURCE:-$root/.local/baselib}"
 cp "$baselib_payload"/BaseLib{.dll,.pck,.json,CompatibilityHelper.dll,CompatibilityHelper.json} "$mods/BaseLib/"
 cp "$payload"/SpireLab{.dll,.pck,.json} "$mods/SpireLab/"
-dotnet build tests/SpireLab.Smoke/SpireLab.Smoke.csproj -o "$test_dir/smoke-build"
+dotnet build tests/SpireLab.Smoke/SpireLab.Smoke.csproj \
+    --artifacts-path "$test_dir/smoke-artifacts" -o "$test_dir/smoke-build"
 cp "$test_dir/smoke-build/SpireLab.Smoke.dll" tests/SpireLab.Smoke/SpireLab.Smoke.json "$mods/SpireLabSmoke/"
 
 cat > "$bin/override.cfg" <<EOF_CONFIG
