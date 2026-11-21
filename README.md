@@ -1,6 +1,6 @@
 # SpireLab
 
-《杀戮尖塔 2》C# 原创角色 Mod。魔女拥有命运选牌、战斗牌交换、91 种卡牌、9 件遗物和 3 种药水。当前开发版本为 `v1.6.2`，Steam 创意工坊仍使用此前的 `v1.6.0`。
+《杀戮尖塔 2》C# 原创角色 Mod。魔女拥有命运选牌、战斗牌交换、91 种卡牌、9 件遗物和 3 种药水。当前版本为 `v1.6.2`，已更新原有 Steam 创意工坊私密条目。[工坊版本记录](docs/workshop/release-notes.md)
 
 - [魔女 V1.6 规格书](SpireLab_The_Witch_GDD_v1.6.md)
 - [魔女 V1.6 实机验证](docs/witch-v1.6-validation.md)
