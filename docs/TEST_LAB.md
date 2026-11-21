@@ -1,15 +1,18 @@
 # Witch Test Lab · V1.6.2
 
-在 Apple Silicon Mac 上，从仓库根目录执行。依赖安装与版本见 [README](../README.md)。
+在 Apple Silicon Mac 的 Finder 中，双击仓库根目录的 [启动魔女测试实验室.command](../启动魔女测试实验室.command)。它会显示当前工程的 Mod 版本，重新构建 Debug 包和实验室面板，启动隔离游戏副本并直接进入测试战斗。依赖安装与版本见 [README](../README.md)。
+
+启动器使用本机已安装的游戏作为副本来源。副本只加载本次构建的 Mod、实验室和 BaseLib，关闭 Steam 集成。每次双击都读取当前工作区，未提交的本地改动也会进入测试版。
+
+终端中也可以指定预设或运行回归检查。
 
 ```sh
-./scripts/dev-macos.sh witch-test
-./scripts/dev-macos.sh witch-test --check
-./scripts/dev-macos.sh witch-test --scenario mirror-reflect
-./scripts/dev-macos.sh witch-test --verify
+./启动魔女测试实验室.command --check
+./启动魔女测试实验室.command --scenario mirror-reflect
+./启动魔女测试实验室.command --verify
 ```
 
-启动会重新构建 Debug Mod 与测试面板，导入资源，然后打开独立的游戏副本。`--check` 只准备并检查副本。`--verify` 在实际游戏里执行回归断言，保存截图和日志，结束后关闭测试窗口。
+`--check` 只准备并检查副本。`--verify` 在实际游戏里执行回归断言，保存截图和日志，结束后关闭测试窗口。
 
 ## 使用
 

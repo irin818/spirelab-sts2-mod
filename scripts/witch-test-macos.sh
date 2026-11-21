@@ -32,6 +32,8 @@ cache="$lab/project"
 mods="$lab/SlayTheSpire2.app/Contents/MacOS/mods"
 mkdir -p "$cache" "$lab/output"
 rsync -a --exclude=.godot --exclude=bin --exclude=obj SpireLab/ "$cache/"
+mod_version="$(plutil -extract version raw -o - "$cache/SpireLab.json")"
+printf '正在从当前工程构建魔女 %s Debug 版并准备独立游戏副本。\n' "$mod_version"
 cp -cR "$game/SlayTheSpire2.app" "$lab/"
 bin="$lab/SlayTheSpire2.app/Contents/MacOS"
 # Only move paths in the fresh clone. Do not leave symlinked loaders in the sandbox.

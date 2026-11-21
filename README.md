@@ -69,7 +69,7 @@ git switch -c codex/your-task
 
 ## 隔离实机与自动化验证
 
-开发任意卡牌或战斗结算时可以直接启动 [Witch Test Lab](docs/TEST_LAB.md)。
+双击仓库根目录的 [启动魔女测试实验室.command](启动魔女测试实验室.command)，即可从当前工程构建 Debug 版并打开独立游戏副本。[Witch Test Lab 使用说明](docs/TEST_LAB.md)
 
 ```sh
 ./scripts/dev-macos.sh witch-test
