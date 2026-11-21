@@ -31,9 +31,6 @@ internal static class WitchLife
             state.GamblePaidThisTurn = (int)Math.Min(int.MaxValue, (long)state.GamblePaidThisTurn + cost);
         }
         await CreatureCmd.SetCurrentHp(creature, creature.CurrentHp - cost);
-#if SPIRELAB_TEST_LAB
-        WitchCombatState.Trace($"支付真实生命 {cost}，剩余 {creature.CurrentHp}。");
-#endif
         await AfterPayment(choice, player, state);
         return true;
     }

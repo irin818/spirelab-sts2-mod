@@ -329,11 +329,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             if (paid > 0 && player.Creature.IsAlive)
             {
                 var creature = player.Creature;
-                var realBefore = creature.CurrentHp;
-                await CreatureCmd.SetCurrentHp(creature, WitchRules.RefundLife(realBefore, creature.MaxHp, paid));
-#if SPIRELAB_TEST_LAB
-                WitchCombatState.Trace($"狂赌之渊胜利返还 {creature.CurrentHp - realBefore} 点，本段支付 {paid} 点。");
-#endif
+                await CreatureCmd.SetCurrentHp(creature, WitchRules.RefundLife(creature.CurrentHp, creature.MaxHp, paid));
             }
 
             if (state.OpeningCard is { Pile.IsCombatPile: true } card)
@@ -471,9 +467,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
         WitchFeedback.Block(target);
         state.BlockedDuringEnemyTurn |= target.CombatState?.CurrentSide == CombatSide.Enemy;
-        var mirrorSelf = state.MirrorForm ? 100 : 0;
-        var burial = state.NextReflectPercent;
-        var percent = mirrorSelf + state.MazeReflectPercent + burial;
+        var percent = (state.MirrorForm ? 100 : 0) + state.MazeReflectPercent + state.NextReflectPercent;
         var fixedDamage = state.DeferredReflections.Sum();
         state.DeferredReflections.Clear();
         state.NextReflectPercent = 0;
@@ -493,9 +487,6 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
         // One response per native DamageResult. An unpowered response has no Move flag.
         var reflection = WitchRules.Reflect(result.BlockedDamage, percent, fixedDamage);
-#if SPIRELAB_TEST_LAB
-        WitchCombatState.Trace($"反射 · {dealer.Name} · 实际格挡 {result.BlockedDamage} · 镜中人 {mirrorSelf}% + 迷宫 {state.MazeReflectPercent}% + 镜葬 {burial}% · 固定 {fixedDamage} · 最终 {reflection}");
-#endif
         if (reflection > 0 && dealer.IsAlive)
         {
             WitchFeedback.Reflect(dealer);

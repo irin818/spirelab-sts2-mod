@@ -6,11 +6,6 @@ namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 internal sealed class WitchCombatState
 {
-#if SPIRELAB_TEST_LAB
-    internal static event Action<string>? DebugTrace;
-    internal static void Trace(string message) => DebugTrace?.Invoke(message);
-#endif
-
     private static readonly ConditionalWeakTable<PlayerCombatState, WitchCombatState> States = new();
 
     public static WitchCombatState? Find(Player? player) =>
