@@ -1,8 +1,8 @@
 {
   "SPIRELAB-MIST_DRAUGHT.title": "薄雾药剂",
-  "SPIRELAB-MIST_DRAUGHT.description": "获得 {Block} 点格挡。本回合下一次格挡敌方攻击时，额外反射 {Reflection} 点伤害。",
+  "SPIRELAB-MIST_DRAUGHT.description": "获得 {Block} 点格挡。下一次格挡敌方攻击时，额外反射 {Reflection} 点伤害。",
   "SPIRELAB-TWIN_DRAUGHT.title": "双生药剂",
-  "SPIRELAB-TWIN_DRAUGHT.description": "选择1张手牌按魔法启迪规则转化，再抽1张牌。",
+  "SPIRELAB-TWIN_DRAUGHT.description": "可将1张手牌与抽牌堆或弃牌堆中的随机牌交换，再抽1张牌。此次交换不占用固有启迪的本回合次数。",
   "SPIRELAB-ABYSSAL_DISTILLATE.title": "深渊蒸馏液",
   "SPIRELAB-ABYSSAL_DISTILLATE.description": "失去 {Life} 点真实生命，获得 {Energy:energyIcons()}。须保留至少1点真实生命方可使用。"
 }

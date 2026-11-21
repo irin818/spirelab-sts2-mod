@@ -1,4 +1,23 @@
 {
-  "SPIRELAB-WITCH_ENLIGHTENMENT": "魔法启迪：选择至多 {Amount} 张手牌临时转化",
-  "SPIRELAB-WITCH_PACT_ECHO": "选择弃牌堆中一张非消耗牌放回手牌"
+  "SPIRELAB-WITCH_FATE_ALL_TYPES": "全部类型",
+  "SPIRELAB-WITCH_FATE_ATTACK": "攻击",
+  "SPIRELAB-WITCH_FATE_SKILL": "技能",
+  "SPIRELAB-WITCH_FATE_POWER": "能力",
+  "SPIRELAB-WITCH_FATE_ALL_COSTS": "全部费用",
+  "SPIRELAB-WITCH_FATE_ALL_SUITS": "全部体系",
+  "SPIRELAB-WITCH_FATE_POTION": "魔药",
+  "SPIRELAB-WITCH_FATE_MIRROR": "镜子",
+  "SPIRELAB-WITCH_FATE_GRIMOIRE": "魔法书",
+  "SPIRELAB-WITCH_FATE_DESIRE": "欲望",
+  "SPIRELAB-WITCH_FATE_RESET_FILTERS": "重置",
+  "SPIRELAB-WITCH_FATE_SELECTED": "已选 {Card}，确认后加入本场战斗。",
+  "SPIRELAB-WITCH_FATE_EMPTY": "没有符合条件的卡牌。请调整或重置筛选。",
+  "SPIRELAB-WITCH_ENLIGHTENMENT": "魔法启迪：选择1张手牌，与抽牌堆或弃牌堆中的随机牌交换",
+  "SPIRELAB-WITCH_PACT_ECHO": "选择弃牌堆中一张非消耗牌放回手牌",
+  "SPIRELAB-WITCH_OPENING_CHOICE": "命运选牌：选择1张卡牌加入本场战斗的抽牌堆",
+  "SPIRELAB-WITCH_GREED_KEEP": "镜中欲望：选择至多1张其他手牌留在手中",
+  "SPIRELAB-WITCH_SLOTH_RETAIN": "镜中欲望：选择至多1张其他手牌保留到下回合",
+  "SPIRELAB-WITCH_FATE_DRAW": "选择抽牌堆中的1张牌加入手牌",
+  "SPIRELAB-WITCH_CONVERT_BLOCK": "选择此牌以消耗最多4点当前格挡，下回合获得两倍格挡，也可跳过。",
+  "SPIRELAB-WITCH_OVERLOAD_ALL": "选择此牌以额外支付1点能量，改为攻击全体敌人，也可跳过。"
 }

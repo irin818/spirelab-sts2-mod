@@ -46,30 +46,23 @@ public sealed class SilverScreen() : WitchCard("C11", 1, CardType.Skill, CardRar
 // C19
 public sealed class RazorPages() : WitchCard("C19", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(7), new DynamicVar("Bonus", 3)];
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, State.TurnEnlightenments > 0 ? Number("Bonus") : 0);
-
-    protected override void OnUpgrade()
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(6), new CardsVar(1)];
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        DynamicVars.Damage.UpgradeValueBy(3);
-        DynamicVars["Bonus"].UpgradeValueBy(1);
+        await Attack(choice, play);
+        await Draw(choice);
     }
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(3);
 }
 
 // C20
 public sealed class BlackVeil() : WitchCard("C20", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new DynamicVar("Bonus", 2)];
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Block(play, State.Plays == 1 ? Number("Bonus") : 0);
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Block.UpgradeValueBy(3);
-        DynamicVars["Bonus"].UpgradeValueBy(1);
-    }
+    public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Retain];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(7)];
+    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) => Block(play);
+    protected override void OnUpgrade() => DynamicVars.Block.UpgradeValueBy(3);
 }
 
 // R01

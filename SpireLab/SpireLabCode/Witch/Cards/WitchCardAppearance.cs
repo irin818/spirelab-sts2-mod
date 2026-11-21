@@ -53,7 +53,7 @@ internal static class WitchCardAppearance
             });
     }
 
-    private static string? Suit(WitchCard card)
+    internal static string? Suit(WitchCard card)
     {
         if (card.IsDesire)
         {

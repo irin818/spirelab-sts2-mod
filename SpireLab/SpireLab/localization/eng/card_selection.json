@@ -1,4 +1,23 @@
 {
-  "SPIRELAB-WITCH_ENLIGHTENMENT": "Enlightenment: choose up to {Amount} card(s) to replace temporarily",
-  "SPIRELAB-WITCH_PACT_ECHO": "Return a non-Exhaust card from your discard pile"
+  "SPIRELAB-WITCH_FATE_ALL_TYPES": "All types",
+  "SPIRELAB-WITCH_FATE_ATTACK": "Attack",
+  "SPIRELAB-WITCH_FATE_SKILL": "Skill",
+  "SPIRELAB-WITCH_FATE_POWER": "Power",
+  "SPIRELAB-WITCH_FATE_ALL_COSTS": "All costs",
+  "SPIRELAB-WITCH_FATE_ALL_SUITS": "All suits",
+  "SPIRELAB-WITCH_FATE_POTION": "Alchemy",
+  "SPIRELAB-WITCH_FATE_MIRROR": "Mirror",
+  "SPIRELAB-WITCH_FATE_GRIMOIRE": "Grimoire",
+  "SPIRELAB-WITCH_FATE_DESIRE": "Desire",
+  "SPIRELAB-WITCH_FATE_RESET_FILTERS": "Reset",
+  "SPIRELAB-WITCH_FATE_SELECTED": "Selected: {Card}. Confirm to add it to this combat.",
+  "SPIRELAB-WITCH_FATE_EMPTY": "No matching cards. Change or reset the filters.",
+  "SPIRELAB-WITCH_ENLIGHTENMENT": "Arcane Insight: choose 1 card to swap with a random card from your draw or discard pile",
+  "SPIRELAB-WITCH_PACT_ECHO": "Return a non-Exhaust card from your discard pile",
+  "SPIRELAB-WITCH_OPENING_CHOICE": "Fate Selection: choose 1 card to add to your draw pile for this combat",
+  "SPIRELAB-WITCH_GREED_KEEP": "Mirror Desire: choose up to 1 other card to keep in hand",
+  "SPIRELAB-WITCH_SLOTH_RETAIN": "Mirror Desire: choose up to 1 other card to Retain this turn",
+  "SPIRELAB-WITCH_FATE_DRAW": "Choose 1 card from your draw pile to put into your hand",
+  "SPIRELAB-WITCH_CONVERT_BLOCK": "Select to spend up to 4 Block for twice that amount next turn, or skip.",
+  "SPIRELAB-WITCH_OVERLOAD_ALL": "Select to pay 1 extra Energy and hit all enemies, or skip to hit your target."
 }

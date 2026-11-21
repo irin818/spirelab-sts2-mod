@@ -1,5 +1,6 @@
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.AutoSlay.Helpers;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -9,15 +10,23 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Encounters;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.TestSupport;
+using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch;
 using SpireLab.SpireLabCode.Witch.Cards;
+using SpireLab.SpireLabCode.Witch.Mechanics;
+using SpireLab.SpireLabCode.Witch.UI;
 using static SpireLab.Smoke.WitchSmoke;
 
 namespace SpireLab.Smoke;
@@ -31,11 +40,10 @@ internal static class WitchVisualPreview
         {
             var game = NGame.Instance!;
             await game.GameStartupComplete;
-            var commonScenes = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet)
-                .Where(path => path.EndsWith(".tscn", StringComparison.Ordinal) && ResourceLoader.Exists(path))
-                .ToArray();
-            await WaitFor(tree, () => commonScenes.All(PreloadManager.Cache.GetLoadedCacheAssets().Contains),
-                "main menu scenes available");
+            var startupAssets = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet)
+                .Where(path => ResourceLoader.Exists(path)).Distinct().ToArray();
+            await WaitFor(tree, () => PreloadManager.Cache.GetLoadedCacheAssets().IsSupersetOf(startupAssets),
+                "deferred startup assets finish before the visual checks");
             if (NModalContainer.Instance?.OpenModal is NEarlyAccessDisclaimer disclaimer)
             {
                 await disclaimer.CloseScreen();
@@ -51,38 +59,162 @@ internal static class WitchVisualPreview
             var button = select.GetNode<NCharacterSelectButton>($"CharSelectButtons/ButtonContainer/{witch.Id.Entry}_button");
             Check(!button.IsLocked, "Witch character button selectable");
             select.SelectCharacter(button, witch);
-            CheckSelectionText(select, "Character Trait • Enlightenment", "may freely swap", "random card from your deck",
-                "Cracked Vanity Mirror", "first successful Enlightenment swap each combat", "keeps Enlightenment without this relic");
+            CheckSelectionText(select, "Character Trait • Arcane Insight", "choose 1 Witch reward card", "random card from your draw or discard pile",
+                "Cracked Vanity Mirror", "first successful Arcane Insight swap each combat", "keeps Arcane Insight without this relic");
             await Capture(tree, "character-select-eng-macos.png");
 
             LocManager.Instance.SetLanguage("zhs");
             select.SelectCharacter(button, witch);
-            CheckSelectionText(select, "角色特性 · 魔法启迪", "可以免费将1张手牌临时换成", "当前牌组中的随机牌",
-                "破损梳妆镜", "每场战斗第一次通过魔法启迪成功换牌", "失去此遗物后，魔法启迪仍然生效");
+            CheckSelectionText(select, "角色特性 · 魔法启迪", "选1张魔女奖励牌临时加入抽牌堆", "抽牌堆或弃牌堆中的随机牌交换",
+                "破损梳妆镜", "每场战斗第一次成功完成魔法启迪随机交换", "失去此遗物后，魔法启迪仍然生效");
             Check(select.GetNode<TextureRect>($"AnimatedBg/{witch.Id.Entry}_bg").Texture.GetSize() == new Vector2(1600, 900),
                 "Witch selection candidate loaded from PCK");
             await Capture(tree, "character-select-macos.png");
 
-            using var selection = CardSelectCmd.UseSelector(new WitchSelector());
             var run = await game.StartNewSingleplayerRun(witch, false, ActModel.GetDefaultList(), [], "WITCHART2", GameMode.Standard);
             var player = run.Players.Single();
             await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
+
+            await WaitFor(tree, () => NOverlayStack.Instance?.Peek() is WitchFateScreen,
+                "actual Fate Selection overlay opens before the first draw");
+            var fate = (WitchFateScreen)NOverlayStack.Instance!.Peek()!;
+            var grid = fate.GetNode<NCardGrid>("%CardGrid");
+            await WaitFor(tree, () => grid.CurrentlyDisplayedCardHolders.Any(), "Fate grid creates native card holders");
+            Check(grid.CurrentlyDisplayedCardHolders.Count() < 85, "native grid only builds holders for visible rows");
+            await Capture(tree, "fate-selection-macos.png");
+            var first = grid.CurrentlyDisplayedCardHolders.First();
+            Check(first.CardModel.IsCanonical, "picker renders definitions with no temporary combat instances");
+            grid.EmitSignal(NCardGrid.SignalName.HolderPressed, first);
+            var costs = fate.GetNode<OptionButton>("FateFilters/CostFilter");
+            var suits = fate.GetNode<OptionButton>("FateFilters/SuitFilter");
+            var types = fate.GetNode<OptionButton>("FateFilters/TypeFilter");
+            costs.Select(6);
+            costs.EmitSignal(OptionButton.SignalName.ItemSelected, 6);
+            suits.Select(1);
+            suits.EmitSignal(OptionButton.SignalName.ItemSelected, 1);
+            await WaitFor(tree, () => grid.CurrentlyDisplayedCards.Take(2).Select(card => card.Id).SequenceEqual([ModelDb.Card<ManaDeluge>().Id]),
+                "X cost plus Alchemy yields only Mana Deluge");
+            var holder = grid.CurrentlyDisplayedCardHolders.Single();
+            var fateId = holder.CardModel.Id;
+            grid.EmitSignal(NCardGrid.SignalName.HolderPressed, holder);
+            types.Select(holder.CardModel.Type == CardType.Attack ? 2 : 1);
+            types.EmitSignal(OptionButton.SignalName.ItemSelected, types.Selected);
+            await WaitFor(tree, () => !grid.CurrentlyDisplayedCardHolders.Any(),
+                "a zero-match filter does not silently replace the selected card");
+            await Capture(tree, "fate-filtered-macos.png");
+            var reset = fate.GetNode<Button>("FateFilters/ResetFilters");
+            reset.EmitSignal(Button.SignalName.Pressed);
+            await WaitFor(tree, () => costs.Selected == 0 && suits.Selected == 0 && types.Selected == 0 && grid.CurrentlyDisplayedCardHolders.Any(),
+                "reset restores the unfiltered grid");
+            await UiHelper.Click(fate.GetNode<NConfirmButton>("%Confirm"));
+            await WaitFor(tree, () => NPlayerHand.Instance?.IsInCardSelection == true, "actual optional swap opens after drawing");
+            await UiHelper.Click(NPlayerHand.Instance!.GetNode<NConfirmButton>("%SelectModeConfirmButton"));
+
             var piles = player.PlayerCombatState!;
             await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "native combat hand ready");
+            Check(WitchCombatState.For(player).OpeningCard?.Id == fateId && player.Deck.Cards.Count == 10,
+                "native Fate selection matches the chosen combat-only card");
             foreach (var card in piles.Hand.Cards.ToArray())
             {
                 await CardCmd.Discard(new ThrowingPlayerChoiceContext(), card);
             }
 
-            WitchCard[] cards = [await Add<PinnacleOfMana>(player), await Add<TheMirrorSelf>(player), await Add<FallenConfidence>(player)];
-            Check(piles.Hand.Cards.Count == 3 && cards.All(card =>
+            WitchCard[] cards = [await Add<PinnacleOfMana>(player), await Add<TheMirrorSelf>(player), await Add<FallenConfidence>(player),
+                await Add<ForbiddenFrontispiece>(player)];
+            Check(piles.Hand.Cards.Count == cards.Length && cards.All(card =>
                 card.Pile?.Type == PileType.Hand &&
                 ResourceLoader.Load<Texture2D>(card.PortraitPath)?.GetSize() == new Vector2(500, 380)),
-                "three native hand cards use the candidate portraits");
+                "native hand shows the four themed card portraits including the integrated U31 art");
+            var pool = (WitchCardPool)witch.CardPool;
+            var inline = ResourceLoader.Load<Texture2D>(pool.TextEnergyIconPath);
+            var big = ResourceLoader.Load<Texture2D>(pool.BigEnergyIconPath);
+            Check(inline.GetSize() == new Vector2(28, 28) && big.GetSize() == new Vector2(96, 96)
+                && ModelDb.Card<AbyssOfGambling>().GetDescriptionForPile(PileType.None).Contains(pool.TextEnergyIconPath)
+                && ModelDb.Card<ForbiddenRefinement>().GetDescriptionForUpgradePreview().Contains(pool.TextEnergyIconPath),
+                "base and upgraded descriptions use the 28px inline glyph while cost uses the 96px texture");
+            await Add<AbyssOfGambling>(player);
             await Capture(tree, "card-hand-macos.png");
+            await Capture(tree, "status-before-macos.png");
             await CreatureCmd.SetCurrentHp(player.Creature, 20);
             await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[1], null);
+            await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[0], null);
+            await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), cards[2], null);
+            var pinnacle = player.Creature.GetPower<PinnaclePower>();
+            Check(pinnacle is { IsVisible: true }
+                && player.Creature.GetPower<MirrorFormPower>()?.IsVisible == true
+                && player.Creature.GetPower<DesireDiscountPower>()?.IsVisible == true,
+                "three persistent powers appear on the real combat state");
+            if (System.Environment.GetEnvironmentVariable("SPIRELAB_ART_SYNC_TEST") == "1")
+            {
+                var relic = witch.StartingRelics[0];
+                Check(relic.Icon.GetSize() == new Vector2(94, 94)
+                    && pinnacle!.CustomPackedIconPath.EndsWith("/powers/pinnacle.png", StringComparison.Ordinal)
+                    && pinnacle.Icon.GetSize() == new Vector2(64, 64)
+                    && ResourceLoader.Load<Texture2D>(pinnacle.CustomBigIconPath)?.GetSize() == new Vector2(256, 256)
+                    && ResourceLoader.Load<Texture2D>(cards[0].PortraitPath).GetSize() == new Vector2(500, 380),
+                    "the PCK resolves the card, relic and both native sizes of the replacement Power icon");
+            }
             await Capture(tree, "mirror-form-macos.png");
+            var powers = player.Creature.GetCreatureNode()!.GetNode<Control>("%HealthBar")
+                .GetNode<NPowerContainer>("%PowerContainer");
+            var badge = powers.GetChildren().OfType<NPower>().Single(power => power.Model == pinnacle);
+            var tooltips = game.HoverTipsContainer ?? throw new InvalidOperationException("The native hover tips container is missing.");
+            badge.EmitSignal(Control.SignalName.MouseEntered);
+            await WaitFor(tree, () => tooltips.GetChildren().OfType<NHoverTipSet>()
+                .Where(tip => tip.IsVisibleInTree()).SelectMany(tip => tip.FindChildren("Description", "RichTextLabel", true, false))
+                .OfType<RichTextLabel>().Any(label => label.GetParsedText().Contains("回合结束保留全部未用能量")),
+                "native hover shows the Simplified Chinese Pinnacle power tooltip");
+            await Capture(tree, "power-tooltip-macos.png");
+            badge.EmitSignal(Control.SignalName.MouseExited);
+
+            var choice = new ThrowingPlayerChoiceContext();
+            await CardCmd.AutoPlay(choice, cards[3], null);
+            await Play<BloodstainedBookmark>(player, choice);
+            await Play<HallOfGlass>(player, choice);
+            await Play<RefinedAbyss>(player, choice);
+            await Play<ManaPump>(player, choice, upgrade: true);
+            await Play<ReflectiveInscription>(player, choice, upgrade: true);
+            await Play<MirrorBurial>(player, choice);
+            await Play<TemporalSeal>(player, choice);
+            await Play<MirrorTransfer>(player, choice);
+            await Play<MoonInTheMirror>(player, choice);
+            Check(powers.GetChildren().OfType<NPower>().Select(node => node.Model).Any(power => power is WitchImmunityPower)
+                && player.Creature.GetPower<GrimoireRetainPower>()?.Amount == 1
+                && player.Creature.GetPower<BookmarkPower>()?.Amount == 1
+                && player.Creature.GetPower<GlassHallPower>()?.Amount == 5
+                && player.Creature.GetPower<RefinedAbyssPower>()?.Amount == 1
+                && player.Creature.GetPower<ManaPumpPower>()?.Amount == 3,
+                "native buffs show after playing persistent cards and the shared attack-immunity effect");
+            Check(player.Creature.GetPower<PendingEnergyPower>()?.Amount == 2
+                && player.Creature.GetPower<PendingBlockPower>()?.Amount == 3
+                && player.Creature.GetPower<PendingDrawPower>()?.Amount == 2
+                && player.Creature.GetPower<ReflectChargesPower>()?.Amount == 1,
+                "delayed energy, block, draw and one blocked reflection show their real amounts");
+            await Capture(tree, "status-active-macos.png");
+
+            var creature = player.Creature;
+            var enemy = creature.CombatState!.HittableEnemies.First();
+            var originalBlock = creature.Block;
+            await CreatureCmd.Damage(choice, creature, 4, ValueProp.Move, enemy);
+            Check(creature.Block == originalBlock && creature.GetPower<WitchImmunityPower>() == null,
+                "the first enemy hit consumes immunity without losing Block");
+            await CreatureCmd.Damage(choice, creature, 4, ValueProp.Move, enemy);
+            Check(creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<InscribedSkillPower>()?.Amount == 1,
+                "the next blocked hit consumes the reflection charge and queues one Inscription");
+            await Capture(tree, "status-after-hit-macos.png");
+
+            using var selection = CardSelectCmd.UseSelector(new WitchSelector());
+            var turn = piles.TurnNumber;
+            CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
+            await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play,
+                "the game advances through the enemy turn and next draw");
+            Check(creature.GetPower<PendingEnergyPower>() == null && creature.GetPower<PendingDrawPower>() == null
+                && creature.GetPower<PendingBlockPower>() == null && creature.GetPower<ManaPumpPower>()?.Amount == 2,
+                "turn start consumes delayed icons and decrements the pump while persistent powers remain");
+            await Play<WitchDefend>(player, choice);
+            Check(creature.GetPower<InscribedSkillPower>() == null,
+                "playing the first Skill consumes the current Inscription discount");
+            await Capture(tree, "status-next-turn-macos.png");
             GD.Print("[SpireLabSmoke] PASS");
             game.Quit();
         }
@@ -109,7 +241,7 @@ internal static class WitchVisualPreview
     {
         // Selection panel, hand layout and battle entrance animate for several frames.
         await tree.ToSignal(tree.CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);
-        await tree.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
         var destination = System.Environment.GetEnvironmentVariable("SPIRELAB_WITCH_ART_SCREENSHOTS")
             ?? throw new InvalidOperationException("Missing screenshot directory.");
         using var image = tree.Root.GetTexture().GetImage();

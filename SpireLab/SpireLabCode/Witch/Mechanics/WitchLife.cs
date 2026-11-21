@@ -10,8 +10,9 @@ namespace SpireLab.SpireLabCode.Witch.Mechanics;
 internal static class WitchLife
 {
     private const string DisplayName = "SpireLabMirrorHp";
+    private const float MeterWidth = 154;
 
-    public static async Task<bool> Pay(PlayerChoiceContext choice, Player player, int cost, bool fromCard)
+    public static async Task<bool> Pay(PlayerChoiceContext choice, Player player, int cost, bool fromCard, bool refundOnVictory = false)
     {
         var creature = player.Creature;
         if (!WitchRules.CanPayLife(creature.CurrentHp, cost))
@@ -25,7 +26,14 @@ internal static class WitchLife
             state.RecordCardLifeLoss(cost);
         }
 
+        if (refundOnVictory)
+        {
+            state.GamblePaidThisTurn = (int)Math.Min(int.MaxValue, (long)state.GamblePaidThisTurn + cost);
+        }
         await CreatureCmd.SetCurrentHp(creature, creature.CurrentHp - cost);
+#if SPIRELAB_TEST_LAB
+        WitchCombatState.Trace($"支付真实生命 {cost}，剩余 {creature.CurrentHp}。");
+#endif
         await AfterPayment(choice, player, state);
         return true;
     }
@@ -73,20 +81,25 @@ internal static class WitchLife
         var meter = health.GetNodeOrNull<Control>(DisplayName);
         if (meter == null)
         {
-            meter = new Control { Name = DisplayName, Position = new Vector2(0, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
+            // The native health bar is centered at the origin, with its powers below it.
+            meter = new Control
+            {
+                Name = DisplayName,
+                Position = new Vector2(-MeterWidth / 2, -38),
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
             meter.AddChild(Segment("Shadow", "17131b"));
             meter.AddChild(Segment("Real", "8c2645"));
             meter.AddChild(Segment("Mirror", "d7dbe2"));
-            var caption = new Label { Name = "Caption", Position = new Vector2(0, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
-            caption.AddThemeFontSizeOverride("font_size", 15);
-            meter.AddChild(caption);
+            var label = new Label { Name = "Caption", MouseFilter = Control.MouseFilterEnum.Ignore };
+            label.AddThemeFontSizeOverride("font_size", 15);
+            meter.AddChild(label);
             health.AddChild(meter);
         }
 
-        const float width = 154;
-        var realWidth = width * creature.CurrentHp / creature.MaxHp;
-        var mirrorWidth = width * state.MirrorHp / creature.MaxHp;
-        meter.GetNode<ColorRect>("Shadow").Size = new Vector2(width, 4);
+        var realWidth = MeterWidth * creature.CurrentHp / creature.MaxHp;
+        var mirrorWidth = MeterWidth * state.MirrorHp / creature.MaxHp;
+        meter.GetNode<ColorRect>("Shadow").Size = new Vector2(MeterWidth, 4);
         meter.GetNode<ColorRect>("Real").Size = new Vector2(realWidth, 4);
         var mirrorSegment = meter.GetNode<ColorRect>("Mirror");
         mirrorSegment.Position = new Vector2(realWidth, 0);
@@ -96,7 +109,10 @@ internal static class WitchLife
         text.Add("Real", creature.CurrentHp);
         text.Add("Mirror", state.MirrorHp);
         text.Add("Total", creature.CurrentHp + state.MirrorHp);
-        meter.GetNode<Label>("Caption").Text = text.GetFormattedText();
+        var caption = meter.GetNode<Label>("Caption");
+        caption.Text = text.GetFormattedText();
+        caption.ResetSize();
+        caption.Position = new Vector2((MeterWidth - caption.GetMinimumSize().X) / 2, 4);
     }
 
     private static ColorRect Segment(string name, string color) =>

@@ -2,14 +2,14 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-if [[ "$#" != 2 ]]; then
-    printf 'Usage: %s <tested-game-mods-directory> <tested-screenshot-directory>\n' "$0" >&2
+if [[ "$#" != 2 && "$#" != 3 ]]; then
+    printf 'Usage: %s <tested-game-mods-directory> <tested-screenshot-directory> [verified-existing-workshop-directory]\n' "$0" >&2
     exit 2
 fi
 tested="$(cd "$1" && pwd -P)"
 captures="$(cd "$2" && pwd -P)"
+python3 scripts/verify-witch-release.py tested-mods "$tested"
 version="$(plutil -extract version raw -o - "$tested/SpireLab/SpireLab.json")"
-[[ "$version" == "$(plutil -extract version raw -o - SpireLab/SpireLab.json)" ]]
 mkdir -p .local/release
 stage="$(mktemp -d ".local/release/Witch-$version.XXXXXX")"
 install="$stage/install"
@@ -19,15 +19,24 @@ for name in SpireLab.dll SpireLab.pck SpireLab.json; do
     cp "$tested/SpireLab/$name" "$install/SpireLab/"
     cp "$tested/SpireLab/$name" "$workshop/content/"
 done
+python3 scripts/verify-witch-release.py workshop "$workshop"
 for name in BaseLib.dll BaseLib.pck BaseLib.json BaseLibCompatibilityHelper.dll BaseLibCompatibilityHelper.json; do
     cp "$tested/BaseLib/$name" "$install/BaseLib/"
 done
 cp docs/workshop/licenses/BaseLib-MIT.txt "$install/BaseLib/LICENSE.txt"
 cp docs/workshop/INSTALL.txt "$install/"
-cp docs/workshop/workshop.json "$workshop/"
 cp docs/workshop/README.md "$workshop/README.md"
 
-swift docs/art/witch-v2/export-cover.swift docs/art/witch-v2/source/character-select-reframed.png "$workshop/image.png"
+if [[ "$#" == 3 ]]; then
+    existing="$(cd "$3" && pwd -P)"
+    [[ "$(cat "$existing/mod_id.txt")" =~ ^[0-9]+$ ]]
+    [[ "$(plutil -extract visibility raw -o - "$existing/workshop.json")" == private ]]
+    [[ "$(sips -g format "$existing/image.png" | awk '$1 == "format:" { print $2 }')" == png ]]
+    cp "$existing"/{mod_id.txt,workshop.json,image.png} "$workshop/"
+else
+    cp docs/workshop/workshop.json "$workshop/"
+    swift docs/art/witch-v2/export-cover.swift docs/art/witch-v2/source/character-select-reframed.png "$workshop/image.png"
+fi
 for name in character-select-macos card-hand-macos mirror-form-macos; do
     sips -s format jpeg -s formatOptions 85 "$captures/$name.png" --out "$workshop/previews/$name.jpg" >/dev/null
 done

@@ -1,4 +1,5 @@
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -24,6 +25,11 @@ internal static class WitchSaveProbe
         {
             var game = NGame.Instance!;
             await game.GameStartupComplete;
+            // Loading a run while the main menu's deferred preload is active can race the engine's asset worker.
+            var startupAssets = AssetSets.CommonAssets.Concat(AssetSets.MainMenuSet)
+                .Where(path => ResourceLoader.Exists(path)).Distinct().ToArray();
+            await WaitFor(tree, () => PreloadManager.Cache.GetLoadedCacheAssets().IsSupersetOf(startupAssets),
+                "deferred startup assets finish before opening a saved run");
             SaveManager.Instance.SetFtuesEnabled(false);
             using var selection = CardSelectCmd.UseSelector(new WitchSelector());
             if (resume)
@@ -40,7 +46,8 @@ internal static class WitchSaveProbe
                     && player.Relics.Single() is CrackedVanityMirror && player.Creature.CurrentHp == 41,
                     "new process restores Witch, ancient upgrade, relic and real HP");
                 var state = WitchCombatState.For(player);
-                Check(state.MirrorHp == 0 && state.StandIns.Count == 0 && player.PlayerCombatState!.Hand.Cards.Count == 6,
+                Check(state.MirrorHp == 0 && state.OpeningCard is PotionMist && !player.Deck.Cards.Contains(state.OpeningCard)
+                    && player.Deck.Cards.Count == 11 && player.PlayerCombatState!.Hand.Cards.Count == 6,
                     "resumed battle starts clean and triggers intrinsic draw");
             }
             else

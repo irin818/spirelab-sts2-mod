@@ -1,6 +1,8 @@
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
@@ -50,16 +52,16 @@ public sealed class Residue() : WitchCard("C05", 0, CardType.Skill, CardRarity.C
 // C06
 public sealed class ConcentratedFlame() : WitchCard("C06", 2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(14), new DynamicVar("Bonus", 3)];
-
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, ExtraEnergy > 0 ? Number("Bonus") : 0);
-
-    protected override void OnUpgrade()
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(16)];
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        DynamicVars.Damage.UpgradeValueBy(4);
-        DynamicVars["Bonus"].UpgradeValueBy(1);
+        await Attack(choice, play);
+        if (Owner.PlayerCombatState!.Energy > 0)
+        {
+            State.NextDraw++;
+        }
     }
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(4);
 }
 
 // C07
@@ -105,7 +107,7 @@ public sealed class EmberTrace() : WitchCard("C09", 0, CardType.Attack, CardRari
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Attack(choice, play);
-        if (ExtraEnergy > 0 && play.Target?.IsAlive == true)
+        if (Owner.PlayerCombatState!.Energy == 0 && play.Target?.IsAlive == true)
         {
             await Deal(choice, play, Number("Bonus"));
         }
@@ -114,57 +116,63 @@ public sealed class EmberTrace() : WitchCard("C09", 0, CardType.Attack, CardRari
     protected override void OnUpgrade()
     {
         DynamicVars.Damage.UpgradeValueBy(2);
-        DynamicVars["Bonus"].UpgradeValueBy(1);
+        DynamicVars["Bonus"].UpgradeValueBy(2);
     }
 }
 
 // C10
 public sealed class MirrorChip() : WitchCard("C10", 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(4), new DynamicVar("Bonus", 2)];
+    public override bool GainsBlock => true;
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(4), Guard(2)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, Owner.Creature.Block > 0 ? Number("Bonus") : 0);
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
+    {
+        await Attack(choice, play);
+        if (State.BlockBeforeAttack == 0)
+        {
+            await Block(play);
+        }
+    }
 
     protected override void OnUpgrade()
     {
         DynamicVars.Damage.UpgradeValueBy(2);
-        DynamicVars["Bonus"].UpgradeValueBy(1);
+        DynamicVars.Block.UpgradeValueBy(1);
     }
 }
 
 // C12
 public sealed class EtchedMirrorSlash() : WitchCard("C12", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8), new DynamicVar("Bonus", 3)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, Owner.Creature.Block > 0 ? Number("Bonus") : 0);
-
-    protected override void OnUpgrade()
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        DynamicVars.Damage.UpgradeValueBy(3);
-        DynamicVars["Bonus"].UpgradeValueBy(1);
+        var block = Math.Min(4, Owner.Creature.Block);
+        if (block > 0 && await ConfirmOptionalEffect(choice, "SPIRELAB-WITCH_CONVERT_BLOCK"))
+        {
+            await CreatureCmd.LoseBlock(choice, Owner.Creature, block, null);
+            State.NextBlock += block * 2;
+        }
+        await Attack(choice, play);
     }
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(3);
 }
 
 // C13
 public sealed class SplitFace() : WitchCard("C13", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new DynamicVar("Reflection", 3)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Block(play);
-        State.NextReflections.Add(Number("Reflection"));
+        State.WeakOnBlock++;
     }
 
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Block.UpgradeValueBy(2);
-        DynamicVars["Reflection"].UpgradeValueBy(2);
-    }
+    protected override void OnUpgrade() => DynamicVars.Block.UpgradeValueBy(3);
 }
 
 // C14
@@ -234,14 +242,21 @@ public sealed class ReflectedLight() : WitchCard("C17", 1, CardType.Skill, CardR
 // C18
 public sealed class Refraction() : WitchCard("C18", 2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(13), new DynamicVar("Bonus", 4)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(13), new DynamicVar("Next", 6)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, State.BlockGains > 0 ? Number("Bonus") : 0);
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
+    {
+        var attacking = play.Target?.Monster?.NextMove.Intents.Any(intent => intent is AttackIntent) == true;
+        await Attack(choice, play);
+        if (attacking)
+        {
+            State.NextBlock += Number("Next");
+        }
+    }
 
     protected override void OnUpgrade()
     {
         DynamicVars.Damage.UpgradeValueBy(4);
-        DynamicVars["Bonus"].UpgradeValueBy(2);
+        DynamicVars["Next"].UpgradeValueBy(2);
     }
 }

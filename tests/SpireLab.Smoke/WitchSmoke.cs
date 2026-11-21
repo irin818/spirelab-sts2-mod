@@ -84,19 +84,28 @@ internal static class WitchSmoke
             var creature = player.Creature;
             var enemy = creature.CombatState!.HittableEnemies.First();
             Check(piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 0 && creature.Block == 0, "passive sixth draw, skip gives no credit or Block");
+            Check(creature.GetPower<InsightPower>() is { IsVisible: true, DisplayAmount: 0 },
+                "native Insight icon reflects that the opening swap window closed");
+            var opening = state.OpeningCard ?? throw new InvalidOperationException("No opening card");
+            Check(selector.OpeningChoices == 1 && opening is PotionMist && !opening.IsUpgraded
+                && opening.Pile?.Type is PileType.Draw or PileType.Hand && player.Deck.Cards.Count == 10,
+                "the full opening grid adds a fresh combat-only reward card before the first draw");
 
             var original = piles.Hand.Cards[2];
-            var proxy = await Enlightenment.Replace(player, original) ?? throw new InvalidOperationException("No substitute");
-            Check(ReferenceEquals(piles.Hand.Cards[2], proxy) && original.Pile?.Type == EnlightenmentPile.HeldType
-                && piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 1 && creature.Block == 3, "same-slot swap with held original and once-per-combat Block");
-            Check(player.Deck.Cards.Count == 10 && !player.Deck.Cards.Contains(proxy), "permanent deck unchanged");
-            await CardCmd.Discard(choice, proxy);
-            Check(proxy.HasBeenRemovedFromState && piles.DiscardPile.Cards.Contains(original) && state.StandIns.Count == 0, "discarded substitute restores original");
+            var previousPiles = piles.DrawPile.Cards.Concat(piles.DiscardPile.Cards).ToDictionary(card => card, card => card.Pile);
+            var incoming = await Enlightenment.Swap(player, original) ?? throw new InvalidOperationException("No swap");
+            Check(piles.Hand.Cards.Contains(incoming) && previousPiles[incoming] == original.Pile
+                && piles.Hand.Cards.Count == 6 && state.CombatEnlightenments == 1 && creature.Block == 3,
+                "real instances swap between piles and trigger the starter relic once");
+            Check(player.Deck.Cards.Count == 10 && !player.Deck.Cards.Contains(incoming), "permanent deck unchanged");
+            await CardCmd.Discard(choice, incoming);
+            Check(incoming.Pile?.Type == PileType.Discard && original.Pile == previousPiles[incoming],
+                "discarding the incoming card moves the real card without restoring the outgoing card");
             var second = piles.Hand.Cards[1];
-            var nextProxy = await Enlightenment.Replace(player, second) ?? throw new InvalidOperationException("No substitute");
-            var chained = await Enlightenment.Replace(player, nextProxy) ?? throw new InvalidOperationException("No chained substitute");
-            Check(nextProxy.HasBeenRemovedFromState && piles.DiscardPile.Cards.Contains(second) && state.StandIns.Count == 1 && creature.Block == 3,
-                "retransformation releases original without copying it or re-awarding relic Block");
+            Check(await Enlightenment.Swap(player, second) == null && second.Pile?.Type == PileType.Hand,
+                "the intrinsic swap can succeed only once per turn");
+            Check(await Enlightenment.Swap(player, second, fromTrait: false) != null && creature.Block == 3,
+                "a separate potion swap can succeed without another starter relic trigger");
 
             var attack = await Add<StarterDraught>(player);
             var beforeEnemy = enemy.CurrentHp;
@@ -105,14 +114,17 @@ internal static class WitchSmoke
             await WaitFor(tree, () => attack.Pile?.Type == PileType.Discard && piles.Energy == beforeEnergy - 1, "manual attack pays energy and finishes");
             Check(enemy.CurrentHp < beforeEnemy && state.NextEnergy == 1, "attack deals damage and schedules extra energy");
             await Play<PinnacleOfMana>(player, choice);
+            Check(creature.GetPower<PinnaclePower>() is { IsVisible: true } power && power.Icon != null
+                && power.GetDumbHoverTip().Description.Contains("unspent", StringComparison.Ordinal),
+                "Pinnacle displays the native power icon and localized description from live retained-energy state");
             var remaining = piles.Energy;
             var turn = piles.TurnNumber;
             selector.SelectFirstHand = true;
             CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
             await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play, "actual enemy/player turn transition");
-            Check(chained.HasBeenRemovedFromState && state.CombatEnlightenments == 4 && state.TurnEnlightenments == 1
-                && piles.Energy == remaining + 4 && state.ExtraEnergy == 1, "turn expiry, one new passive transform and retained energy");
-            await Enlightenment.ReleaseAll(player, state);
+            Check(state.CombatEnlightenments == 3 && state.TurnEnlightenments == 1 && state.TraitSwapUsed
+                && state.OpeningCard == opening && selector.OpeningChoices == 1 && piles.Energy == remaining + 4 && state.ExtraEnergy == 1,
+                "next turn resets the intrinsic swap while keeping one opening choice and retained energy");
 
             await CreatureCmd.SetCurrentHp(creature, 20);
             var visuals = creature.GetCreatureNode()!.Visuals;
@@ -138,11 +150,11 @@ internal static class WitchSmoke
             var hit = (await CreatureCmd.Damage(choice, creature, 12, ValueProp.Move, enemy)).Single();
             effects.ChildEnteredTree -= DetectBlockFlash;
             Check(blockFlash, "blocking an attack shows the Witch block flash");
-            Check(hit.BlockedDamage == 7 && creature.CurrentHp == 20 && state.MirrorHp == 23 && enemy.CurrentHp == foe - 5,
-                "7 Block absorbs attack, 5 mirror HP absorbs overflow, 3+2 reflection");
+            Check(hit.BlockedDamage == 9 && creature.CurrentHp == 20 && state.MirrorHp == 25 && enemy.CurrentHp == foe - 14,
+                "9 Block absorbs attack, 3 mirror HP absorbs overflow, 9+5 reflection");
             var poisonLike = (await CreatureCmd.Damage(choice, creature, 4, ValueProp.Unblockable | ValueProp.Unpowered,
                 dealer: null, cardSource: null, cardPlay: null)).Single();
-            Check(poisonLike.BlockedDamage == 0 && creature.CurrentHp == 20 && state.MirrorHp == 19,
+            Check(poisonLike.BlockedDamage == 0 && creature.CurrentHp == 20 && state.MirrorHp == 21,
                 "unblockable status damage still consumes mirror HP without counting as Block");
             await CreatureCmd.Heal(creature, 100);
             Check(creature.CurrentHp + state.MirrorHp == 68, "healing and mirror HP obey effective cap");
@@ -204,18 +216,21 @@ internal static class WitchSmoke
             await reward.GenerateWithoutOffering();
             Check(reward.Rewards.OfType<CardReward>().Single().Cards.All(card => card.Pool == witch.CardPool), "Witch rewards belong to her pool");
             var restored = RunState.FromSerializable(RunManager.Instance.ToSave(null)).Players.Single();
-            Check(restored.Character.Id == witch.Id && restored.Creature.CurrentHp == 1 && restored.Deck.Cards.Count == 10, "save carries real HP and permanent deck only");
+            Check(restored.Character.Id == witch.Id && restored.Creature.CurrentHp == 11 && restored.Deck.Cards.Count == 10 && state.GamblePaidThisTurn == 0, "victory refunds all four payments before saving real HP and the permanent deck");
 
             await CreatureCmd.SetCurrentHp(creature, 68);
             await LeaveCompletedCombat(tree);
+            Check(state.OpeningCard == null && opening.HasBeenRemovedFromState && opening.Pile == null,
+                "completed combat removes the chosen battle instance from the game state");
             await RunManager.Instance.EnterRoomDebug(RoomType.Monster, model: ModelDb.Encounter<NibbitsWeak>().ToMutable(), showTransition: false);
             piles = player.PlayerCombatState!;
             await WaitFor(tree, () => piles.Phase == PlayerTurnPhase.Play, "second real Witch battle");
             state = WitchCombatState.For(player);
-            Check(!state.MirrorForm && state.MirrorHp == 0 && !state.DesireDiscount, "next battle resets temporary state");
+            Check(!state.MirrorForm && state.MirrorHp == 0 && !state.DesireDiscount && creature.GetPower<PinnaclePower>() == null,
+                "next battle resets temporary state and removes native power icons");
             await Play<TheMirrorSelf>(player, choice);
             Check(creature.CurrentHp == 1 && state.MirrorHp == 0, "maximum-HP inversion cannot kill its owner");
-            await WitchContentSmoke.Exercise(tree, player, choice);
+            await WitchContentSmoke.Exercise(tree, player, choice, selector);
             LocManager.Instance.SetLanguage("zhs");
             WitchContentSmoke.ValidateCardText(witch);
             Check(witch.Title.GetRawText() == "魔女" && ModelDb.Card<AbyssOfGambling>().Title == "狂赌之渊", "Simplified Chinese names loaded");
@@ -321,12 +336,22 @@ internal static class WitchSmoke
     internal sealed class WitchSelector : ICardSelector
     {
         public bool SelectFirstHand { get; set; }
+        public string OpeningSpecId { get; set; } = "C02";
         public int DesireOptions { get; private set; }
         public CardModel? LastDesire { get; private set; }
+        public int OpeningChoices { get; private set; }
 
         public Task<IEnumerable<CardModel>> GetSelectedCards(IEnumerable<CardModel> options, int minSelect, int maxSelect)
         {
             var cards = options.ToArray();
+            if (cards.Length == 85 && cards.All(card => card is WitchCard))
+            {
+                Check(minSelect == 1 && maxSelect == 1 && cards.Count(card => ((WitchCard)card).IsDesire) == 5
+                    && cards.All(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare),
+                    "Fate Selection shows all 85 rewards including the five Desire cards");
+                OpeningChoices++;
+                return Task.FromResult<IEnumerable<CardModel>>([cards.Cast<WitchCard>().Single(card => card.SpecId == OpeningSpecId)]);
+            }
             if (cards.All(card => card.Pile == null && card is DesireCard))
             {
                 if (cards.Length != cards.Select(card => card.Id).Distinct().Count() || cards.Any(card => card is SourceOfCalamity))

@@ -69,3 +69,48 @@
 - 简中与英文的 `characters.json` 在原版选角面板明确展示固有特性。两份 `relics.json` 写明破损梳妆镜每场战斗首次成功换牌给 3 点格挡，双生全身镜改为每回合首次。失去初始遗物仍可使用启迪。
 - 本机 `sts2.dll` 中 `NCharacterSelectScreen.SelectCharacter` 分别读取角色描述和 `StartingRelics[0].DynamicDescription`。因此可以用本地化资源清楚区分特性和遗物，战斗钩子、存档和场景布局继续沿用现有实现。
 - [实机预览测试](tests/SpireLab.Smoke/WitchVisualPreview.cs) 读取原版面板的渲染文字，验证双语并截图。`witch-art` 通过 14 项检查。`witch` 首次完成 100 项断言，但在启动预载时出现引擎 `Invalid Task ID`，整项复跑以 0 退出并通过全部 100 项。已将实测 PCK 装入本机 Steam Mod 目录。
+
+## 2026-11-20 · 魔女 V1.6 开场与换牌
+
+- [V1.6 规格](SpireLab_The_Witch_GDD_v1.6.md) 和 [差异与验证](docs/witch-v1.6-validation.md) 记录当前基线。命运选牌只在首次抽牌前创建 1 张未升级战斗牌，随机插入抽牌堆。手牌交换用两次原版移动保留实例、升级与附魔。
+- [启迪](SpireLab/SpireLabCode/Witch/Mechanics/Enlightenment.cs) 体现随机插入与实例等权采样的区别。[战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 分开处理首次抽牌、回合选择和战斗清理。106 项窗口实机断言通过，下一阶段继续检查角标、美术同步与卡池改动。
+
+## 2026-11-20 · 魔女 V1.6 卡池、状态与打包
+
+- 更新魔药、镜子、魔法书和五张欲望牌的规则与双语描述。[内容索引](docs/witch-content.tsv) 对齐 91 种卡牌定义、费用、资源与源码。正式美术继续使用用户确认的现有资源，28 个新状态角标采用临时线稿。
+- [WitchStatuses.Refresh](SpireLab/SpireLabCode/Witch/Mechanics/WitchVisiblePowers.cs) 把一次结算的数据映射到原生 Power。`WitchCombatHooks.AfterFlush` 记录真实保留牌，书签通过实例身份匹配。命运选牌网格需要有玩家归属的战斗牌，确认后清理未入堆的候选。
+- [美术导入器](scripts/sync-art.py) 先验证并导出到临时目录，再导入和打包。三张测试源图替换了卡图、遗物和 Power，并从实机 PCK 加载。拒绝不透明能力图时保留原包。缩放与来源约定见 [美术资源包规范](artwork/README.md)。
+- 116 项规则与集成窗口断言以及双进程读档通过。实机截图复核了原生选牌与状态栏。测试了 500 条狂赌递减路径。安装与工坊候选 ZIP 已校验，当前发布条目按原状态保留。[验证记录](docs/witch-v1.6-validation.md)
+- 后续可用外部美术包替换临时角标，再做完整构筑平衡、Windows 和联网试验。
+
+## 2026-11-20 · V1.6 外部美术验收与整局集成
+
+- 审查外部包全部 139 张 PNG 和双图缩略对照，只导入 U31 与 8 个明确对应 Power 的图标。统一清单记录原图来源、质量和使用许可。被拒图以及旧运行文件保存在可还原快照。[逐项审查](docs/art/witch-v1.6-source-audit.csv)
+- [战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 在能量和格挡结算及起手抽牌后刷新状态。下一次可操作窗口看到的是本回合真实数值。原生状态持续由结算状态驱动。
+- 工程通过 116 项机制回归、33 项界面测试、新旧档恢复和一次三幕整局 AutoSlay。记录了战败种子与后续通关种子的区别。能力图导入测试覆盖 64 与 256 两种输出，以及透明度错误时的拒绝路径。[集成验收](docs/witch-v1.6-integration.md)
+- Steam 作者会话单独确认原条目已设为 Private，再更新三件运行文件。下载后逐字节比对，并在独立游戏副本中复跑 34 项界面和状态检查。预载诊断的失败记录保留，最终严格复测通过。
+
+## 2026-11-21 · V1.6.2 平衡与测试实验室
+
+- 修改欲望牌、反射结算、双语说明、能量小图标和开场选牌。开场网格只显示卡牌定义，按钮确认后才创建一张战斗牌。筛选沿用原版可见行渲染，费用、体系和类型可以组合。
+- [战斗钩子](SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatHooks.cs) 使用原版 `DamageResult.BlockedDamage` 做单次反射；加算比例和固定量的先后次序影响取整。[真实生命](SpireLab/SpireLabCode/Witch/Mechanics/WitchLife.cs) 区分伤害和直接支付，胜利清算只读取当前回合的实际支出。
+- [实机断言](tests/SpireLab.TestLab/LabVerification.cs) 展示纯函数测试和集成测试的差别。用原版命令发出三段伤害，读取敌人实际掉血以核对 4、4、2。先审查本机程序集，再用高生命测试敌人消除回归夹具中提前击杀带来的干扰。
+- Release 构建与资源扫描通过，130 项实验室、116 项机制、40 项界面、双进程保存与恢复通过。实验室内的脚本木桩通过原版敌方回合再次复现了三段反射。最初界面测试命中过载入诊断 `Invalid Task ID`，隔离重跑通过。Steam 订阅文件的三项 SHA-256 仍与备份一致。命令、反射实测矩阵和复现边界见 [Witch Test Lab](docs/TEST_LAB.md)。
+- 正式包在种子 `WITCH10051` 完成一次三幕 AutoSlay 回归。该工具会施加辅助增益，结果用于验证流程兼容性。
+
+## 2026-11-21 · 实验室双击入口
+
+- 根目录新增可执行的 [启动魔女测试实验室.command](启动魔女测试实验室.command)。入口定位仓库后调用原有隔离脚本，因此 macOS 双击与终端参数共用同一套构建与存档隔离逻辑。
+- 通过 macOS 打开文件后进入实际测试战斗。副本里的 DLL、PCK 与当次 Debug 输出逐字节一致，运行日志显示 Steam 未初始化。工坊订阅文件的三项校验值一致。从仓库外调用 `--check` 也通过。
+
+## 2026-11-21 · 工坊正式包隔离
+
+- [构建配置](SpireLab/SpireLab.csproj) 在专用 Debug 中启用实验室追踪，显式禁止把它带入 ExportRelease。只给正式构建写入发布标记，独立的实验室项目也禁止以 Release 构建。
+- [发布校验](scripts/verify-witch-release.py) 将构建标记、文件白名单和逐字节比对用在正式打包、实测产物准备及上传前校验。相同版本号的实际实验室产物被拒绝。实测正式包成功生成 ZIP，工坊下载目录恰有三个 Mod 文件。
+- 8 项发布校验回归、130 项实验室断言和 40 项正式包界面断言通过。两种把实验室编入 Release 的尝试在编译前被拒绝。Steam 订阅中的现有文件校验值一致。
+
+## 2026-11-21 · V1.6.2 合并验收
+
+- [实机脚本](scripts/smoke-macos.sh) 与 [实验室脚本](scripts/witch-test-macos.sh) 将整套编译中间产物放在单次会话目录。两场并行实机编译原会争用共享的 `obj` 文件，隔离后重新构建并运行成功。
+- 在 `v0.111.1` 上通过 116 项战斗、40 项界面、130 项实验室、8 项发布防混包检查，以及新档跨进程与 V1.0 旧档恢复。种子 `WITCH10051` 在 AutoSlay 辅助下打完三幕并返回主菜单。首次个别引擎预载报错的项目按原严格规则单独复跑，保留原始失败日志。
+- 复核本地工坊 ZIP，下载内容恰有三件正式 Mod 文件，实验室会话仍被拒绝。Steam 已订阅文件校验值一致。

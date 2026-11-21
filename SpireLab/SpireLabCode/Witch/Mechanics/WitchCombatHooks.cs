@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
 using SpireLab.SpireLabCode.Witch.Cards;
 
@@ -16,6 +17,13 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override async Task BeforeSideTurnStart(PlayerChoiceContext choice, CombatSide side,
         IReadOnlyList<Creature> participants, ICombatState combatState)
     {
+        foreach (var player in combatState.Players)
+        {
+            if (WitchCombatState.Find(player) is { } state)
+            {
+                state.GamblePaidThisTurn = 0;
+            }
+        }
         if (side == CombatSide.Player)
         {
             foreach (var creature in participants)
@@ -29,6 +37,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                     {
                         await PlayerCmd.SetEnergy(WitchEnergy.EngineLimit - piles.MaxEnergy, player);
                     }
+                    await WitchStatuses.Refresh(choice, player, state);
                 }
             }
         }
@@ -37,6 +46,11 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
     public override decimal ModifyHandDraw(Player player, decimal count) =>
         WitchCombatState.Find(player) is { } state ? count + 1 + state.NextDraw : count;
+
+    public override Task BeforeHandDraw(Player player, PlayerChoiceContext choiceContext, ICombatState combatState) =>
+        WitchCombatState.Find(player) != null && combatState is CombatState combat
+            ? Enlightenment.ChooseOpeningCard(choiceContext, player, combat)
+            : Task.CompletedTask;
 
     public override bool ShouldPlayerResetEnergy(Player player) =>
         WitchCombatState.Find(player)?.RetainEnergy != true || player.PlayerCombatState!.TurnNumber == 1;
@@ -79,6 +93,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         {
             await CreatureCmd.GainBlock(player.Creature, block, ValueProp.Unpowered, null);
         }
+        await WitchStatuses.Refresh(choice, player, state);
     }
 
     public override async Task AfterAutoPrePlayPhaseEnteredEarly(PlayerChoiceContext choice, Player player)
@@ -86,7 +101,10 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         if (WitchCombatState.Find(player) is { } state)
         {
             state.NextDraw = 0;
-            await Enlightenment.Choose(choice, player, this);
+            await WitchStatuses.Refresh(choice, player, state);
+            await Enlightenment.ChooseSwap(choice, player, this);
+            state.TraitSwapOffered = true;
+            await WitchStatuses.Refresh(choice, player, state);
         }
     }
 
@@ -94,7 +112,8 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     {
         if (WitchCombatState.Find(play.Player) is { } state)
         {
-            await WitchEnergy.Resolve(new BlockingPlayerChoiceContext(), play.Player, state);
+            var choice = new BlockingPlayerChoiceContext();
+            await WitchEnergy.Resolve(choice, play.Player, state);
             state.Plays++;
             if (play.Card is WitchCard && play.Card.Type is CardType.Skill or CardType.Power)
             {
@@ -105,6 +124,20 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 WitchFeedback.Desire(play.Player.Creature);
             }
             state.ResolvingCard = true;
+            if (play.Card.Type == CardType.Skill && state.SkillDiscount > 0)
+            {
+                state.SkillDiscount = 0;
+                var ward = state.SkillWard;
+                state.SkillWard = 0;
+                foreach (var skill in play.Player.PlayerCombatState!.Hand.Cards.Where(card => card.Type == CardType.Skill))
+                {
+                    skill.InvokeEnergyCostChanged();
+                }
+                if (ward > 0)
+                {
+                    await CreatureCmd.GainBlock(play.Player.Creature, ward, ValueProp.Unpowered, null);
+                }
+            }
             if (play.Card.Type == CardType.Attack)
             {
                 state.BlockBeforeAttack = play.Player.Creature.Block;
@@ -112,16 +145,6 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 state.PendingAttackBonus = 0;
             }
         }
-    }
-
-    public override Task AfterEnergySpent(CardModel card, int amount)
-    {
-        if (card is SilentVow && card.Owner.PlayerCombatState?.Hand.Cards.Count >= 8)
-        {
-            card.EnergyCost.SetThisTurn(1, reduceOnly: true);
-        }
-
-        return Task.CompletedTask;
     }
 
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choice, CardPlay play)
@@ -161,15 +184,26 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 await CreatureCmd.GainBlock(player.Creature, state.DuskBlock, ValueProp.Unpowered, null);
             }
         }
+        if (!state.BookmarkUsed && state.BookmarkEnergy > 0 && state.RetainedCards.Contains(play.Card))
+        {
+            state.BookmarkUsed = true;
+            await WitchEnergy.Gain(choice, player, state.BookmarkEnergy, fromCard: true);
+        }
+        await WitchStatuses.Refresh(choice, player, state);
     }
 
     public override Task AfterPlayerTurnStartLate(PlayerChoiceContext choice, Player player) =>
         WitchCombatState.Find(player) is { } state ? WitchEnergy.Resolve(choice, player, state) : Task.CompletedTask;
 
-    public override Task AfterPotionUsed(PotionModel potion, Creature? target) =>
-        WitchCombatState.Find(potion.Owner) is { } state
-            ? WitchEnergy.Resolve(new BlockingPlayerChoiceContext(), potion.Owner, state)
-            : Task.CompletedTask;
+    public override async Task AfterPotionUsed(PotionModel potion, Creature? target)
+    {
+        if (WitchCombatState.Find(potion.Owner) is { } state)
+        {
+            var choice = new BlockingPlayerChoiceContext();
+            await WitchEnergy.Resolve(choice, potion.Owner, state);
+            await WitchStatuses.Refresh(choice, potion.Owner, state);
+        }
+    }
 
     public override async Task BeforeSideTurnEnd(PlayerChoiceContext choice, CombatSide side,
         IEnumerable<Creature> participants)
@@ -193,20 +227,20 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             {
                 await CreatureCmd.GainBlock(creature, Math.Min((long)remaining * perEnergy, cap), ValueProp.Unpowered, null);
             }
-            if (remaining > 0 && state.DepthsBlock > 0)
+            if (remaining > 0 && state.DepthsEnergy > 0)
             {
-                await CreatureCmd.GainBlock(creature, Math.Min(3, remaining) * state.DepthsBlock, ValueProp.Unpowered, null);
+                state.NextEnergy += state.DepthsEnergy;
+                if (state.DepthsBlock > 0)
+                {
+                    await CreatureCmd.GainBlock(creature, state.DepthsBlock, ValueProp.Unpowered, null);
+                }
             }
-            if (creature.Block > 0)
-            {
-                state.NextBlock += state.StartingBlockIfRetained;
-            }
-
             if (!state.RetainEnergy && remaining > 0 && player.Relics.OfType<LostFormula>().FirstOrDefault() is { } formula)
             {
                 state.RetainedRelicEnergy = 1;
                 formula.Flash();
             }
+            await WitchStatuses.Refresh(choice, player, state);
         }
     }
 
@@ -248,42 +282,65 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         return Task.CompletedTask;
     }
 
-    public override Task AfterCardEnteredCombat(CardModel card)
-    {
-        if (WitchCombatState.Find(card.Owner) is { } state && state.HandInsertions.TryGetValue(card, out var index)
-            && card.Pile is { Type: PileType.Hand } hand)
-        {
-            // CardPileCmd has inserted the model but has yet to create its hand holder.
-            hand.RemoveInternal(card, silent: true);
-            hand.AddInternal(card, Math.Min(index, hand.Cards.Count), silent: true);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public override async Task AfterCardChangedPilesLate(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
-    {
-        var player = card.Owner;
-        if (WitchCombatState.Find(player) is not { } state)
-        {
-            return;
-        }
-
-        foreach (var (standIn, original) in state.StandIns.ToArray())
-        {
-            if (standIn.Pile is null || (standIn == card && standIn.Pile.Type is not (PileType.Hand or PileType.Play)))
-            {
-                await Enlightenment.Release(player, state, standIn, original);
-            }
-        }
-    }
-
-    public override async Task BeforeFlush(PlayerChoiceContext choice, Player player)
+    public override Task BeforeFlush(PlayerChoiceContext choice, Player player)
     {
         if (WitchCombatState.Find(player) is { } state)
         {
             state.LastRemainingEnergy = player.PlayerCombatState!.Energy;
-            await Enlightenment.ReleaseAll(player, state);
+            if (state.RetainRandomCount > 0)
+            {
+                var candidates = player.PlayerCombatState.Hand.Cards.Where(card => !card.ShouldRetainThisTurn).ToList();
+                player.RunState.Rng.CombatCardSelection.Shuffle(candidates);
+                foreach (var card in candidates.Take(state.RetainRandomCount))
+                {
+                    CardCmd.ApplySingleTurnRetain(card);
+                }
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterFlush(PlayerChoiceContext choiceContext, Player player,
+        IReadOnlyCollection<CardModel> flushedCards, IReadOnlyCollection<CardModel> retainedCards)
+    {
+        WitchCombatState.Find(player)?.RetainedCards.UnionWith(retainedCards);
+        return Task.CompletedTask;
+    }
+
+    public override bool ShouldClearBlock(Creature creature) => WitchCombatState.Find(creature.Player)?.RetainedBlockCap is not > 0;
+
+    public override Task AfterPreventingBlockClear(AbstractModel preventer, Creature creature) =>
+        preventer == this && WitchCombatState.Find(creature.Player) is { } state && creature.Block > state.RetainedBlockCap
+            ? CreatureCmd.LoseBlock(new BlockingPlayerChoiceContext(), creature, creature.Block - state.RetainedBlockCap, null)
+            : Task.CompletedTask;
+
+    public override async Task AfterCombatEnd(CombatRoom room)
+    {
+        foreach (var player in room.CombatState.Players)
+        {
+            if (WitchCombatState.Find(player) is not { } state)
+            {
+                continue;
+            }
+
+            // The engine calls AfterCombatEnd only on victory, before writing the finished-room save.
+            var paid = state.GamblePaidThisTurn;
+            state.GamblePaidThisTurn = 0;
+            if (paid > 0 && player.Creature.IsAlive)
+            {
+                var creature = player.Creature;
+                var realBefore = creature.CurrentHp;
+                await CreatureCmd.SetCurrentHp(creature, WitchRules.RefundLife(realBefore, creature.MaxHp, paid));
+#if SPIRELAB_TEST_LAB
+                WitchCombatState.Trace($"狂赌之渊胜利返还 {creature.CurrentHp - realBefore} 点，本段支付 {paid} 点。");
+#endif
+            }
+
+            if (state.OpeningCard is { Pile.IsCombatPile: true } card)
+            {
+                await CardPileCmd.RemoveFromCombat(card, skipVisuals: true);
+            }
+            state.OpeningCard = null;
         }
     }
 
@@ -294,9 +351,9 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override bool TryModifyEnergyCostInCombatLate(CardModel card, decimal originalCost, out decimal modifiedCost)
     {
         modifiedCost = originalCost;
-        if (card is SilentVow && card.Owner.PlayerCombatState?.Hand.Cards.Count >= 8)
+        if (card.Type == CardType.Skill && WitchCombatState.Find(card.Owner) is { SkillDiscount: > 0 } state)
         {
-            modifiedCost = Math.Min(modifiedCost, 1);
+            modifiedCost = Math.Max(0, modifiedCost - state.SkillDiscount);
         }
         if (modifiedCost > 0 && card is WitchCard { IsDesire: true } && WitchCombatState.Find(card.Owner)?.DesireDiscount == true)
         {
@@ -310,13 +367,18 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         dealer?.Side == CombatSide.Enemy && props.IsCardOrMonsterMove() && !props.HasFlag(ValueProp.Unblockable);
 
     public override decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? play) =>
-        EnemyAttack(dealer, props) && WitchCombatState.Find(target?.Player)?.Immunity != null ? 0 : decimal.MaxValue;
+        WitchCombatState.Find(target?.Player) is { } state &&
+        (state.SlothImmunity || (EnemyAttack(dealer, props) && state.Immunity.HasValue)) ? 0 : decimal.MaxValue;
 
     public override Task BeforeDamageReceived(PlayerChoiceContext choice, Creature target, decimal amount,
         ValueProp props, Creature? dealer, CardModel? cardSource)
     {
         if (EnemyAttack(dealer, props) && WitchCombatState.Find(target.Player) is { } state)
         {
+            if (state.SlothImmunity)
+            {
+                return Task.CompletedTask;
+            }
             if (state.Immunity is int retaliation)
             {
                 state.SpentImmunity = retaliation;
@@ -397,67 +459,62 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             {
                 await CreatureCmd.Damage(choice, dealer, immuneHit, ValueProp.Unpowered, target);
             }
+            await WitchStatuses.Refresh(choice, target.Player!, state);
             return;
         }
 
         if (result.BlockedDamage <= 0 || !dealer.IsAlive || !target.IsAlive)
         {
+            await WitchStatuses.Refresh(choice, target.Player!, state);
             return;
         }
 
         WitchFeedback.Block(target);
-        var firstBlock = !state.BlockedAttackThisTurn;
-        state.BlockedAttackThisTurn = true;
         state.BlockedDuringEnemyTurn |= target.CombatState?.CurrentSide == CombatSide.Enemy;
-        var reflect = new List<int>();
-        if (state.MirrorForm)
-        {
-            reflect.Add(WitchRules.Reflect(result.BlockedDamage, 50, state.ReflectMultiplier));
-        }
-
-        reflect.AddRange(state.NextReflections.Select(value => WitchRules.Reflect(value, 100, state.ReflectMultiplier)));
-        reflect.AddRange(state.DeferredReflections.Select(value => WitchRules.Reflect(value, 100, state.ReflectMultiplier)));
-        state.NextReflections.Clear();
+        var mirrorSelf = state.MirrorForm ? 100 : 0;
+        var burial = state.NextReflectPercent;
+        var percent = mirrorSelf + state.MazeReflectPercent + burial;
+        var fixedDamage = state.DeferredReflections.Sum();
         state.DeferredReflections.Clear();
+        state.NextReflectPercent = 0;
 
-        if (firstBlock && state.FirstReflectDamage > 0)
-        {
-            reflect.Add(WitchRules.Reflect(state.FirstReflectDamage, 100, state.ReflectMultiplier));
-        }
-        if (state.NextReflectPercent > 0)
-        {
-            reflect.Add(WitchRules.Reflect(result.BlockedDamage, state.NextReflectPercent, state.ReflectMultiplier));
-            state.NextReflectPercent = 0;
-        }
         if (!state.FirstCombatBlockTriggered && target.Player!.Relics.OfType<SilverMirrorFrame>().FirstOrDefault() is { } frame)
         {
             state.FirstCombatBlockTriggered = true;
             frame.Flash();
-            reflect.Add(WitchRules.Reflect(5, 100, state.ReflectMultiplier));
+            fixedDamage += 5;
+        }
+        if (state.WeakOnBlock > 0)
+        {
+            var weak = state.WeakOnBlock;
+            state.WeakOnBlock = 0;
+            await PowerCmd.Apply<MegaCrit.Sts2.Core.Models.Powers.WeakPower>(choice, dealer, weak, target, null);
         }
 
-        if (reflect.Any(amount => amount > 0))
+        // One response per native DamageResult. An unpowered response has no Move flag.
+        var reflection = WitchRules.Reflect(result.BlockedDamage, percent, fixedDamage);
+#if SPIRELAB_TEST_LAB
+        WitchCombatState.Trace($"反射 · {dealer.Name} · 实际格挡 {result.BlockedDamage} · 镜中人 {mirrorSelf}% + 迷宫 {state.MazeReflectPercent}% + 镜葬 {burial}% · 固定 {fixedDamage} · 最终 {reflection}");
+#endif
+        if (reflection > 0 && dealer.IsAlive)
         {
             WitchFeedback.Reflect(dealer);
-        }
-
-        foreach (var reflection in reflect)
-        {
-            if (reflection <= 0 || !dealer.IsAlive)
-            {
-                continue;
-            }
-
             var hits = await CreatureCmd.Damage(choice, dealer, reflection, ValueProp.Unpowered, target);
             if (hits.Any(hit => hit.TotalDamage > 0))
             {
                 if (!state.Reflected)
                 {
                     state.NextDraw += state.ShadowDraw;
+                    if (state.InscriptionEnabled)
+                    {
+                        state.NextSkillDiscount = 1;
+                        state.NextSkillWard = state.InscriptionWard;
+                    }
                 }
                 state.Reflected = true;
                 state.ReflectedDuringEnemyTurn |= target.CombatState?.CurrentSide == CombatSide.Enemy;
             }
         }
+        await WitchStatuses.Refresh(choice, target.Player!, state);
     }
 }
