@@ -5,69 +5,159 @@
 
 [sub_resource type="Animation" id="Animation_idle"]
 resource_name = "idle"
-length = 1.6
+length = 3.2
 loop_mode = 1
 tracks/0/type = "value"
 tracks/0/path = NodePath("Visuals:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.8, 1.6),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(0, 1.6, 3.2),
+"transitions": PackedFloat32Array(-2, -2, -2),
 "update": 0,
-"values": [Vector2(0, -158), Vector2(0, -162), Vector2(0, -158)]
+"values": [Vector2(0, -158), Vector2(0, -161.5), Vector2(0, -158)]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Visuals:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1.6, 3.2),
+"transitions": PackedFloat32Array(-2, -2, -2),
+"update": 0,
+"values": [Vector2(0.7, 0.7), Vector2(0.703, 0.708), Vector2(0.7, 0.7)]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Visuals:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.85, 2.35, 3.2),
+"transitions": PackedFloat32Array(-2, -2, -2, -2),
+"update": 0,
+"values": [0.0, 0.008, -0.006, 0.0]
+}
+tracks/3/type = "value"
+tracks/3/path = NodePath("Visuals:modulate")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+tracks/4/type = "value"
+tracks/4/path = NodePath("MirrorFormVisual:position")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 1.05, 2.3, 3.2),
+"transitions": PackedFloat32Array(-2, -2, -2, -2),
+"update": 0,
+"values": [Vector2(-106, -145), Vector2(-107.5, -148.5), Vector2(-104.5, -143.5), Vector2(-106, -145)]
+}
+tracks/5/type = "value"
+tracks/5/path = NodePath("MirrorFormVisual:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 1.15, 2.45, 3.2),
+"transitions": PackedFloat32Array(-2, -2, -2, -2),
+"update": 0,
+"values": [0.0, -0.011, 0.009, 0.0]
+}
+
+[sub_resource type="Animation" id="Animation_attack"]
+resource_name = "attack"
+length = 0.36
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.36),
+"transitions": PackedFloat32Array(0.4, 2, 1),
+"update": 0,
+"values": [Vector2(0, -158), Vector2(28, -160), Vector2(0, -158)]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Visuals:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.36),
+"transitions": PackedFloat32Array(0.4, 2, 1),
+"update": 0,
+"values": [0.0, 0.042, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("MirrorFormVisual:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.36),
+"transitions": PackedFloat32Array(0.5, 2, 1),
+"update": 0,
+"values": [Vector2(-106, -145), Vector2(-99, -146.5), Vector2(-106, -145)]
+}
+
+[sub_resource type="Animation" id="Animation_cast"]
+resource_name = "cast"
+length = 0.42
+tracks/0/type = "value"
+tracks/0/path = NodePath("Visuals:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.42),
+"transitions": PackedFloat32Array(0.45, -2, 1),
+"update": 0,
+"values": [Vector2(0, -158), Vector2(0, -164), Vector2(0, -158)]
 }
 tracks/1/type = "value"
 tracks/1/path = NodePath("Visuals:modulate")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
+"times": PackedFloat32Array(0, 0.15, 0.42),
+"transitions": PackedFloat32Array(0.5, 2, 1),
 "update": 0,
-"values": [Color(1, 1, 1, 1)]
+"values": [Color(1, 1, 1, 1), Color(1.22, 1.08, 0.92, 1), Color(1, 1, 1, 1)]
 }
-
-[sub_resource type="Animation" id="Animation_attack"]
-resource_name = "attack"
-length = 0.34
-tracks/0/type = "value"
-tracks/0/path = NodePath("Visuals:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.11, 0.34),
-"transitions": PackedFloat32Array(1, 1, 1),
+tracks/2/type = "value"
+tracks/2/path = NodePath("MirrorFormVisual:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.22, 0.42),
+"transitions": PackedFloat32Array(-2, -2, 1),
 "update": 0,
-"values": [Vector2(0, -158), Vector2(27, -158), Vector2(0, -158)]
-}
-
-[sub_resource type="Animation" id="Animation_cast"]
-resource_name = "cast"
-length = 0.38
-tracks/0/type = "value"
-tracks/0/path = NodePath("Visuals:modulate")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.14, 0.38),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [Color(1, 1, 1, 1), Color(1.25, 1.12, 0.78, 1), Color(1, 1, 1, 1)]
+"values": [Vector2(-106, -145), Vector2(-109, -150), Vector2(-106, -145)]
 }
 
 [sub_resource type="Animation" id="Animation_hit"]
 resource_name = "hit"
-length = 0.25
+length = 0.28
 tracks/0/type = "value"
 tracks/0/path = NodePath("Visuals:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.25),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(0, 0.07, 0.19, 0.28),
+"transitions": PackedFloat32Array(0.35, 1.8, -2, 1),
 "update": 0,
-"values": [Vector2(0, -158), Vector2(-13, -158), Vector2(0, -158)]
+"values": [Vector2(0, -158), Vector2(-13, -157), Vector2(2, -158), Vector2(0, -158)]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Visuals:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.07, 0.28),
+"transitions": PackedFloat32Array(0.35, 2, 1),
+"update": 0,
+"values": [0.0, -0.045, 0.0]
 }
 
 [sub_resource type="Animation" id="Animation_die"]
