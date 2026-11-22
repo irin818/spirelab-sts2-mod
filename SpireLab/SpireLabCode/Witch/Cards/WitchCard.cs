@@ -22,9 +22,15 @@ public abstract class WitchCard(string specId, int cost, CardType type, CardRari
     [CustomEnum]
     public static CardTag Desire;
 
+    internal static readonly HashSet<string> RetiredSpecIds =
+        ["C17", "U02", "U03", "U17", "U25", "U26", "U29", "R06", "R22"];
+
     public string SpecId { get; } = specId;
     public virtual bool IsDesire => false;
     public virtual int LifeCost => 0;
+    public bool IsRetiredFromRewardPool => RetiredSpecIds.Contains(SpecId);
+    public bool IsInRewardPool =>
+        Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare && !IsRetiredFromRewardPool;
     public override string CustomPortraitPath => $"{TheWitch.Art}/cards/{SpecId.ToLowerInvariant()}.png";
     public override string PortraitPath => CustomPortraitPath;
     public override string BetaPortraitPath => CustomPortraitPath;
@@ -58,7 +64,9 @@ public abstract class WitchCard(string specId, int cost, CardType type, CardRari
 
     protected bool BelowHalf => WitchRules.IsBelowHalf(Owner.Creature.CurrentHp, Owner.Creature.MaxHp);
     protected int ExtraEnergy => State.ExtraEnergy;
+    protected bool IsCounterpoint => State.CurrentPlayWasCounterpoint;
 
+    protected Task Draw(PlayerChoiceContext choice, decimal count) => CardPileCmd.Draw(choice, count, Owner);
     protected Task Draw(PlayerChoiceContext choice) => CardPileCmd.Draw(choice, DynamicVars.Cards.BaseValue, Owner);
     protected Task GainEnergy(PlayerChoiceContext choice) => WitchEnergy.Gain(choice, Owner, DynamicVars.Energy.IntValue, fromCard: true);
     protected Task Weak(PlayerChoiceContext choice, CardPlay play) =>
@@ -77,6 +85,24 @@ public abstract class WitchCard(string specId, int cost, CardType type, CardRari
 
         await CardCmd.Discard(choice, selected);
         return true;
+    }
+
+    protected async Task<bool> ExhaustOne(PlayerChoiceContext choice, string prompt)
+    {
+        var prefs = new CardSelectorPrefs(new LocString("card_selection", prompt), 1, 1)
+        {
+            Cancelable = false,
+            RequireManualConfirmation = true,
+            PretendCardsCanBePlayed = true
+        };
+        var selected = (await CardSelectCmd.FromHand(choice, Owner, prefs, card => card != this, this)).FirstOrDefault();
+        if (selected == null || selected == this)
+        {
+            return false;
+        }
+
+        var result = await CardCmd.Exhaust(choice, selected);
+        return result?.success == true;
     }
 
     protected Task<bool> PayLife(PlayerChoiceContext choice) => WitchLife.Pay(choice, Owner, LifeCost, fromCard: true);

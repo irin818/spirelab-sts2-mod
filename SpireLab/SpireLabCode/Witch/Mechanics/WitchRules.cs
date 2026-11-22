@@ -1,7 +1,17 @@
 namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
+public enum PlayKind
+{
+    Other = 0,
+    Attack = 1,
+    Skill = 2
+}
+
 public static class WitchRules
 {
+    public const int InscriptionReflectCap = 100;
+    public const int MirrorCageFloor = 10;
+
     public static bool IsBelowHalf(int realHp, int maxHp) => 2L * realHp < maxHp;
 
     public static bool CanPayLife(int realHp, int cost) => cost > 0 && cost < realHp;
@@ -23,6 +33,15 @@ public static class WitchRules
 
     public static int Reflect(int blocked, int totalPercent, int fixedDamage = 0) =>
         blocked <= 0 ? 0 : (int)Math.Min(int.MaxValue, (long)blocked * totalPercent / 100 + fixedDamage);
+
+    public static int AddCappedReflect(int current, int gain, int cap = InscriptionReflectCap) =>
+        Math.Min(cap, Math.Max(0, current) + Math.Max(0, gain));
+
+    public static bool IsCounterpoint(PlayKind? previous, PlayKind current) =>
+        (previous == PlayKind.Attack && current == PlayKind.Skill)
+        || (previous == PlayKind.Skill && current == PlayKind.Attack);
+
+    public static int MirrorCageDamage(int block, int floor = MirrorCageFloor) => Math.Max(block, floor);
 
     public static int RefundLife(int realHp, int maxHp, int paid) =>
         (int)Math.Min((long)realHp + paid, maxHp);

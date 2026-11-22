@@ -43,13 +43,9 @@ internal static class WitchEnergy
                 {
                     WitchFeedback.Energy(player.Creature);
                 }
-                if (first && state.BlueFlameDamage > 0)
+                if (first && state.BlueFlameBonus > 0)
                 {
-                    var enemy = player.RunState.Rng.CombatTargets.NextItem(player.Creature.CombatState!.HittableEnemies);
-                    if (enemy != null)
-                    {
-                        await CreatureCmd.Damage(choice, enemy, state.BlueFlameDamage, ValueProp.Unpowered, player.Creature);
-                    }
+                    state.PendingSingleHitAttackBonus += state.BlueFlameBonus;
                 }
                 if (first && state.SevenfoldDraw)
                 {

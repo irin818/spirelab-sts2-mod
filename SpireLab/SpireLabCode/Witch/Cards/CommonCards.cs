@@ -1,15 +1,13 @@
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 
 namespace SpireLab.SpireLabCode.Witch.Cards;
 
 // C03
 public sealed class Distillation() : WitchCard("C03", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(1), new EnergyVar(1)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [new CardsVar(2), new EnergyVar(1)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
@@ -23,51 +21,54 @@ public sealed class Distillation() : WitchCard("C03", 1, CardType.Skill, CardRar
 // C04
 public sealed class ShatterPhial() : WitchCard("C04", 2, CardType.Attack, CardRarity.Common, TargetType.AllEnemies)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(10)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(12)];
 
     protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
         Attack(choice, play);
 
-    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(3);
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(4);
 }
 
 // C05
 public sealed class Residue() : WitchCard("C05", 0, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override IEnumerable<CardKeyword> CanonicalKeywords => [CardKeyword.Exhaust];
-    public override int LifeCost => Number("Life");
-    protected override IEnumerable<DynamicVar> CanonicalVars => [new DynamicVar("Life", 2), new EnergyVar(1)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [new EnergyVar(1), new CardsVar(0)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        if (await PayLife(choice))
+        await GainEnergy(choice);
+        if (IsUpgraded)
         {
-            await GainEnergy(choice);
+            await Draw(choice);
         }
     }
 
-    protected override void OnUpgrade() => DynamicVars["Life"].UpgradeValueBy(-1);
+    protected override void OnUpgrade() => DynamicVars.Cards.UpgradeValueBy(1);
 }
 
 // C06
 public sealed class ConcentratedFlame() : WitchCard("C06", 2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(16)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(18), new CardsVar(1)];
+
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Attack(choice, play);
-        if (Owner.PlayerCombatState!.Energy > 0)
+        await Draw(choice);
+        if (ExtraEnergy > 0)
         {
-            State.NextDraw++;
+            await Draw(choice);
         }
     }
-    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(4);
+
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(5);
 }
 
 // C07
 public sealed class VolatileSteam() : WitchCard("C07", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(6), new DynamicVar("Weak", 1)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(6), new DynamicVar("Weak", 1), new DynamicVar("Bonus", 4)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
@@ -75,10 +76,18 @@ public sealed class VolatileSteam() : WitchCard("C07", 1, CardType.Attack, CardR
         if (play.Target?.IsAlive == true)
         {
             await Weak(choice, play);
+            if (IsCounterpoint && play.Target?.IsAlive == true)
+            {
+                await Deal(choice, play, Number("Bonus"));
+            }
         }
     }
 
-    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(2);
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Damage.UpgradeValueBy(2);
+        DynamicVars["Bonus"].UpgradeValueBy(1);
+    }
 }
 
 // C08
@@ -90,7 +99,7 @@ public sealed class Sediment() : WitchCard("C08", 1, CardType.Skill, CardRarity.
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Block(play);
-        if (State.LastRemainingEnergy > 0)
+        if (ExtraEnergy > 0)
         {
             await Draw(choice);
         }
@@ -102,7 +111,8 @@ public sealed class Sediment() : WitchCard("C08", 1, CardType.Skill, CardRarity.
 // C09
 public sealed class EmberTrace() : WitchCard("C09", 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(3), new DynamicVar("Bonus", 3)];
+    public override bool GainsBlock => true;
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(3), new DynamicVar("Bonus", 3), Guard(3)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
@@ -111,25 +121,7 @@ public sealed class EmberTrace() : WitchCard("C09", 0, CardType.Attack, CardRari
         {
             await Deal(choice, play, Number("Bonus"));
         }
-    }
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Damage.UpgradeValueBy(2);
-        DynamicVars["Bonus"].UpgradeValueBy(2);
-    }
-}
-
-// C10
-public sealed class MirrorChip() : WitchCard("C10", 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
-{
-    public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(4), Guard(2)];
-
-    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
-    {
-        await Attack(choice, play);
-        if (State.BlockBeforeAttack == 0)
+        if (IsCounterpoint)
         {
             await Block(play);
         }
@@ -138,25 +130,52 @@ public sealed class MirrorChip() : WitchCard("C10", 0, CardType.Attack, CardRari
     protected override void OnUpgrade()
     {
         DynamicVars.Damage.UpgradeValueBy(2);
+        DynamicVars["Bonus"].UpgradeValueBy(2);
+        DynamicVars.Block.UpgradeValueBy(2);
+    }
+}
+
+// C10
+public sealed class MirrorChip() : WitchCard("C10", 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
+{
+    public override bool GainsBlock => true;
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(4), Guard(2), new DynamicVar("Reflection", 25)];
+
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
+    {
+        await Attack(choice, play);
+        if (State.BlockBeforeAttack == 0)
+        {
+            await Block(play);
+        }
+        if (IsCounterpoint)
+        {
+            State.TempReflectPercent += Number("Reflection");
+        }
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Damage.UpgradeValueBy(2);
         DynamicVars.Block.UpgradeValueBy(1);
+        DynamicVars["Reflection"].UpgradeValueBy(25);
     }
 }
 
 // C12
 public sealed class EtchedMirrorSlash() : WitchCard("C12", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(8)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(9), new CardsVar(1)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        var block = Math.Min(4, Owner.Creature.Block);
-        if (block > 0 && await ConfirmOptionalEffect(choice, "SPIRELAB-WITCH_CONVERT_BLOCK"))
-        {
-            await CreatureCmd.LoseBlock(choice, Owner.Creature, block, null);
-            State.NextBlock += block * 2;
-        }
         await Attack(choice, play);
+        if (State.DesirePlayedThisTurn)
+        {
+            await Draw(choice);
+        }
     }
+
     protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(3);
 }
 
@@ -176,52 +195,60 @@ public sealed class SplitFace() : WitchCard("C13", 1, CardType.Skill, CardRarity
 }
 
 // C14
-public sealed class ColdMirrorBarrier() : WitchCard("C14", 2, CardType.Skill, CardRarity.Common, TargetType.Self)
+public sealed class ColdMirrorBarrier() : WitchCard("C14", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(14)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(8), new CardsVar(1)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Block(play);
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
+    {
+        await Block(play);
+        if (IsCounterpoint)
+        {
+            await Draw(choice);
+        }
+    }
 
-    protected override void OnUpgrade() => DynamicVars.Block.UpgradeValueBy(4);
+    protected override void OnUpgrade() => DynamicVars.Block.UpgradeValueBy(3);
 }
 
 // C15
 public sealed class MirrorTransfer() : WitchCard("C15", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(5), new DynamicVar("Next", 3)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Guard(6), new EnergyVar(1)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         await Block(play);
-        State.NextBlock += Number("Next");
+        if (IsCounterpoint && !State.MirrorTransferEnergyUsed)
+        {
+            State.MirrorTransferEnergyUsed = true;
+            await GainEnergy(choice);
+        }
     }
 
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Block.UpgradeValueBy(2);
-        DynamicVars["Next"].UpgradeValueBy(2);
-    }
+    protected override void OnUpgrade() => DynamicVars.Block.UpgradeValueBy(3);
 }
 
 // C16
 public sealed class SeveredShadow() : WitchCard("C16", 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(7), new DynamicVar("Bonus", 4)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(10), new CardsVar(1)];
 
-    protected override Task OnPlay(PlayerChoiceContext choice, CardPlay play) =>
-        Attack(choice, play, BelowHalf ? Number("Bonus") : 0);
-
-    protected override void OnUpgrade()
+    protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        DynamicVars.Damage.UpgradeValueBy(3);
-        DynamicVars["Bonus"].UpgradeValueBy(2);
+        await Attack(choice, play);
+        if (State.BlockGains > 0)
+        {
+            await Draw(choice);
+        }
     }
+
+    protected override void OnUpgrade() => DynamicVars.Damage.UpgradeValueBy(3);
 }
 
-// C17
+// C17 (Retired from reward pool in V2.0; preserved for save compatibility)
 public sealed class ReflectedLight() : WitchCard("C17", 1, CardType.Skill, CardRarity.Common, TargetType.Self)
 {
     public override bool GainsBlock => true;
@@ -242,21 +269,18 @@ public sealed class ReflectedLight() : WitchCard("C17", 1, CardType.Skill, CardR
 // C18
 public sealed class Refraction() : WitchCard("C18", 2, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
 {
-    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(13), new DynamicVar("Next", 6)];
+    public override bool GainsBlock => true;
+    protected override IEnumerable<DynamicVar> CanonicalVars => [Damage(16), Guard(7)];
 
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
-        var attacking = play.Target?.Monster?.NextMove.Intents.Any(intent => intent is AttackIntent) == true;
         await Attack(choice, play);
-        if (attacking)
-        {
-            State.NextBlock += Number("Next");
-        }
+        await Block(play);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(4);
-        DynamicVars["Next"].UpgradeValueBy(2);
+        DynamicVars.Damage.UpgradeValueBy(5);
+        DynamicVars.Block.UpgradeValueBy(3);
     }
 }

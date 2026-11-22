@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
@@ -54,14 +55,11 @@ internal sealed class WitchCombatState
     public bool RetainEnergy { get; set; }
     public List<int> DeferredReflections { get; } = [];
     public int NextReflectPercent { get; set; }
+    public int TempReflectPercent { get; set; }
+    public int BaseReflectPercent { get; set; }
+    public int InscriptionReflectGain { get; set; }
     public int WeakOnBlock { get; set; }
-    public bool InscriptionEnabled { get; set; }
-    public int InscriptionWard { get; set; }
-    public int NextSkillDiscount { get; set; }
-    public int NextSkillWard { get; set; }
-    public int SkillDiscount { get; set; }
-    public int SkillWard { get; set; }
-    public int MazeReflectPercent { get; set; }
+    public int NextAttackDiscount { get; set; }
     public bool SlothImmunity { get; set; }
     public int GamblePaidThisTurn { get; set; }
     public int ShadowDraw { get; set; }
@@ -69,19 +67,31 @@ internal sealed class WitchCombatState
     public int BlockBeforeAttack { get; set; }
     public int PendingAttackBonus { get; set; }
     public int ActiveAttackBonus { get; set; }
+    public int BlueFlameBonus { get; set; }
+    public int PendingSingleHitAttackBonus { get; set; }
+    public int ActiveSingleHitBonus { get; set; }
     public int CrownDamage { get; set; }
     public int? Immunity { get; set; }
     public int? SpentImmunity { get; set; }
     public int CardLifeLost { get; private set; }
     public void RecordCardLifeLoss(int amount) => CardLifeLost = (int)Math.Min(10L, (long)CardLifeLost + amount);
+    public bool LifePaidByCardThisTurn { get; set; }
+    public bool DesirePlayedThisTurn { get; set; }
     public bool LifePaymentTriggered { get; set; }
     public bool VeilTriggered { get; set; }
     public bool FirstCombatBlockTriggered { get; set; }
 
+    public CardType? LastPlayedType { get; set; }
+    public bool CurrentPlayWasCounterpoint { get; set; }
+    public bool MirrorTransferEnergyUsed { get; set; }
+    public int EmptyMirrorDraw { get; set; }
+    public int EmptyMirrorBlock { get; set; }
+    public bool EmptyMirrorTriggered { get; set; }
+    public bool PendingLedgerAttack { get; set; }
+
     public int StartingEnergy { get; set; }
     public List<int> ManaPumpDurations { get; } = [];
     public int RetainedBlockCap { get; set; }
-    public int BlueFlameDamage { get; set; }
     public bool SevenfoldDraw { get; set; }
     public bool EnergyTriggered { get; set; }
     public bool ResolvingCard { get; set; }
@@ -95,16 +105,17 @@ internal sealed class WitchCombatState
     public List<(int PerEnergy, int Cap)> TurnEndEnergyBlocks { get; } = [];
     public int DepthsEnergy { get; set; }
     public int DepthsBlock { get; set; }
-    public int RedCatalystBlock { get; set; }
+    public int RedCatalystDraw { get; set; }
+    public int RedCatalystStacks { get; set; }
+    public bool RedCatalystTriggered { get; set; }
     public int ReverseRiteDraw { get; set; }
     public int HighPrintedPlays { get; set; }
     public int DuskDraw { get; set; }
     public int DuskBlock { get; set; }
     public bool FreePlayTriggered { get; set; }
 
-    public decimal BlockMultiplier { get; set; } = 1;
     public int FirstBlockPercent { get; set; }
-    public int RetainRandomCount { get; set; }
+    public int RetainSelectCount { get; set; }
     public HashSet<CardModel> RetainedCards { get; } = new(ReferenceEqualityComparer.Instance);
     public int BookmarkEnergy { get; set; }
     public bool BookmarkUsed { get; set; }
@@ -125,20 +136,25 @@ internal sealed class WitchCombatState
         BlockedDuringEnemyTurn = false;
         ReflectedDuringEnemyTurn = false;
         NextReflectPercent = 0;
+        TempReflectPercent = 0;
         WeakOnBlock = 0;
-        SkillDiscount = NextSkillDiscount;
-        SkillWard = NextSkillWard;
-        NextSkillDiscount = 0;
-        NextSkillWard = 0;
-        MazeReflectPercent = 0;
+        NextAttackDiscount = 0;
         SlothImmunity = false;
         ActiveAttackBonus = 0;
+        ActiveSingleHitBonus = 0;
+        LifePaidByCardThisTurn = false;
+        DesirePlayedThisTurn = false;
+        LastPlayedType = null;
+        CurrentPlayWasCounterpoint = false;
+        MirrorTransferEnergyUsed = false;
+        EmptyMirrorTriggered = false;
+        PendingLedgerAttack = false;
+        RedCatalystTriggered = false;
         ResolvingCard = false;
         EnergyTriggered = false;
         DistillerUsed = false;
         HighPrintedPlays = 0;
         FreePlayTriggered = false;
-        BlockMultiplier = 1;
         TurnEndEnergyBlocks.Clear();
         Immunity = null;
         SpentImmunity = null;
