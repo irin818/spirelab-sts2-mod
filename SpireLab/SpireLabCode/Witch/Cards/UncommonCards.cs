@@ -86,6 +86,7 @@ public sealed class Purification() : WitchCard("U05", 0, CardType.Skill, CardRar
         }
         if (await ExhaustOne(choice, "SPIRELAB-WITCH_PURIFY_EXHAUST"))
         {
+            WitchFeedback.PurifyTransmute(Owner.Creature);
             await GainEnergy(choice);
         }
     }

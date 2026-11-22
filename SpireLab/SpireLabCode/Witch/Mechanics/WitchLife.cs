@@ -32,6 +32,7 @@ internal static class WitchLife
             state.GamblePaidThisTurn = (int)Math.Min(int.MaxValue, (long)state.GamblePaidThisTurn + cost);
         }
         await CreatureCmd.SetCurrentHp(creature, creature.CurrentHp - cost);
+        WitchFeedback.LifePaid(creature, cost, refundOnVictory);
         await AfterPayment(choice, player, state);
         return true;
     }

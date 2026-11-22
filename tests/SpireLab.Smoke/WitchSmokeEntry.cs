@@ -18,6 +18,7 @@ public static class WitchSmokeEntry
             _ when args.Contains("--witch-greed") => () => _ = WitchGreedSmoke.Run(),
             _ when args.Contains("--witch-finisher") => () => _ = WitchFinisherSmoke.Run(),
             _ when args.Contains("--witch-art") => () => _ = WitchVisualPreview.Run(),
+            _ when args.Contains("--witch-animated-art") => () => _ = WitchAnimatedArtSmoke.Run(),
             _ => null
         };
 

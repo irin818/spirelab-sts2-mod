@@ -148,13 +148,18 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                     state.LastPlayedType is { } prev ? Classify(prev) : null,
                     Classify(play.Card.Type));
             }
-            if (play.Card is WitchCard && play.Card.Type is CardType.Skill or CardType.Power)
+            if (play.Card is WitchCard witchCard)
             {
-                await CreatureCmd.TriggerAnim(play.Player.Creature, "Cast", 0);
-            }
-            if (play.Card is WitchCard { IsDesire: true })
-            {
-                WitchFeedback.Desire(play.Player.Creature);
+                WitchAnimatedCardArt.NotifyCardPlayed(witchCard);
+                if (play.Card.Type is CardType.Skill or CardType.Power)
+                {
+                    await CreatureCmd.TriggerAnim(play.Player.Creature, "Cast", 0);
+                }
+                WitchFeedback.CardCast(play.Player.Creature, play.Target, witchCard, state.CurrentPlayWasCounterpoint);
+                if (witchCard.IsDesire)
+                {
+                    WitchFeedback.Desire(play.Player.Creature);
+                }
             }
             state.ResolvingCard = true;
             if (play.Card.Type == CardType.Attack)
@@ -347,6 +352,37 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         if (amount > 0 && WitchCombatState.Find(target.Player) is { } state)
         {
             state.BlockGains++;
+            WitchFeedback.BlockGained(target, amount);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardDrawn(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
+    {
+        if (!fromHandDraw && WitchCombatState.Find(card.Owner) != null)
+        {
+            WitchFeedback.CardDrawn(card.Owner.Creature);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardDiscarded(PlayerChoiceContext choiceContext, CardModel card)
+    {
+        if (WitchCombatState.Find(card.Owner) != null)
+        {
+            WitchFeedback.CardDiscarded(card.Owner.Creature);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardExhausted(PlayerChoiceContext choiceContext, CardModel card, bool causedByEthereal)
+    {
+        if (WitchCombatState.Find(card.Owner) != null)
+        {
+            WitchFeedback.CardExhausted(card.Owner.Creature);
         }
 
         return Task.CompletedTask;
@@ -403,6 +439,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
     public override async Task AfterCombatEnd(CombatRoom room)
     {
+        WitchFeedback.CombatEnded();
         foreach (var player in room.CombatState.Players)
         {
             if (WitchCombatState.Find(player) is not { } state)
@@ -522,9 +559,16 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     {
         // U14 Blue Flame Formula buffs only a single powered attack damage event.
         if (props.IsPoweredAttack() && dealer?.Player is { } attacker
-            && WitchCombatState.Find(attacker) is { ActiveSingleHitBonus: > 0 } attackerState)
+            && WitchCombatState.Find(attacker) is { } attackerState)
         {
-            attackerState.ActiveSingleHitBonus = 0;
+            if (attackerState.ActiveSingleHitBonus > 0)
+            {
+                attackerState.ActiveSingleHitBonus = 0;
+            }
+            if (cardSource is WitchCard hitCard && target.Side == CombatSide.Enemy)
+            {
+                WitchFeedback.AttackHit(dealer, target, hitCard);
+            }
         }
 
         if (WitchCombatState.Find(target.Player) is not { } state)
@@ -552,6 +596,11 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             }
             await WitchStatuses.Refresh(choice, target.Player!, state);
             return;
+        }
+
+        if (result.UnblockedDamage > 0 && target.IsAlive)
+        {
+            WitchFeedback.Hit(target);
         }
 
         if (result.BlockedDamage <= 0 || !dealer.IsAlive || !target.IsAlive)
@@ -584,7 +633,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         var reflection = WitchRules.Reflect(result.BlockedDamage, percent, fixedDamage);
         if (reflection > 0 && dealer.IsAlive)
         {
-            WitchFeedback.Reflect(dealer);
+            WitchFeedback.Reflect(dealer, target);
             var hits = await CreatureCmd.Damage(choice, dealer, reflection, ValueProp.Unpowered, target);
             if (hits.Any(hit => hit.TotalDamage > 0))
             {
@@ -594,6 +643,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                     if (state.InscriptionReflectGain > 0)
                     {
                         state.BaseReflectPercent = WitchRules.AddCappedReflect(state.BaseReflectPercent, state.InscriptionReflectGain);
+                        WitchFeedback.UpdateInscription(target, state.BaseReflectPercent);
                     }
                 }
                 state.Reflected = true;

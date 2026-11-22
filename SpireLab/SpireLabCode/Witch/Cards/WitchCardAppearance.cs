@@ -43,6 +43,7 @@ internal static class WitchCardAppearance
             },
             (node, model, badge) =>
             {
+                WitchAnimatedCardArt.Sync(node, model);
                 if (node.Visibility != ModelVisibility.Visible || model is not WitchCard witch || Suit(witch) is not { } suit)
                 {
                     return false;

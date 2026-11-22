@@ -1,19 +1,106 @@
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using SpireLab.SpireLabCode.Witch.Cards;
 
 namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 internal static class WitchFeedback
 {
-    public static void Enlighten(Creature creature) => Pulse(creature, "enlighten", new Color("eed9d9"), 43);
-    public static void Reflect(Creature dealer) => Pulse(dealer, "reflect", new Color("d6e1ed"), 28);
-    public static void Desire(Creature creature) => Pulse(creature, "desire", new Color("d84362"), 63);
-    public static void Energy(Creature creature) => Pulse(creature, "energy", new Color("c58298"), 29);
-    public static void ReserveEnergy(Creature creature) => Pulse(creature, "reserve", new Color("f6ccd4"), 66);
-    public static void Block(Creature creature) => Pulse(creature, null, new Color("d6e1ed"), 52);
+    public static void Enlighten(Creature creature)
+    {
+        WitchLiveRig.PulseGesture(creature, "mirror", isAttack: false);
+        WitchCombatVfx.SpawnCoreCue(creature, "enlighten");
+    }
+
+    public static void Reflect(Creature dealer, Creature? source = null)
+    {
+        if (source != null)
+        {
+            WitchLiveRig.PulseReflect(source);
+        }
+        WitchCombatVfx.SpawnCoreCue(dealer, "reflect", source);
+    }
+
+    public static void Desire(Creature creature)
+    {
+        WitchLiveRig.PulseDesire(creature);
+        WitchCombatVfx.SpawnCoreCue(creature, "desire");
+    }
+
+    public static void Energy(Creature creature)
+    {
+        WitchLiveRig.PulseCast(creature, "potion");
+        WitchCombatVfx.SpawnCoreCue(creature, "energy");
+    }
+
+    public static void ReserveEnergy(Creature creature)
+    {
+        WitchLiveRig.PulseCast(creature, "potion");
+        WitchCombatVfx.SpawnCoreCue(creature, "reserve");
+    }
+
+    public static void Block(Creature creature)
+    {
+        WitchLiveRig.PulseBlock(creature);
+        WitchCombatVfx.SpawnCoreCue(creature, null);
+    }
+
+    public static void BlockGained(Creature creature, decimal amount)
+    {
+        if (amount > 0)
+        {
+            WitchCombatVfx.SpawnSmallBlockGlint(creature);
+        }
+    }
+
+    public static void Hit(Creature creature)
+    {
+        WitchLiveRig.PulseHit(creature);
+    }
+
+    public static void CardCast(Creature witch, Creature? target, WitchCard card, bool isCounterpoint)
+    {
+        var suit = WitchCardAppearance.Suit(card);
+        if (isCounterpoint)
+        {
+            WitchLiveRig.PulseCounterpoint(witch);
+        }
+        else
+        {
+            WitchLiveRig.PulseGesture(witch, suit, card.Type == CardType.Attack);
+        }
+
+        WitchCombatVfx.SpawnCardCast(witch, target, card, suit, isCounterpoint);
+    }
+
+    public static void AttackHit(Creature witch, Creature target, WitchCard card) =>
+        WitchCombatVfx.SpawnAttackHit(witch, target, card);
+
+    public static void LifePaid(Creature witch, int actualPaid, bool isGamble) =>
+        WitchCombatVfx.SpawnLifePaid(witch, actualPaid, isGamble);
+
+    public static void PurifyTransmute(Creature witch) =>
+        WitchCombatVfx.SpawnPurifyTransmute(witch);
+
+    public static void CardDrawn(Creature witch) =>
+        WitchCombatVfx.SpawnCardDraw(witch);
+
+    public static void CardDiscarded(Creature witch) =>
+        WitchCombatVfx.SpawnCardDiscard(witch);
+
+    public static void CardExhausted(Creature witch) =>
+        WitchCombatVfx.SpawnCardExhaust(witch);
+
+    public static void UpdateInscription(Creature witch, int baseReflectPercent) =>
+        WitchLiveRig.SetInscriptionLevel(witch, baseReflectPercent);
+
+    public static void CombatEnded() =>
+        WitchCombatVfx.ClearTransientCombatEffects();
 
     public static void Invert(Creature creature)
     {
+        WitchLiveRig.SetMirrorAwakened(creature, true);
         if (creature.GetCreatureNode()?.Visuals.GetNodeOrNull<Sprite2D>("MirrorFormVisual") is { } mirror)
         {
             var awakening = mirror.CreateTween();
@@ -21,11 +108,15 @@ internal static class WitchFeedback
             awakening.TweenProperty(mirror, "modulate", Colors.White, 0.35);
         }
 
-        Pulse(creature, "mirror", new Color("dfecf9"), 96);
+        WitchCombatVfx.SpawnCoreCue(creature, "mirror");
     }
 
     public static void UpdateHealth(Creature creature)
     {
+        WitchLiveRig.EnsureAttached(creature);
+        var low = creature.IsAlive && WitchRules.IsBelowHalf(creature.CurrentHp, creature.MaxHp);
+        WitchLiveRig.SetLowHealth(creature, low);
+
         var visuals = creature.GetCreatureNode()?.Visuals;
         if (visuals?.GetNodeOrNull<AnimationPlayer>("HealthAnimation") is not { } animation)
         {
@@ -33,7 +124,7 @@ internal static class WitchFeedback
         }
 
         // This player only controls the sprite's own color; BaseLib keeps ownership of combat animations.
-        if (creature.IsAlive && WitchRules.IsBelowHalf(creature.CurrentHp, creature.MaxHp))
+        if (low)
         {
             if (!animation.IsPlaying())
             {
@@ -45,51 +136,5 @@ internal static class WitchFeedback
             animation.Stop();
             visuals.Body.SelfModulate = Colors.White;
         }
-    }
-
-    private static void Pulse(Creature creature, string? cue, Color color, float radius)
-    {
-        if (DisplayServer.GetName() == "headless" || creature.GetVfxContainer() is not { } host
-            || creature.GetCreatureNode() is not { } target)
-        {
-            return;
-        }
-
-        var pulse = new Line2D
-        {
-            Name = cue == null ? "WitchBlockFlash" : "WitchMagicFlash",
-            Width = 3,
-            DefaultColor = color,
-            Antialiased = true,
-            Closed = true,
-            Points = [new(-radius, 0), new(0, -radius), new(radius, 0), new(0, radius)]
-        };
-        host.AddChild(pulse);
-        pulse.GlobalPosition = target.VfxSpawnPosition;
-        var tween = pulse.CreateTween().SetParallel();
-        tween.TweenProperty(pulse, "scale", new Vector2(1.8f, 1.8f), 0.34);
-        tween.TweenProperty(pulse, "modulate:a", 0f, 0.34);
-        tween.Finished += pulse.QueueFree;
-
-        if (cue == null)
-        {
-            return;
-        }
-
-        var glyph = cue == "energy" ? $"{TheWitch.Art}/witch_energy.svg" : $"{TheWitch.Art}/abilities/{cue}.svg";
-        pulse.AddChild(new Sprite2D
-        {
-            Texture = ResourceLoader.Load<Texture2D>(glyph),
-            Scale = new Vector2(0.48f, 0.48f)
-        });
-
-        var audio = new AudioStreamPlayer
-        {
-            Stream = ResourceLoader.Load<AudioStream>($"{MainFile.ResPath}/audio/witch/{(cue == "reserve" ? "energy" : cue)}.wav"),
-            VolumeDb = -15
-        };
-        host.AddChild(audio);
-        audio.Finished += audio.QueueFree;
-        audio.Play();
     }
 }
