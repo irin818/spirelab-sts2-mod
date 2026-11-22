@@ -5,7 +5,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 root="$(pwd -P)"
 quit_after=15000
 case "${1:-witch}" in
-    witch) character=witch; smoke_flag=--witch-smoke ;;
+    witch) character=witch; smoke_flag=--witch-smoke; quit_after=24000 ;;
     witch-save) character=witch-save; smoke_flag=--witch-save-probe ;;
     witch-legacy-save) character=witch-legacy-save; smoke_flag=--witch-resume-probe ;;
     witch-campaign) character=witch-campaign; smoke_flag=--witch-campaign; quit_after=200000 ;;

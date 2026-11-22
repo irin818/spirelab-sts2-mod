@@ -43,11 +43,13 @@ internal static class WitchSaveProbe
                 await WaitFor(tree, () => player.PlayerCombatState?.Phase == PlayerTurnPhase.Play,
                     "resumed mapped combat reaches play phase");
                 Check(player.Character is TheWitch && player.Deck.Cards.OfType<BeyondTheGlass>().Single().IsUpgraded
+                    && player.Deck.Cards.OfType<ReflectedLight>().Count() == 1
+                    && player.Deck.Cards.OfType<EmptyMirror>().Single().Type == CardType.Power
                     && player.Relics.Single() is CrackedVanityMirror && player.Creature.CurrentHp == 41,
-                    "new process restores Witch, ancient upgrade, relic and real HP");
+                    "new process restores Witch, ancient upgrade, retired C17 card, R15 Power migration, relic and real HP");
                 var state = WitchCombatState.For(player);
                 Check(state.MirrorHp == 0 && state.OpeningCard is PotionMist && !player.Deck.Cards.Contains(state.OpeningCard)
-                    && player.Deck.Cards.Count == 11 && player.PlayerCombatState!.Hand.Cards.Count == 6,
+                    && player.Deck.Cards.Count == 13 && player.PlayerCombatState!.Hand.Cards.Count == 6,
                     "resumed battle starts clean and triggers intrinsic draw");
             }
             else
@@ -59,6 +61,8 @@ internal static class WitchSaveProbe
                 var ancient = run.CreateCard(ModelDb.Card<BeyondTheGlass>(), player);
                 CardCmd.Upgrade(ancient);
                 await CardPileCmd.Add(ancient, PileType.Deck);
+                await CardPileCmd.Add(run.CreateCard(ModelDb.Card<ReflectedLight>(), player), PileType.Deck);
+                await CardPileCmd.Add(run.CreateCard(ModelDb.Card<EmptyMirror>(), player), PileType.Deck);
                 await RunManager.Instance.EnterMapCoord(run.Map.StartingMapPoint.coord);
                 await WaitFor(tree, () => player.PlayerCombatState?.Phase == PlayerTurnPhase.Play,
                     "first process enters a real mapped room");
