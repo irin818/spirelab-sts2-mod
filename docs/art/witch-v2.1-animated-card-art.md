@@ -38,13 +38,40 @@
 
 核心实现位置：[WitchAnimatedCardArt.cs](../../SpireLab/SpireLabCode/Witch/Cards/WitchAnimatedCardArt.cs)，在 [WitchCardAppearance.cs](../../SpireLab/SpireLabCode/Witch/Cards/WitchCardAppearance.cs) 的现有 `ExtraCardUi` 钩子中惰性挂载，并通过 [WitchCharacter.cs](../../SpireLab/SpireLabCode/Witch/WitchCharacter.cs) 的 `TheWitch.ExtraAssetPaths` 预载资源。
 
-### 2.1 三级运行状态与性能约束
+### 2.1 触发原则与性能约束（遵循用户确认：一切浏览/查看保持原版，仅出牌时展示动态卡面）
 
-| 状态 | 触发条件 | 渲染策略 | 每帧开销 |
-| --- | --- | --- | --- |
-| **Idle（默认静止）** | 手牌静止、奖励静止、选牌静止、非焦点状态 | `portrait.Material = null`，`SetProcess(false)` | **0**（零 Shader、零 `_Process`） |
-| **Hover（克制微动）** | `NCardHolder` 鼠标悬停或手柄/键盘聚焦 | 挂载动态材质，`is_inspect = 0.0`；仅启用克制镜面冷银扫光、微弱裂纹与瞳孔回光，关闭镜内呼吸位移 | 仅当前聚焦单卡运行 |
-| **Inspect（放大完整循环）** | 位于可见的 `NInspectCardScreen` 内 | 挂载动态材质，`is_inspect = 1.0`；完整 4.2 秒无缝周期循环（含 `< 1.05 px` 镜内低频呼吸感与微尘） | 仅放大单卡运行 |
+| 场景 | 渲染策略 | 每帧开销 |
+| --- | --- | --- |
+| **手牌 / 牌库 / 奖励 / 命运选牌 / 放大查看（默认）** | **100% 原版行为**（`portrait.Material = null`，`SetProcess(false)`），不做任何专门的悬停/查看动效劫持 | **0** |
+| **打出卡牌进入出牌区（`NCardPlayQueue` / `PlayContainer`）** | 仅当含动态配置的卡牌实际打出时（目前为 `R10` 镜中人），自动激活 `CardArtDisplayState.Play` 动态材质，并在结算离开出牌区后立即卸载回收 | 仅当前打出单卡 |
+
+---
+
+## 2.5 魔女 Live2D 级战斗角色动态与通用哥特战斗特效（V2.1 Phase 2）
+
+### 魔女本体与镜中形态 Live2D 级动态绑定（60+ FPS，零原生第三方依赖）
+
+因 STS2（MegaDot `4.5.1-m.14`）不内置专有 Live2D Cubism Core 原生动态库，且外挂原生 C++ GDExtension 会破坏 macOS/Windows Steam 创意工坊跨平台分发；本方案采用与 Live2D 同源的 **2D 解剖权重遮罩 + GPU 运动学变形 Shader + C# 60 FPS 阻尼弹簧物理系统** 实现同等流畅度，且**0 字节修改 `witch_sprite.png` 与 `witch_mirror_form.png` 原图**：
+
+- **可重现遮罩管线**：[build-witch-live-rig-masks.py](../../scripts/build-witch-live-rig-masks.py) 生成像素锁定的四通道权重贴图（`.import` 显式关闭 `process/fix_alpha_border`）：
+  - `witch_rig_masks.png`（`391 × 438`）：`R` = 颈部铰接的头部与宽檐帽刚体权重（零五官拉伸）；`G` = 后发卷束、弯尖帽梢与红宝石垂饰、下垂十字饰的次级物理摆动权重；`B` = 分层哥特裙摆与象牙蕾丝波纹权重（严格排除双腿与厚底靴）；`A` = 深红双瞳、帽坠红宝石、帽针宝石与魔法书红宝石发光区。
+  - `mirror_rig_masks.png`（`238 × 438`）：`R` = 镜内椭圆玻璃；`G` = 镜中人深红双瞳；`B` = 既有暗红裂纹与银框红宝石；`A` = 镜内羽化呼吸区（严格锁死外层华丽银框）。
+- **GPU 运动学与自然眨眼**：
+  - [witch_live.gdshader](../../SpireLab/SpireLab/images/witch/live/witch_live.gdshader)：脚踝以下（`uv.y >= 0.855`）锚死地面零滑步；胸腔呼吸起伏、颈部点头偏头、多谐波后发/帽梢/裙摆波纹、精确眼眶坐标自然上眼睑闭合与睫毛弧线（非眨眼时 0 像素改动）、施法/反奏/格挡/欲望轮廓边光。
+  - [witch_mirror_live.gdshader](../../SpireLab/SpireLab/images/witch/live/witch_mirror_live.gdshader)：与魔女本体错峰不同步的镜内呼吸与冷银斜向扫光；触发 `R10` 镜像逆转后平滑进入 `mirror_awakened = 1.0` 觉醒态。
+- **C# 弹簧物理驱动**：[WitchLiveRig.cs](../../SpireLab/SpireLabCode/Witch/Mechanics/WitchLiveRig.cs) 通过 `Spring1D` 模拟身体前倾、攻击突进、受击后仰、头发与裙摆滞后回弹，并定时触发自然单/双眨眼，受 `Full / Reduced / Static` 全局偏好统一控制。
+
+### 通用哥特战斗特效系统（[WitchCombatVfx.cs](../../SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatVfx.cs) + [WitchFeedback.cs](../../SpireLab/SpireLabCode/Witch/Mechanics/WitchFeedback.cs)）
+
+采用抗锯齿程序化矢量几何（Retina 4K 锐利、严格锁定魔女色板、单次 `0.28s–0.56s` 非阻塞、播放完自动 `QueueFree`）：
+- **五类出牌差异化特效**：魔药抛物弧与炼金六芒环、镜子冷银斜斩与六角镜壁、魔法书残页旋涡与银墨符文飞刃、欲望酒红裂纹法阵与暗红花瓣、**反奏（Counterpoint）冷银→石榴红双拍共鸣环**。
+- **核心通用特效升级**：格挡升级为弧形冷银镜盾（保留 `WitchBlockFlash` 节点名兼容测试）、反射升级为由魔女镜面直击攻击者的**冷银+深红折射光束与碎镜爆裂**、镜像逆转增加银红裂镜冲击波与镜中形态觉醒联动。
+
+### 实机动态预览
+
+- **魔女本体 + 镜中人 Live2D 动态循环 GIF（含自然眨眼、发丝/帽梢/裙摆物理与镜面扫光）**：[witch-live-rig-loop.gif](witch-v2.1/witch-live-rig-loop.gif)
+- **实机战斗特效 2×2 展示（R10 出牌动态卡面 / 反奏共鸣 / 书页飞刃 / 镜盾与反射光束）**：[witch-combat-vfx-showcase.png](witch-v2.1/witch-combat-vfx-showcase.png)
+- 实测性能（macOS Apple Silicon，STS2 `v0.111.1`）：实时战斗 **61.3 FPS**（`mean=16.32ms, p95=16.74ms`），退出战斗返回主菜单控制器与特效残留均为 0。
 
 ### 2.2 动态偏好与降级模式
 
