@@ -148,13 +148,18 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                     state.LastPlayedType is { } prev ? Classify(prev) : null,
                     Classify(play.Card.Type));
             }
-            if (play.Card is WitchCard && play.Card.Type is CardType.Skill or CardType.Power)
+            if (play.Card is WitchCard witchCard)
             {
-                await CreatureCmd.TriggerAnim(play.Player.Creature, "Cast", 0);
-            }
-            if (play.Card is WitchCard { IsDesire: true })
-            {
-                WitchFeedback.Desire(play.Player.Creature);
+                WitchAnimatedCardArt.NotifyCardPlayed(witchCard);
+                if (play.Card.Type is CardType.Skill or CardType.Power)
+                {
+                    await CreatureCmd.TriggerAnim(play.Player.Creature, "Cast", 0);
+                }
+                WitchFeedback.CardCast(play.Player.Creature, play.Target, witchCard, state.CurrentPlayWasCounterpoint);
+                if (witchCard.IsDesire)
+                {
+                    WitchFeedback.Desire(play.Player.Creature);
+                }
             }
             state.ResolvingCard = true;
             if (play.Card.Type == CardType.Attack)
@@ -554,6 +559,11 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             return;
         }
 
+        if (result.UnblockedDamage > 0 && target.IsAlive)
+        {
+            WitchFeedback.Hit(target);
+        }
+
         if (result.BlockedDamage <= 0 || !dealer.IsAlive || !target.IsAlive)
         {
             await WitchStatuses.Refresh(choice, target.Player!, state);
@@ -584,7 +594,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         var reflection = WitchRules.Reflect(result.BlockedDamage, percent, fixedDamage);
         if (reflection > 0 && dealer.IsAlive)
         {
-            WitchFeedback.Reflect(dealer);
+            WitchFeedback.Reflect(dealer, target);
             var hits = await CreatureCmd.Damage(choice, dealer, reflection, ValueProp.Unpowered, target);
             if (hits.Any(hit => hit.TotalDamage > 0))
             {

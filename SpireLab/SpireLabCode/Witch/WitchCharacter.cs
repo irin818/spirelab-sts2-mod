@@ -22,7 +22,10 @@ public sealed class TheWitch : PlaceholderCharacterModel
     public override int StartingHp => 68;
     public override float DeathAnimTime => 0.5f;
     protected override IEnumerable<string> ExtraAssetPaths =>
-        base.ExtraAssetPaths.Concat(CrimsonFinalMirror.Assets).Concat(WitchAnimatedCardArt.Assets);
+        base.ExtraAssetPaths
+            .Concat(CrimsonFinalMirror.Assets)
+            .Concat(WitchAnimatedCardArt.Assets)
+            .Concat(WitchLiveRig.AssetPaths);
 
     public override IEnumerable<CardModel> StartingDeck =>
     [
