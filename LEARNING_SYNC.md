@@ -131,3 +131,10 @@
 - `WitchGreedSmoke.cs` 通过原版队列检查支付、抽回和未抽回的两条结算路径，用引用相等比较所有战斗牌堆。`WitchFinisherSmoke.cs` 检查镜头边界、局部退场和握拳同步，并记录帧时间。命令见 [V4 说明](docs/art/crimson-final-mirror-v4.md)。
 - Apple Silicon 实机已通过 116 项常规战斗、53 项原初贪婪专项、129 项 V4 演出和 40 项界面检查。围绕原版事件战斗复现了退场时序竞争，改用 `CombatRoom.ParentEventId` 判断事件所属的战斗并保留其原生退场。1600 × 900 无截图回读时，首次正常击杀平均 60.4 FPS，P95 17.31 ms，P99 17.60 ms。
 - 同一 AutoSlay 种子通过茂密植被的事件战斗、三幕首领与最终胜利，冷启动读档复测通过。
+
+### 创意工坊宣传素材升级（血色终镜 V4）
+
+- 核对 `ModUploader` v0.2.0 二进制与 `template/README.md`，确认官方上传器强制要求工作区根目录提供小于 1 MB 的 `image.png`，且不支持直接上传 MP4；视频预览需绑定 YouTube ID（`ISteamUGC::AddItemPreviewVideo` 或网页端添加）。
+- 在 [export-witch-workshop-media.py](scripts/export-witch-workshop-media.py) 实现可重现管线，直接复用仓库无损 V3/V4 绘画分层与实机录屏 `.local/crimson-v4/evidence/crimson-final-mirror-v4.mp4`，导出 1600×1600 封面母版、800×800 真彩 `< 1 MB` 主封面（943,374 字节）、1920×1080 干净视频封面、10 秒 1080p60 H.264/ProRes 宣传片（含 60 fps 动态片头/片尾与 7.02s 握拳碎镜音画同步）、540×540 12 fps `< 1 MB` 1:1 循环 GIF（770,480 字节）及页面适配审查表。
+- [verify-witch-release.py](scripts/verify-witch-release.py) 新增 `media` 发布前校验模式，并在 `workshop` 模式下拒绝伪装为 `image.png` 的非 PNG 文件或超 1 MB 封面；[test_witch_release.py](tests/test_witch_release.py) 增补对应单元测试。
+- 已按安全流程将 Steam 创意工坊条目 `3842829456` 先切为 Private，再通过 `ISteamUGC::SetItemPreview` 仅更新主封面为 `cover.gif`（新句柄 `12592709661809387352`）。实测从 Steam CDN 回读确认 `Content-Type: image/gif`、`540×540`、完整保留 29 帧动态且 SHA-256 与本地逐字节一致；`contentSize`（`41331444`）、标题、描述摘要与 BaseLib 依赖 `3737335127` 均未改动，条目保持 Private 待作者验收后公开。
