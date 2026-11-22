@@ -20,7 +20,7 @@
 
 ### 1.2 统一非阻塞战斗 VFX 调度与音频预算（[WitchCombatVfx.cs](../../SpireLab/SpireLabCode/Witch/Mechanics/WitchCombatVfx.cs) + [WitchFeedback.cs](../../SpireLab/SpireLabCode/Witch/Mechanics/WitchFeedback.cs)）
 - **严格并发与降级**：完整档上限 18 活跃节点、简化档上限 8；饱和时仅丢弃 P3 装饰效果，绝不遮挡 P0 数值/血条/手牌；`CombatEnded` 立即清空所有瞬态轨迹。
-- **材质匹配合成音效**：[build-witch-vfx-audio.py](../../scripts/build-witch-vfx-audio.py) 导出 7 组哥特材质 WAV（`potion_throw`、`potion_burst`、`mirror_slash`、`grimoire_page`、`counterpoint_chime`、`exhaust_ash`、`gamble_siphon`），全局并发上限 5 声道、单音效 `65ms` 冷却、高频自动轻微压低音量与微调音高。
+- **音频策略**：已按用户要求移除 V2.1 新增的 7 组合成特效音效，仅保留原有 5 组经典魔女音效（`desire / energy / enlighten / mirror / reflect.wav`）与血色终镜 V4 音轨，并对既有音效施加声道并发上限（5）与 `65ms` 节流防叠音。
 - **全语义事件适配**：严格由真实战斗结算驱动（真实命中段数、真实反射、真实生命支付、真实提纯消耗、真实抽/弃/耗牌与 `CombatEnded`）。
 
 ### 1.3 五组代表样板与特色卡牌实现
@@ -31,7 +31,7 @@
 | **银镜折光（镜子）** | `C11` 银幕（半透明冷银哥特镜面展开与斜向折光）、`U18` 镜面迷宫（4 面错位冷银镜片棱镜空间）、`U21` 反光刻印（镜框发光铭文随基础反射率递增，零额外节点）、`R10` 镜中人（觉醒冲击波 + 镜中人异步呼吸 + `R10` 动态卡面）、`R16` 镜狱（按真实 2 段命中交替左右斜斩）、通用格挡冷银镜盾与真实反射银红折射光束 |
 | **禁书秘仪（魔法书）** | `C19` 书页飞刃（羊皮纸书页扇形展开→银墨飞刃直击）、`U05` 提纯（真实消耗成功时虚影折叠压缩成炼金符印→跃起能量星点）、抽牌（合并翻页虚影）、弃牌（浅灰墨页坠落）、消耗（细红丝线解离化灰，与弃牌清晰区分） |
 | **人格侵染（欲望）** | `U37` 原初贪婪（镜影洗牌涡旋，不遮挡真实手牌）、`U38` 怠惰（冷银双镜合拢柔幕，非阻塞不延迟结束回合）、`R25` 堕落自信（酒红契约裂纹法阵与暗红花瓣）、`R26` 灾祸之源（单镜裂作三片带红印碎镜）、`R27` 狂赌之渊（真实生命支付触发血条→掌心红丝汲取，高频连拍自动提速缩短） |
-| **反奏接力（Counterpoint）** | 连续追踪上一张法术体系色（魔法书象牙白→镜子冷银→魔药石榴红），真实反奏成立时生成流畅的跨色衔接丝带与双拍共鸣环 + 双音钟鸣提示 |
+| **反奏接力（Counterpoint）** | 连续追踪上一张法术体系色（魔法书象牙白→镜子冷银→魔药石榴红），真实反奏成立时生成流畅的跨色衔接丝带与双拍共鸣环 |
 
 ### 1.4 动态卡面样板（R10 与 C01）
 - **`R10` 镜中人**：[r10_masks.png](../../SpireLab/SpireLab/images/witch/cards/animated/r10/r10_masks.png) + [r10_mirror_self.gdshader](../../SpireLab/SpireLab/images/witch/cards/animated/r10/r10_mirror_self.gdshader)（4.2s 无缝循环；左侧真实魔女 0 像素变动）。

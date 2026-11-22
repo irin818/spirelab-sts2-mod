@@ -32,17 +32,6 @@ public static partial class WitchCombatVfx
     private const double ExhaustCoalesceSec = 0.12;
     private const double GambleRapidWindowSec = 0.55;
 
-    internal static readonly string[] AudioAssets =
-    [
-        $"{MainFile.ResPath}/audio/witch/vfx/potion_throw.wav",
-        $"{MainFile.ResPath}/audio/witch/vfx/potion_burst.wav",
-        $"{MainFile.ResPath}/audio/witch/vfx/mirror_slash.wav",
-        $"{MainFile.ResPath}/audio/witch/vfx/grimoire_page.wav",
-        $"{MainFile.ResPath}/audio/witch/vfx/counterpoint_chime.wav",
-        $"{MainFile.ResPath}/audio/witch/vfx/exhaust_ash.wav",
-        $"{MainFile.ResPath}/audio/witch/vfx/gamble_siphon.wav"
-    ];
-
     internal enum EffectKind
     {
         BlockBarrier,
@@ -138,43 +127,37 @@ public static partial class WitchCombatVfx
         _activeMultiHitSpec = card.SpecId;
         _activeMultiHitIndex = 0;
 
-        // Signature card routing (Sections 6-9) with reusable fallbacks for all other cards
+        // Signature card routing (Sections 6-9) with reusable fallbacks for all other cards (visual-only; preserves original game SFX)
         switch (card.SpecId)
         {
             case "C01": // Potion Toss: spinning crimson glass vial parabola -> shatter splash
                 SpawnNode(host, EffectKind.PotionVialThrow, witchPos, targetPos, reduced ? 0.28f : 0.36f,
                     reduced, priority: 1, "WitchCastVfx", primaryColor: GarnetCrimson);
-                PlayMaterialAudio(host, "vfx/potion_throw", -14f);
                 break;
 
             case "C06": // Concentrated Flame: compressed crimson elixir jet
                 SpawnNode(host, EffectKind.ConcentratedFlameJet, witchPos, targetPos, reduced ? 0.26f : 0.34f,
                     reduced, priority: 1, "WitchCastVfx", primaryColor: GarnetCrimson);
-                PlayMaterialAudio(host, "vfx/potion_burst", -14f);
                 break;
 
             case "R08": // Final Distillation: crimson threads -> dense garnet crystal -> implosion shatter
                 SpawnNode(host, EffectKind.FinalDistillationCrystal, witchPos, targetPos, reduced ? 0.38f : 0.50f,
                     reduced, priority: 1, "WitchCastVfx", primaryColor: GarnetCrimson);
-                PlayMaterialAudio(host, "vfx/potion_burst", -12.5f);
                 break;
 
             case "U10": // Boiling Echo: hits are driven individually by actual AfterDamageGiven events!
                 SpawnNode(host, EffectKind.PotionAlchemy, witchPos, witchPos, reduced ? 0.22f : 0.28f,
                     reduced, priority: 2, "WitchCastVfx", primaryColor: GarnetCrimson);
-                PlayMaterialAudio(host, "vfx/potion_throw", -16f);
                 break;
 
             case "C11": // Silver Screen: unfolding translucent gothic silver mirror plane
                 SpawnNode(host, EffectKind.SilverScreenFold, witchPos, witchPos, reduced ? 0.28f : 0.36f,
                     reduced, priority: 1, "WitchCastVfx", primaryColor: CoolSilver);
-                PlayMaterialAudio(host, "vfx/mirror_slash", -16f);
                 break;
 
             case "U18": // Mirror Maze: staggered multi-plane silver mirror sanctuary
                 SpawnNode(host, EffectKind.MirrorMazeSanctuary, witchPos, witchPos, reduced ? 0.36f : 0.48f,
                     reduced, priority: 1, "WitchCastVfx", primaryColor: CoolSilver);
-                PlayMaterialAudio(host, "vfx/mirror_slash", -14.5f);
                 break;
 
             case "R16": // Mirror Cage: two opposing blades driven by actual hits in AfterDamageGiven
@@ -185,7 +168,6 @@ public static partial class WitchCombatVfx
             case "C19": // Razor Pages: translucent pages fan -> crisp silver-ink blade
                 SpawnNode(host, EffectKind.RazorPagesFan, witchPos, targetPos, reduced ? 0.28f : 0.36f,
                     reduced, priority: 1, "WitchCastVfx", primaryColor: Ivory);
-                PlayMaterialAudio(host, "vfx/grimoire_page", -14f);
                 break;
 
             case "U37": // Primal Greed: translucent mirror shimmer + swirling phantom card silhouettes
@@ -218,7 +200,6 @@ public static partial class WitchCombatVfx
             var prevColor = (now - _lastRelaySec) < 8.0 ? _lastRelayColor : CoolSilver;
             SpawnNode(host, EffectKind.CounterpointRelay, witchPos, witchPos, reduced ? 0.30f : 0.40f,
                 reduced, priority: 2, "WitchCounterpointVfx", primaryColor: prevColor, secondaryColor: nextRelayColor);
-            PlayMaterialAudio(host, "vfx/counterpoint_chime", -13.5f);
         }
 
         _lastRelayColor = nextRelayColor;
@@ -246,13 +227,11 @@ public static partial class WitchCombatVfx
             var dur = hitIndex >= 2 ? (reduced ? 0.30f : 0.40f) : (reduced ? 0.22f : 0.28f);
             SpawnNode(host, EffectKind.BoilingEchoHit, targetPos, witchPos, dur,
                 reduced, priority: 1, "WitchHitVfx", primaryColor: GarnetCrimson, variantIndex: hitIndex);
-            PlayMaterialAudio(host, hitIndex >= 2 ? "vfx/potion_burst" : "vfx/potion_throw", hitIndex >= 2 ? -12.5f : -16f);
         }
         else if (card.SpecId == "R16") // Mirror Cage: opposing alternating diagonal silver blades
         {
             SpawnNode(host, EffectKind.MirrorCageBlade, targetPos, targetPos, reduced ? 0.24f : 0.32f,
                 reduced, priority: 1, "WitchHitVfx", primaryColor: CoolSilver, variantIndex: hitIndex);
-            PlayMaterialAudio(host, "vfx/mirror_slash", -14f);
         }
     }
 
@@ -281,7 +260,6 @@ public static partial class WitchCombatVfx
         SpawnNode(host, EffectKind.LifeSiphon, hpOrigin, witchPos + new Vector2(18f, -12f), dur,
             reduced || _gambleBurstCount >= 2, priority: 1, "WitchLifeSiphonVfx",
             primaryColor: GarnetCrimson, secondaryColor: Ivory, variantIndex: Math.Min(actualPaid, 30));
-        PlayMaterialAudio(host, "vfx/gamble_siphon", _gambleBurstCount >= 2 ? -18f : -14.5f);
     }
 
     public static void SpawnPurifyTransmute(Creature witch)
@@ -293,7 +271,6 @@ public static partial class WitchCombatVfx
 
         SpawnNode(host, EffectKind.PurifyTransmute, witchPos + new Vector2(28f, -18f), witchPos, reduced ? 0.32f : 0.44f,
             reduced, priority: 2, "WitchPurifyVfx", primaryColor: GarnetCrimson, secondaryColor: Ivory);
-        PlayMaterialAudio(host, "vfx/exhaust_ash", -14.5f);
     }
 
     public static void SpawnCardDraw(Creature witch)
@@ -306,7 +283,6 @@ public static partial class WitchCombatVfx
         _lastDrawSec = now;
         SpawnNode(host, EffectKind.CardDrawFlutter, witchPos + new Vector2(-12f, -30f), witchPos + new Vector2(60f, 45f),
             reduced ? 0.20f : 0.28f, reduced, priority: 3, "WitchDrawVfx", primaryColor: Ivory);
-        PlayMaterialAudio(host, "vfx/grimoire_page", -21f);
     }
 
     public static void SpawnCardDiscard(Creature witch)
@@ -331,7 +307,6 @@ public static partial class WitchCombatVfx
         _lastExhaustSec = now;
         SpawnNode(host, EffectKind.CardExhaustAsh, witchPos + new Vector2(18f, -24f), witchPos,
             reduced ? 0.24f : 0.34f, reduced, priority: 2, "WitchExhaustVfx", primaryColor: GarnetCrimson, secondaryColor: Charcoal);
-        PlayMaterialAudio(host, "vfx/exhaust_ash", -16f);
     }
 
     public static void SpawnSmallBlockGlint(Creature witch)
@@ -419,20 +394,17 @@ public static partial class WitchCombatVfx
             case "potion":
                 SpawnNode(host, isAttack ? EffectKind.PotionVialThrow : EffectKind.PotionAlchemy,
                     witchPos, targetPos, reduced ? 0.26f : 0.34f, reduced, priority: 2, "WitchCastVfx", primaryColor: GarnetCrimson);
-                PlayMaterialAudio(host, isAttack ? "vfx/potion_throw" : "vfx/potion_burst", -16f);
                 break;
             case "mirror":
                 SpawnNode(host, isAttack ? EffectKind.MirrorSlash : EffectKind.MirrorWard,
                     isAttack ? targetPos : witchPos, targetPos, reduced ? 0.24f : 0.32f, reduced, priority: 2, "WitchCastVfx", primaryColor: CoolSilver);
-                PlayMaterialAudio(host, "vfx/mirror_slash", -16f);
                 break;
             case "grimoire":
                 SpawnNode(host, EffectKind.GrimoirePages, witchPos, isAttack ? targetPos : witchPos,
                     reduced ? 0.28f : 0.36f, reduced, priority: 2, "WitchCastVfx", primaryColor: Ivory);
-                PlayMaterialAudio(host, "vfx/grimoire_page", -16f);
                 break;
             case "desire":
-                // Dedicated WitchFeedback.Desire handles DesireFracture + audio
+                // Dedicated WitchFeedback.Desire handles DesireFracture + original desire.wav
                 break;
             default:
                 SpawnNode(host, isAttack ? EffectKind.MirrorSlash : EffectKind.MirrorWard,

@@ -25,8 +25,7 @@ public sealed class TheWitch : PlaceholderCharacterModel
         base.ExtraAssetPaths
             .Concat(CrimsonFinalMirror.Assets)
             .Concat(WitchAnimatedCardArt.Assets)
-            .Concat(WitchLiveRig.AssetPaths)
-            .Concat(WitchCombatVfx.AudioAssets);
+            .Concat(WitchLiveRig.AssetPaths);
 
     public override IEnumerable<CardModel> StartingDeck =>
     [
