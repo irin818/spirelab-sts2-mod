@@ -58,8 +58,15 @@ internal static class WitchSmoke
             var player = run.Players.Single();
             Check(witch.StartingHp == 68 && player.Deck.Cards.Count == 10 && player.Deck.Cards.Select(card => card.Id).Distinct().Count() == 4, "Witch starting deck and HP");
             Check(player.Relics.Single() is CrackedVanityMirror, "Witch starting relic");
+            var unlockedRewards = witch.CardPool.GetUnlockedCards(run.UnlockState, CardMultiplayerConstraint.None).Cast<WitchCard>().ToArray();
             Check(witch.CardPool.AllCards.Count(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare) == 85
-                && witch.CardPool.AllCards.Count(card => card.Tags.Contains(WitchCard.Desire)) == 5, "85 reward cards and exactly five Desire cards");
+                && unlockedRewards.Length == 76
+                && unlockedRewards.Count(card => card.Rarity == CardRarity.Common) == 19
+                && unlockedRewards.Count(card => card.Rarity == CardRarity.Uncommon) == 32
+                && unlockedRewards.Count(card => card.Rarity == CardRarity.Rare) == 25
+                && unlockedRewards.Count(card => card.Tags.Contains(WitchCard.Desire)) == 5
+                && unlockedRewards.All(card => card.IsInRewardPool && !card.IsRetiredFromRewardPool),
+                "76 active reward cards (19C/32U/25R including 5 Desires) with 9 retired cards preserved in AllCards");
             var portraits = witch.CardPool.AllCards.Cast<WitchCard>().ToArray();
             Check(portraits.Select(card => card.SpecId).Distinct().Count() == 91
                 && portraits.Select(card => card.PortraitPath).Distinct().Count() == 91
@@ -185,23 +192,23 @@ internal static class WitchSmoke
                 && selector.LastDesire?.Pile?.Type == PileType.Hand && player.Deck.Cards.Count == 10, "Calamity offers three distinct other Desires at zero for the turn");
 
             var recovery = await Add<Recovery>(player);
-            Check(recovery.TryManualPlay(null), "Recovery enters the native queue");
+            Check(recovery.TryManualPlay(null), "legacy Recovery enters the native queue");
             await WaitFor(tree, () => !actions.IsRunning && recovery.Pile?.Type == PileType.Exhaust && creature.CurrentHp == 5,
-                "Recovery heals four real HP and exhausts");
+                "legacy Recovery heals four real HP and exhausts");
             var elixir = await Add<ElixirPhial>(player);
-            Check(elixir.TryManualPlay(null), "Elixir enters the native queue");
-            await WaitFor(tree, () => !actions.IsRunning && elixir.Pile?.Type == PileType.Exhaust && creature.CurrentHp == 7,
-                "Elixir heals two real HP and exhausts");
+            Check(elixir.TryManualPlay(null), "V2 Elixir Phial enters the native queue");
+            await WaitFor(tree, () => !actions.IsRunning && elixir.Pile?.Type == PileType.Exhaust && creature.CurrentHp == 5,
+                "V2 Elixir Phial draws and exhausts with zero healing");
             var restartGamble = piles.Hand.Cards.OfType<AbyssOfGambling>().First();
             var healingBudgetMana = piles.Energy;
             Check(restartGamble.TryManualPlay(null), "Gamble is playable after healing");
-            await WaitFor(tree, () => !actions.IsRunning && restartGamble.Pile?.Type == PileType.Hand && creature.CurrentHp == 3,
+            await WaitFor(tree, () => !actions.IsRunning && restartGamble.Pile?.Type == PileType.Hand && creature.CurrentHp == 2,
                 "first Gamble funded by the healing budget returns to hand");
-            Check(restartGamble.TryManualPlay(null), "Gamble is playable at three HP");
+            Check(restartGamble.TryManualPlay(null), "Gamble is playable at two HP");
             await WaitFor(tree, () => !actions.IsRunning && restartGamble.Pile?.Type == PileType.Hand && creature.CurrentHp == 1,
                 "second Gamble funded by the healing budget returns to hand");
             Check(state.MirrorHp == mirror && piles.Energy == healingBudgetMana + 4 && !restartGamble.CanPlay(),
-                "two healing cards fund only two more Gamble plays");
+                "Recovery budget funds two more Gamble plays and stops cleanly at 1 HP");
 
             // The fixture kills the enemy directly. A player still sees native card animations
             // after the action queue settles, and the next debug room must not interrupt them.
@@ -214,9 +221,11 @@ internal static class WitchSmoke
             await WaitFor(tree, () => !CombatManager.Instance.IsInProgress, "Witch wins a native battle");
             var reward = new RewardsSet(player).WithRewardsFromRoom(room);
             await reward.GenerateWithoutOffering();
-            Check(reward.Rewards.OfType<CardReward>().Single().Cards.All(card => card.Pool == witch.CardPool), "Witch rewards belong to her pool");
+            Check(reward.Rewards.OfType<CardReward>().Single().Cards.All(card => card is WitchCard w && w.IsInRewardPool),
+                "Witch combat rewards belong to her active V2 reward pool");
             var restored = RunState.FromSerializable(RunManager.Instance.ToSave(null)).Players.Single();
-            Check(restored.Character.Id == witch.Id && restored.Creature.CurrentHp == 11 && restored.Deck.Cards.Count == 10 && state.GamblePaidThisTurn == 0, "victory refunds all four payments before saving real HP and the permanent deck");
+            Check(restored.Character.Id == witch.Id && restored.Creature.CurrentHp == 9 && restored.Deck.Cards.Count == 10 && state.GamblePaidThisTurn == 0,
+                "victory refunds all four Gamble payments (8 HP) before saving real HP and the permanent deck");
 
             await CreatureCmd.SetCurrentHp(creature, 68);
             await LeaveCompletedCombat(tree);
@@ -275,7 +284,8 @@ internal static class WitchSmoke
         var inventory = NMerchantRoom.Instance?.Inventory.Inventory
             ?? throw new InvalidOperationException("Expected a stocked merchant.");
         Check(inventory.CharacterCardEntries.Count == 5 && inventory.CharacterCardEntries.All(entry =>
-            entry.CreationResult?.Card.Pool is WitchCardPool), "merchant stocks all five Witch card slots");
+            entry.CreationResult?.Card is WitchCard w && w.IsInRewardPool),
+            "merchant stocks five active V2 Witch reward cards with zero retired cards");
         var removal = inventory.CardRemovalEntry ?? throw new InvalidOperationException("Expected merchant card removal.");
         var cost = removal.Cost;
         var gold = restarted.Gold;
@@ -346,11 +356,11 @@ internal static class WitchSmoke
         public Task<IEnumerable<CardModel>> GetSelectedCards(IEnumerable<CardModel> options, int minSelect, int maxSelect)
         {
             var cards = options.ToArray();
-            if (cards.Length == 85 && cards.All(card => card is WitchCard))
+            if (cards.Length == 76 && cards.All(card => card is WitchCard))
             {
                 Check(minSelect == 1 && maxSelect == 1 && cards.Count(card => ((WitchCard)card).IsDesire) == 5
-                    && cards.All(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare),
-                    "Fate Selection shows all 85 rewards including the five Desire cards");
+                    && cards.All(card => ((WitchCard)card).IsInRewardPool && !((WitchCard)card).IsRetiredFromRewardPool),
+                    "Fate Selection shows all 76 active V2 reward cards including the five Desire cards and excluding the 9 retired cards");
                 OpeningChoices++;
                 return Task.FromResult<IEnumerable<CardModel>>([cards.Cast<WitchCard>().Single(card => card.SpecId == OpeningSpecId)]);
             }

@@ -80,7 +80,7 @@ internal static class WitchVisualPreview
             var fate = (WitchFateScreen)NOverlayStack.Instance!.Peek()!;
             var grid = fate.GetNode<NCardGrid>("%CardGrid");
             await WaitFor(tree, () => grid.CurrentlyDisplayedCardHolders.Any(), "Fate grid creates native card holders");
-            Check(grid.CurrentlyDisplayedCardHolders.Count() < 85, "native grid only builds holders for visible rows");
+            Check(grid.CurrentlyDisplayedCardHolders.Count() < 76, "native grid only builds holders for visible rows");
             await Capture(tree, "fate-selection-macos.png");
             var first = grid.CurrentlyDisplayedCardHolders.First();
             Check(first.CardModel.IsCanonical, "picker renders definitions with no temporary combat instances");
@@ -171,36 +171,42 @@ internal static class WitchVisualPreview
             await CardCmd.AutoPlay(choice, cards[3], null);
             await Play<BloodstainedBookmark>(player, choice);
             await Play<HallOfGlass>(player, choice);
-            await Play<RefinedAbyss>(player, choice);
+            await Play<EmptyMirror>(player, choice, upgrade: true);
             await Play<ManaPump>(player, choice, upgrade: true);
             await Play<ReflectiveInscription>(player, choice, upgrade: true);
             await Play<MirrorBurial>(player, choice);
-            await Play<TemporalSeal>(player, choice);
-            await Play<MirrorTransfer>(player, choice);
+            await Play<SilverScreen>(player, choice);
+            await Play<HalfMoonLedger>(player, choice);
+            await Play<PotionMist>(player, choice);
+            await Play<WitchStrike>(player, choice);
+            await Play<DarkVeilWard>(player, choice);
             await Play<MoonInTheMirror>(player, choice);
             Check(powers.GetChildren().OfType<NPower>().Select(node => node.Model).Any(power => power is WitchImmunityPower)
                 && player.Creature.GetPower<GrimoireRetainPower>()?.Amount == 1
                 && player.Creature.GetPower<BookmarkPower>()?.Amount == 1
                 && player.Creature.GetPower<GlassHallPower>()?.Amount == 5
-                && player.Creature.GetPower<RefinedAbyssPower>()?.Amount == 1
+                && player.Creature.GetPower<EmptyMirrorPower>()?.Amount == 1
+                && player.Creature.GetPower<ReflectiveInscriptionPower>()?.Amount == 50
                 && player.Creature.GetPower<ManaPumpPower>()?.Amount == 3,
-                "native buffs show after playing persistent cards and the shared attack-immunity effect");
-            Check(player.Creature.GetPower<PendingEnergyPower>()?.Amount == 2
-                && player.Creature.GetPower<PendingBlockPower>()?.Amount == 3
-                && player.Creature.GetPower<PendingDrawPower>()?.Amount == 2
+                "native buffs show after playing V2.0 persistent cards and the shared attack-immunity effect");
+            Check(player.Creature.GetPower<PendingEnergyPower>()?.Amount == 1
+                && player.Creature.GetPower<ReflectBoostPower>()?.Amount == 50
+                && player.Creature.GetPower<AttackDiscountPower>()?.Amount == 1
                 && player.Creature.GetPower<ReflectChargesPower>()?.Amount == 1,
-                "delayed energy, block, draw and one blocked reflection show their real amounts");
+                "delayed energy, temporary reflection, attack discount and one blocked reflection show their real amounts");
             await Capture(tree, "status-active-macos.png");
 
             var creature = player.Creature;
             var enemy = creature.CombatState!.HittableEnemies.First();
+            await CreatureCmd.SetMaxHp(enemy, 100);
+            await CreatureCmd.SetCurrentHp(enemy, 100);
             var originalBlock = creature.Block;
             await CreatureCmd.Damage(choice, creature, 4, ValueProp.Move, enemy);
             Check(creature.Block == originalBlock && creature.GetPower<WitchImmunityPower>() == null,
                 "the first enemy hit consumes immunity without losing Block");
             await CreatureCmd.Damage(choice, creature, 4, ValueProp.Move, enemy);
-            Check(creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<InscribedSkillPower>()?.Amount == 1,
-                "the next blocked hit consumes the reflection charge and queues one Inscription");
+            Check(creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<BaseReflectPower>()?.Amount == 50,
+                "the next blocked hit consumes the reflection charge and grows base reflection from Inscription");
             await Capture(tree, "status-after-hit-macos.png");
 
             using var selection = CardSelectCmd.UseSelector(new WitchSelector());
@@ -208,12 +214,10 @@ internal static class WitchVisualPreview
             CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
             await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play,
                 "the game advances through the enemy turn and next draw");
-            Check(creature.GetPower<PendingEnergyPower>() == null && creature.GetPower<PendingDrawPower>() == null
-                && creature.GetPower<PendingBlockPower>() == null && creature.GetPower<ManaPumpPower>()?.Amount == 2,
-                "turn start consumes delayed icons and decrements the pump while persistent powers remain");
-            await Play<WitchDefend>(player, choice);
-            Check(creature.GetPower<InscribedSkillPower>() == null,
-                "playing the first Skill consumes the current Inscription discount");
+            Check(creature.GetPower<PendingEnergyPower>() == null && creature.GetPower<ReflectBoostPower>() == null
+                && creature.GetPower<AttackDiscountPower>() == null && creature.GetPower<BaseReflectPower>()?.Amount == 50
+                && creature.GetPower<ManaPumpPower>()?.Amount == 2,
+                "turn start consumes temporary icons and decrements the pump while persistent base reflection and powers remain");
             await Capture(tree, "status-next-turn-macos.png");
             GD.Print("[SpireLabSmoke] PASS");
             game.Quit();

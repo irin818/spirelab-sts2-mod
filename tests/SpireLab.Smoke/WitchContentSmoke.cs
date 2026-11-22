@@ -26,11 +26,24 @@ internal static class WitchContentSmoke
     public static void ValidateDefinitions(TheWitch witch, Player player)
     {
         var all = witch.CardPool.AllCards.ToArray();
+        var witchCards = all.Cast<WitchCard>().ToArray();
         var groups = all.GroupBy(card => card.Rarity).ToDictionary(group => group.Key, group => group.Count());
+        var active = witchCards.Where(card => !card.IsRetiredFromRewardPool).ToArray();
+        var retired = witchCards.Where(card => card.IsRetiredFromRewardPool).Select(card => card.SpecId).OrderBy(id => id, StringComparer.Ordinal).ToArray();
         Check(all.Length == 91 && all.Select(card => card.Id).Distinct().Count() == 91
             && groups[CardRarity.Basic] == 4 && groups[CardRarity.Common] == 20 && groups[CardRarity.Uncommon] == 38
-            && groups[CardRarity.Rare] == 27 && groups[CardRarity.Ancient] == 2, "91 distinct cards with exact GDD rarity counts");
-        ValidatePrintedCosts(all.Cast<WitchCard>());
+            && groups[CardRarity.Rare] == 27 && groups[CardRarity.Ancient] == 2,
+            "91 distinct cards preserved in ModelDb with exact legacy rarity counts");
+        Check(active.Length == 82
+            && active.Count(card => card.Rarity == CardRarity.Basic) == 4
+            && active.Count(card => card.Rarity == CardRarity.Common) == 19
+            && active.Count(card => card.Rarity == CardRarity.Uncommon) == 32
+            && active.Count(card => card.Rarity == CardRarity.Rare) == 25
+            && active.Count(card => card.Rarity == CardRarity.Ancient) == 2
+            && retired.SequenceEqual(["C17", "R06", "R22", "U02", "U03", "U17", "U25", "U26", "U29"])
+            && ModelDb.Card<EmptyMirror>().Type == CardType.Power,
+            "V2.0 active card pool has 82 cards (4B/19C/32U/25R/2A), exact 9 retired IDs, and R15 EmptyMirror is a Power");
+        ValidatePrintedCosts(witchCards);
         Check(witch.RelicPool.AllRelics.Count() == 9 && witch.PotionPool.AllPotions.Count() == 3, "nine relics and three potions");
         Check(witch.RelicPool.AllRelics.OfType<WitchRelic>().Count(relic =>
         {
@@ -64,12 +77,12 @@ internal static class WitchContentSmoke
         var costsByRarity = new Dictionary<char, string>
         {
             ['B'] = "1111",
-            ['C'] = "11120211001112111211",
-            ['U'] = "12120111021121111211121212011111212022",
-            ['R'] = "4X3221131332212321322221321",
+            ['C'] = "11120211001111111211",
+            ['U'] = "12120111021121111211111112011111211022",
+            ['R'] = "2X3121131332211221322221321",
             ['A'] = "12"
         };
-        string[] reducedOnUpgrade = ["U37", "R01", "R03", "R10", "R16", "R20", "R21", "R25"];
+        string[] reducedOnUpgrade = ["U34", "U37", "R01", "R03", "R10", "R16", "R20", "R21", "R25"];
         foreach (var card in cards)
         {
             var number = int.Parse(card.SpecId.AsSpan(1), System.Globalization.CultureInfo.InvariantCulture);
@@ -93,7 +106,7 @@ internal static class WitchContentSmoke
             }
         }
 
-        Check(true, "all 91 base and upgraded printed costs match V1.6, including X");
+        Check(true, "all 91 base and upgraded printed costs match V2.0, including X");
     }
 
     public static void ValidateCardText(TheWitch witch)
@@ -133,10 +146,10 @@ internal static class WitchContentSmoke
         var enemyHp = enemy.CurrentHp;
         await CreatureCmd.Damage(choice, creature, 7, ValueProp.Move, enemy);
         await CreatureCmd.Damage(choice, creature, 7, ValueProp.Move, enemy);
-        Check(enemy.CurrentHp == enemyHp - 21 && creature.Block == 0 && creature.CurrentHp == 30
-            && state.NextSkillDiscount == 1 && state.NextSkillWard == 3
-            && creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<InscribedSkillPower>()?.Amount == 1,
-            "two hits reflect per-hit 100%, consume Burial once and schedule the upgraded Inscription");
+        Check(enemy.CurrentHp == enemyHp - 24 && creature.Block == 0 && creature.CurrentHp == 30
+            && state.BaseReflectPercent == 50
+            && creature.GetPower<ReflectChargesPower>() == null && creature.GetPower<BaseReflectPower>()?.Amount == 50,
+            "two hits reflect 200% (14) then 150% (10), consume Burial once and grow upgraded Inscription (+50% base reflect)");
         await Play<SplitFace>(player, choice);
         await CreatureCmd.Damage(choice, creature, 6, ValueProp.Move, enemy);
         Check(enemy.GetPower<WeakPower>()?.Amount == 1 && creature.GetPower<SplitFacePower>() == null,
@@ -155,8 +168,8 @@ internal static class WitchContentSmoke
         await Play<HallOfAllMirrors>(player, choice);
         state.BlockGains = 0;
         await CreatureCmd.LoseBlock(choice, creature, creature.Block, null);
-        await Play<EmptyMirror>(player, choice);
-        Check(creature.Block == 13, $"Empty Mirror and Hall combine then round 13.5 down (actual {creature.Block})");
+        await Play<ColdMirrorBarrier>(player, choice);
+        Check(creature.Block == 12, $"Hall of All Mirrors boosts first Block 8 -> 12 (actual {creature.Block})");
 
         await RelicCmd.Obtain<CrackedPhial>(player);
         await RelicCmd.Obtain<ObsidianDistiller>(player);
@@ -168,8 +181,9 @@ internal static class WitchContentSmoke
         await Play<BlueFlameFormula>(player, choice);
         var energy = piles.Energy;
         await Play<ForbiddenRefinement>(player, choice, upgrade: true);
-        Check(piles.Energy == energy + 5 && state.CrackedPhialUsed && state.DistillerUsed,
-            "refinement triggers flask and one distiller bonus without recursion");
+        Check(piles.Energy == energy + 5 && state.CrackedPhialUsed && state.DistillerUsed
+            && state.PendingSingleHitAttackBonus == 6 && creature.GetPower<BlueFlameReadyPower>()?.Amount == 6,
+            "refinement triggers flask, one distiller bonus without recursion, and arms Blue Flame single-hit +6");
         energy = piles.Energy;
         await Play<AlienExtract>(player, choice);
         Check(piles.Energy == energy + 2, "distiller does not recur on the second card gain");
@@ -178,8 +192,10 @@ internal static class WitchContentSmoke
         await Play<GildedPact>(player, choice);
         Check(creature.CurrentHp == 32 && state.MirrorHp == 12 && state.LifePaymentTriggered,
             "life payment crosses half and triggers first veil and blood ring");
+        await Play<Recovery>(player, choice);
+        Check(creature.CurrentHp == 36 && state.MirrorHp == 12, "legacy exhausting heal affects real HP only");
         await Play<ElixirPhial>(player, choice, upgrade: true);
-        Check(creature.CurrentHp == 35 && state.MirrorHp == 12, "exhausting heal affects real HP only");
+        Check(creature.CurrentHp == 36 && state.MirrorHp == 12, "V2 Elixir Phial does not heal");
         var tonic = ModelDb.Potion<AbyssalDistillate>().ToMutable();
         await PotionCmd.TryToProcure(tonic, player);
         await CreatureCmd.SetCurrentHp(creature, 5);
@@ -190,6 +206,10 @@ internal static class WitchContentSmoke
         Check(creature.CurrentHp == 1 && piles.Energy == energy + 3 && state.MirrorHp == 12,
             "distillate pays real HP and grants energy at the boundary");
 
+        if (piles.Hand.Cards.Count >= CardPile.MaxCardsInHand)
+        {
+            await CardCmd.Discard(choice, piles.Hand.Cards.Last());
+        }
         var original = piles.Hand.Cards.First();
         var incoming = await Enlightenment.Swap(player, original, fromTrait: false) ?? throw new InvalidOperationException("No Greed fixture");
         var kept = piles.Hand.Cards.First();
@@ -265,6 +285,7 @@ internal static class WitchContentSmoke
         await Play<PinnacleOfMana>(player, choice);
         await PlayerCmd.SetEnergy(WitchEnergy.EngineLimit, player);
         turn = piles.TurnNumber;
+        selector.SelectFirstHand = true;
         CombatManager.Instance.SetReadyToEndTurn(player, canBackOut: false);
         await WaitFor(tree, () => piles.TurnNumber > turn && piles.Phase == PlayerTurnPhase.Play, "large retained energy crosses turn boundary");
         Check(piles.Energy == WitchEnergy.EngineLimit, "native retained energy stays at game cap");
@@ -274,6 +295,9 @@ internal static class WitchContentSmoke
         Check(deluge.TryManualPlay(null), "X-cost attack spends retained energy through game queue");
         await WaitFor(tree, () => !CombatManager.Instance.IsInProgress, "X-cost uses high energy and stops on victory");
         await LeaveCompletedCombat(tree);
+
+        // Run dedicated V2.0 mechanics, 15 Counterpoint cases, and 7 cross-archetype combos A-G.
+        await WitchV2Smoke.Exercise(tree, player, choice, selector);
 
         // Confirm the Witch rules still permit a proven two-card draw cycle with base-game colorless cards.
         var run = player.RunState;

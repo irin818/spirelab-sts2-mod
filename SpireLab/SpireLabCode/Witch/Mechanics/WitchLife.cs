@@ -24,6 +24,7 @@ internal static class WitchLife
         if (fromCard)
         {
             state.RecordCardLifeLoss(cost);
+            state.LifePaidByCardThisTurn = true;
         }
 
         if (refundOnVictory)
@@ -60,6 +61,7 @@ internal static class WitchLife
         if (real != creature.CurrentHp)
         {
             state.RecordCardLifeLoss(creature.CurrentHp - real);
+            state.LifePaidByCardThisTurn = true;
             await CreatureCmd.SetCurrentHp(creature, real);
         }
 

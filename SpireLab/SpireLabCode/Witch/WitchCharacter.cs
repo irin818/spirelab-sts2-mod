@@ -71,7 +71,7 @@ public sealed class WitchCardPool : CustomCardPoolModel
 
     protected override IEnumerable<CardModel> FilterThroughEpochs(UnlockState unlockState, IEnumerable<CardModel> cards) =>
         base.FilterThroughEpochs(unlockState, cards).Where(card =>
-            card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare);
+            card is WitchCard witch ? witch.IsInRewardPool : card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare);
 }
 
 public sealed class WitchRelicPool : CustomRelicPoolModel

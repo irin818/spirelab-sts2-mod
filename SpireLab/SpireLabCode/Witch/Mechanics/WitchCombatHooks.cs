@@ -1,10 +1,12 @@
 using BaseLib.Abstracts;
+using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -14,6 +16,21 @@ namespace SpireLab.SpireLabCode.Witch.Mechanics;
 
 public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 {
+    internal static PlayKind Classify(CardType type) => type switch
+    {
+        CardType.Attack => PlayKind.Attack,
+        CardType.Skill => PlayKind.Skill,
+        _ => PlayKind.Other
+    };
+
+    internal static void RefreshHandAttackCosts(Player player)
+    {
+        foreach (var attack in player.PlayerCombatState!.Hand.Cards.Where(card => card.Type == CardType.Attack))
+        {
+            attack.InvokeEnergyCostChanged();
+        }
+    }
+
     public override async Task BeforeSideTurnStart(PlayerChoiceContext choice, CombatSide side,
         IReadOnlyList<Creature> participants, ICombatState combatState)
     {
@@ -30,8 +47,13 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             {
                 if (WitchCombatState.Find(creature.Player) is { } state)
                 {
+                    var hadAttackDiscount = state.NextAttackDiscount > 0;
                     state.BeginTurn();
                     var player = creature.Player!;
+                    if (hadAttackDiscount)
+                    {
+                        RefreshHandAttackCosts(player);
+                    }
                     var piles = player.PlayerCombatState!;
                     if (state.RetainEnergy && piles.Energy > WitchEnergy.EngineLimit - piles.MaxEnergy)
                     {
@@ -41,7 +63,6 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 }
             }
         }
-
     }
 
     public override decimal ModifyHandDraw(Player player, decimal count) =>
@@ -121,6 +142,12 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             var choice = new BlockingPlayerChoiceContext();
             await WitchEnergy.Resolve(choice, play.Player, state);
             state.Plays++;
+            if (play.PlayIndex == 0)
+            {
+                state.CurrentPlayWasCounterpoint = WitchRules.IsCounterpoint(
+                    state.LastPlayedType is { } prev ? Classify(prev) : null,
+                    Classify(play.Card.Type));
+            }
             if (play.Card is WitchCard && play.Card.Type is CardType.Skill or CardType.Power)
             {
                 await CreatureCmd.TriggerAnim(play.Player.Creature, "Cast", 0);
@@ -130,25 +157,21 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 WitchFeedback.Desire(play.Player.Creature);
             }
             state.ResolvingCard = true;
-            if (play.Card.Type == CardType.Skill && state.SkillDiscount > 0)
-            {
-                state.SkillDiscount = 0;
-                var ward = state.SkillWard;
-                state.SkillWard = 0;
-                foreach (var skill in play.Player.PlayerCombatState!.Hand.Cards.Where(card => card.Type == CardType.Skill))
-                {
-                    skill.InvokeEnergyCostChanged();
-                }
-                if (ward > 0)
-                {
-                    await CreatureCmd.GainBlock(play.Player.Creature, ward, ValueProp.Unpowered, null);
-                }
-            }
             if (play.Card.Type == CardType.Attack)
             {
                 state.BlockBeforeAttack = play.Player.Creature.Block;
-                state.ActiveAttackBonus = state.PendingAttackBonus;
-                state.PendingAttackBonus = 0;
+                if (play.PlayIndex == 0)
+                {
+                    if (state.NextAttackDiscount > 0)
+                    {
+                        state.NextAttackDiscount = 0;
+                        RefreshHandAttackCosts(play.Player);
+                    }
+                    state.ActiveAttackBonus = state.PendingAttackBonus;
+                    state.PendingAttackBonus = 0;
+                    state.ActiveSingleHitBonus = state.PendingSingleHitAttackBonus;
+                    state.PendingSingleHitAttackBonus = 0;
+                }
             }
         }
     }
@@ -164,14 +187,52 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         await WitchEnergy.Resolve(choice, player, state);
         state.ResolvingCard = false;
         state.ActiveAttackBonus = 0;
+        state.ActiveSingleHitBonus = 0;
+
+        var wasCounterpoint = state.CurrentPlayWasCounterpoint;
+        state.CurrentPlayWasCounterpoint = false;
+        state.LastPlayedType = play.Card.Type;
+
+        // U34 Half-Moon Ledger: after the next Attack resolves this turn, shuffle it into draw pile (if non-Exhaust / in Play) and draw 1.
+        if (state.PendingLedgerAttack && play.Card.Type == CardType.Attack && play.PlayIndex == play.PlayCount - 1)
+        {
+            state.PendingLedgerAttack = false;
+            if (!CombatManager.Instance.IsOverOrEnding)
+            {
+                if (play.ResultPile == PileType.Discard && play.Card.Pile?.Type == PileType.Play)
+                {
+                    await CardPileCmd.Add(play.Card, PileType.Draw, CardPilePosition.Random);
+                }
+                await CardPileCmd.Draw(choice, 1, player);
+            }
+        }
+
+        // R15 Empty Mirror (Power): first alternating Attack/Skill play each turn draws 1 (+3 Block when upgraded).
+        if (wasCounterpoint && !state.EmptyMirrorTriggered && state.EmptyMirrorDraw > 0 && !CombatManager.Instance.IsOverOrEnding)
+        {
+            state.EmptyMirrorTriggered = true;
+            await CardPileCmd.Draw(choice, state.EmptyMirrorDraw, player);
+            if (state.EmptyMirrorBlock > 0)
+            {
+                await CreatureCmd.GainBlock(player.Creature, state.EmptyMirrorBlock, ValueProp.Unpowered, null);
+            }
+        }
+
+        if (play.Card is WitchCard { IsDesire: true })
+        {
+            state.DesirePlayedThisTurn = true;
+            if (!state.RedCatalystTriggered && state.RedCatalystDraw > 0 && !CombatManager.Instance.IsOverOrEnding)
+            {
+                state.RedCatalystTriggered = true;
+                await CardPileCmd.Draw(choice, state.RedCatalystDraw, player);
+                state.NextAttackDiscount += Math.Max(1, state.RedCatalystStacks);
+                RefreshHandAttackCosts(player);
+            }
+        }
+
         if (!play.Card.EnergyCost.CostsX && play.Card.EnergyCost.GetWithModifiers(CostModifiers.None) >= 2)
         {
             state.HighPrintedPlays++;
-            if (state.HighPrintedPlays <= 2 && state.RedCatalystBlock > 0)
-            {
-                await CreatureCmd.GainBlock(player.Creature, state.RedCatalystBlock, ValueProp.Unpowered, null);
-            }
-
             if (state.HighPrintedPlays == 1 && state.ReverseRiteDraw > 0)
             {
                 await CardPileCmd.Draw(choice, state.ReverseRiteDraw, player);
@@ -257,8 +318,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
             return 1;
         }
 
-        var first = state.BlockGains == 0 ? 1 + state.FirstBlockPercent / 100m : 1;
-        return state.BlockMultiplier * first;
+        return state.BlockGains == 0 ? 1 + state.FirstBlockPercent / 100m : 1;
     }
 
     public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props,
@@ -270,7 +330,11 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         }
 
         var crown = WitchRules.IsBelowHalf(dealer.CurrentHp, dealer.MaxHp) ? state.CrownDamage : 0;
-        return crown + (play?.Card.Type == CardType.Attack ? state.ActiveAttackBonus : 0);
+        if (play?.Card.Type == CardType.Attack)
+        {
+            return crown + state.ActiveAttackBonus + state.ActiveSingleHitBonus;
+        }
+        return crown;
     }
 
     public override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props,
@@ -288,22 +352,31 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         return Task.CompletedTask;
     }
 
-    public override Task BeforeFlush(PlayerChoiceContext choice, Player player)
+    public override async Task BeforeFlush(PlayerChoiceContext choice, Player player)
     {
         if (WitchCombatState.Find(player) is { } state)
         {
             state.LastRemainingEnergy = player.PlayerCombatState!.Energy;
-            if (state.RetainRandomCount > 0)
+            if (state.RetainSelectCount > 0 && !CombatManager.Instance.IsOverOrEnding)
             {
                 var candidates = player.PlayerCombatState.Hand.Cards.Where(card => !card.ShouldRetainThisTurn).ToList();
-                player.RunState.Rng.CombatCardSelection.Shuffle(candidates);
-                foreach (var card in candidates.Take(state.RetainRandomCount))
+                if (candidates.Count > 0)
                 {
-                    CardCmd.ApplySingleTurnRetain(card);
+                    var max = Math.Min(state.RetainSelectCount, candidates.Count);
+                    var prefs = new CardSelectorPrefs(new LocString("card_selection", "SPIRELAB-WITCH_FRONTISPIECE_RETAIN"), 0, max)
+                    {
+                        Cancelable = true,
+                        RequireManualConfirmation = true,
+                        PretendCardsCanBePlayed = true
+                    };
+                    var chosen = await CardSelectCmd.FromHand(choice, player, prefs, card => !card.ShouldRetainThisTurn, this);
+                    foreach (var card in chosen)
+                    {
+                        CardCmd.ApplySingleTurnRetain(card);
+                    }
                 }
             }
         }
-        return Task.CompletedTask;
     }
 
     public override Task AfterFlush(PlayerChoiceContext choiceContext, Player player,
@@ -361,9 +434,10 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override bool TryModifyEnergyCostInCombatLate(CardModel card, decimal originalCost, out decimal modifiedCost)
     {
         modifiedCost = originalCost;
-        if (card.Type == CardType.Skill && WitchCombatState.Find(card.Owner) is { SkillDiscount: > 0 } state)
+        if (card.Type == CardType.Attack && !card.EnergyCost.CostsX
+            && WitchCombatState.Find(card.Owner) is { NextAttackDiscount: > 0 } attackState)
         {
-            modifiedCost = Math.Max(0, modifiedCost - state.SkillDiscount);
+            modifiedCost = Math.Max(0, modifiedCost - attackState.NextAttackDiscount);
         }
         if (modifiedCost > 0 && card is WitchCard { IsDesire: true } && WitchCombatState.Find(card.Owner)?.DesireDiscount == true)
         {
@@ -446,6 +520,13 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override async Task AfterDamageGiven(PlayerChoiceContext choice, Creature? dealer, DamageResult result,
         ValueProp props, Creature target, CardModel? cardSource)
     {
+        // U14 Blue Flame Formula buffs only a single powered attack damage event.
+        if (props.IsPoweredAttack() && dealer?.Player is { } attacker
+            && WitchCombatState.Find(attacker) is { ActiveSingleHitBonus: > 0 } attackerState)
+        {
+            attackerState.ActiveSingleHitBonus = 0;
+        }
+
         if (WitchCombatState.Find(target.Player) is not { } state)
         {
             return;
@@ -481,7 +562,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
         WitchFeedback.Block(target);
         state.BlockedDuringEnemyTurn |= target.CombatState?.CurrentSide == CombatSide.Enemy;
-        var percent = (state.MirrorForm ? 100 : 0) + state.MazeReflectPercent + state.NextReflectPercent;
+        var percent = (state.MirrorForm ? 100 : 0) + state.BaseReflectPercent + state.TempReflectPercent + state.NextReflectPercent;
         var fixedDamage = state.DeferredReflections.Sum();
         state.DeferredReflections.Clear();
         state.NextReflectPercent = 0;
@@ -510,10 +591,9 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                 if (!state.Reflected)
                 {
                     state.NextDraw += state.ShadowDraw;
-                    if (state.InscriptionEnabled)
+                    if (state.InscriptionReflectGain > 0)
                     {
-                        state.NextSkillDiscount = 1;
-                        state.NextSkillWard = state.InscriptionWard;
+                        state.BaseReflectPercent = WitchRules.AddCappedReflect(state.BaseReflectPercent, state.InscriptionReflectGain);
                     }
                 }
                 state.Reflected = true;

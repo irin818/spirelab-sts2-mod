@@ -30,7 +30,7 @@ internal static class Enlightenment
 
         state.OpeningChoiceResolved = true;
         var rewards = player.Character.CardPool.AllCards.OfType<WitchCard>()
-            .Where(card => card.Rarity is CardRarity.Common or CardRarity.Uncommon or CardRarity.Rare)
+            .Where(card => card.IsInRewardPool)
             .OrderBy(card => card.SpecId, StringComparer.Ordinal).Cast<CardModel>().ToArray();
         var model = await PickOpeningModel(choice, player, rewards);
         if (model == null || CombatManager.Instance.IsOverOrEnding)

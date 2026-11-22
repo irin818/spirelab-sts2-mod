@@ -138,3 +138,11 @@
 - 在 [export-witch-workshop-media.py](scripts/export-witch-workshop-media.py) 实现可重现管线，直接复用仓库无损 V3/V4 绘画分层与实机录屏 `.local/crimson-v4/evidence/crimson-final-mirror-v4.mp4`，导出 1600×1600 封面母版、800×800 真彩 `< 1 MB` 主封面（943,374 字节）、1920×1080 干净视频封面、10 秒 1080p60 H.264/ProRes 宣传片（含 60 fps 动态片头/片尾与 7.02s 握拳碎镜音画同步）、540×540 12 fps `< 1 MB` 1:1 循环 GIF（770,480 字节）及页面适配审查表。
 - [verify-witch-release.py](scripts/verify-witch-release.py) 新增 `media` 发布前校验模式，并在 `workshop` 模式下拒绝伪装为 `image.png` 的非 PNG 文件或超 1 MB 封面；[test_witch_release.py](tests/test_witch_release.py) 增补对应单元测试。
 - 已按安全流程将 Steam 创意工坊条目 `3842829456` 先切为 Private，再通过 `ISteamUGC::SetItemPreview` 仅更新主封面为 `cover.gif`（新句柄 `12592709661809387352`）。实测从 Steam CDN 回读确认 `Content-Type: image/gif`、`540×540`、完整保留 29 帧动态且 SHA-256 与本地逐字节一致；`contentSize`（`41331444`）、标题、描述摘要与 BaseLib 依赖 `3737335127` 均未改动，条目保持 Private 待作者验收后公开。
+
+## 2026-11-23 · 魔女 V2.0 卡牌系统迭代
+
+- 基于 V1.6.3（`4f4a99c`）在独立分支 `gemini/witch-v2-cards` 完成 V2.0 增量迭代，完整保留魔法启迪、镜像生命、五张欲望牌、血色终镜 V4 与全套既有美术资源，版本清单升级为 `v2.0.0`。
+- 奖励池精简通过 `WitchCard.RetiredSpecIds` / `IsInRewardPool` 统一接入 `WitchCardPool.FilterThroughEpochs` 与 `Enlightenment.ChooseOpeningCard`：9 张暂退卡（`C17 / U02 / U03 / U17 / U25 / U26 / U29 / R06 / R22`）退出战斗奖励、商店与命运选牌，实际活跃卡池为 82 张（76 常规奖励含 5 欲望），同时保留全部 91 定义以确保旧存档兼容。
+- 反奏（Counterpoint）在 `WitchRules.IsCounterpoint`、`WitchCombatHooks.BeforeCardPlayed` 与 `AfterCardPlayedLate` 中以单状态位统一实现，覆盖全部 14 张反奏卡（13 张清单卡 + `U07` 灵药瓶）；反射率统一为 `MirrorForm(100%) + BaseReflectPercent + TempReflectPercent + NextReflectPercent` 百分比加法结算，`U21` 反光刻印基础反射成长采用保守共享上限 100%。
+- 完成普通 17 张、罕见 19 张、稀有 6 张卡牌重构（含 `C05` 残液去血耗、`U05` 提纯真消耗、`U14` 蓝焰单段伤害强化、`U31` 禁书扉页自选保留、`U34` 半月账本攻击回收、`R15` 空镜能力牌化、`R16` 镜狱 10 伤害下限），同步更新中英 `cards.json`、`powers.json`、`card_selection.json` 与新增可见状态图标。
+- 在 Apple Silicon / STS2 `v0.111.1` 上通过 `dev-macos.sh check/build/pack`（零警告零错误）、`SpireLab.Witch.Rules` 单元测试、`test_witch_release.py`（11/11）及全套六项实机回归（`witch` 含 15 项反奏用例与 7 组跨体系连段 A–G、`witch-save` 含暂退卡与 R15 能力牌跨进程读档、`witch-art`、`witch-greed`、`witch-finisher`、`witch-campaign` 三幕通关）。详细记录见 [V2.0 规格与验证记录](docs/witch-v2-validation.md)。

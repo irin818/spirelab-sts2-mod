@@ -19,5 +19,7 @@
   "SPIRELAB-WITCH_SLOTH_RETAIN": "Mirror Desire: choose up to 1 other card to Retain this turn",
   "SPIRELAB-WITCH_FATE_DRAW": "Choose 1 card from your draw pile to put into your hand",
   "SPIRELAB-WITCH_CONVERT_BLOCK": "Select to spend up to 4 Block for twice that amount next turn, or skip.",
-  "SPIRELAB-WITCH_OVERLOAD_ALL": "Select to pay 1 extra Energy and hit all enemies, or skip to hit your target."
+  "SPIRELAB-WITCH_OVERLOAD_ALL": "Select to pay 1 extra Energy and hit all enemies, or skip to hit your target.",
+  "SPIRELAB-WITCH_PURIFY_EXHAUST": "Purification: choose 1 other card in hand to Exhaust",
+  "SPIRELAB-WITCH_FRONTISPIECE_RETAIN": "Forbidden Frontispiece: choose cards in hand to Retain this turn"
 }
