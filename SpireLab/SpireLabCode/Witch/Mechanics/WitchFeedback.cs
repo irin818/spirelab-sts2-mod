@@ -9,7 +9,7 @@ internal static class WitchFeedback
 {
     public static void Enlighten(Creature creature)
     {
-        WitchLiveRig.PulseCast(creature, "mirror");
+        WitchLiveRig.PulseGesture(creature, "mirror", isAttack: false);
         WitchCombatVfx.SpawnCoreCue(creature, "enlighten");
     }
 
@@ -46,6 +46,14 @@ internal static class WitchFeedback
         WitchCombatVfx.SpawnCoreCue(creature, null);
     }
 
+    public static void BlockGained(Creature creature, decimal amount)
+    {
+        if (amount > 0)
+        {
+            WitchCombatVfx.SpawnSmallBlockGlint(creature);
+        }
+    }
+
     public static void Hit(Creature creature)
     {
         WitchLiveRig.PulseHit(creature);
@@ -58,17 +66,37 @@ internal static class WitchFeedback
         {
             WitchLiveRig.PulseCounterpoint(witch);
         }
-        else if (card.Type == CardType.Attack)
-        {
-            WitchLiveRig.PulseAttack(witch);
-        }
         else
         {
-            WitchLiveRig.PulseCast(witch, suit);
+            WitchLiveRig.PulseGesture(witch, suit, card.Type == CardType.Attack);
         }
 
-        WitchCombatVfx.SpawnCardCast(witch, target, suit, card.Type, isCounterpoint);
+        WitchCombatVfx.SpawnCardCast(witch, target, card, suit, isCounterpoint);
     }
+
+    public static void AttackHit(Creature witch, Creature target, WitchCard card) =>
+        WitchCombatVfx.SpawnAttackHit(witch, target, card);
+
+    public static void LifePaid(Creature witch, int actualPaid, bool isGamble) =>
+        WitchCombatVfx.SpawnLifePaid(witch, actualPaid, isGamble);
+
+    public static void PurifyTransmute(Creature witch) =>
+        WitchCombatVfx.SpawnPurifyTransmute(witch);
+
+    public static void CardDrawn(Creature witch) =>
+        WitchCombatVfx.SpawnCardDraw(witch);
+
+    public static void CardDiscarded(Creature witch) =>
+        WitchCombatVfx.SpawnCardDiscard(witch);
+
+    public static void CardExhausted(Creature witch) =>
+        WitchCombatVfx.SpawnCardExhaust(witch);
+
+    public static void UpdateInscription(Creature witch, int baseReflectPercent) =>
+        WitchLiveRig.SetInscriptionLevel(witch, baseReflectPercent);
+
+    public static void CombatEnded() =>
+        WitchCombatVfx.ClearTransientCombatEffects();
 
     public static void Invert(Creature creature)
     {

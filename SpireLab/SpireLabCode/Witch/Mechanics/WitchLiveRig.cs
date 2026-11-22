@@ -87,6 +87,7 @@ public static class WitchLiveRig
     }
 
     public static void PulseAttack(Creature? creature) => EnsureAttached(creature)?.PulseAttack();
+    public static void PulseGesture(Creature? creature, string? suit, bool isAttack) => EnsureAttached(creature)?.PulseGesture(suit, isAttack);
     public static void PulseCast(Creature? creature, string? suit) => EnsureAttached(creature)?.PulseCast(suit);
     public static void PulseCounterpoint(Creature? creature) => EnsureAttached(creature)?.PulseCounterpoint();
     public static void PulseDesire(Creature? creature) => EnsureAttached(creature)?.PulseDesire();
@@ -94,6 +95,8 @@ public static class WitchLiveRig
     public static void PulseReflect(Creature? creature) => EnsureAttached(creature)?.PulseReflect();
     public static void PulseHit(Creature? creature) => EnsureAttached(creature)?.PulseHit();
     public static void SetMirrorAwakened(Creature? creature, bool awakened) => EnsureAttached(creature)?.SetMirrorAwakened(awakened);
+    public static void SetInscriptionLevel(Creature? creature, int baseReflectPercent) =>
+        EnsureAttached(creature)?.SetInscriptionLevel(baseReflectPercent);
     public static void SetLowHealth(Creature? creature, bool lowHealth) => EnsureAttached(creature)?.SetLowHealth(lowHealth);
 }
 
@@ -135,6 +138,8 @@ public sealed partial class WitchLiveRigController : Node
     private float _mirrorAwakenedTarget;
     private float _mirrorAwakened;
     private float _mirrorPulse;
+    private float _inscriptionGlowTarget;
+    private float _inscriptionGlow;
     private bool _lowHealth;
 
     private bool _isActive;
@@ -340,6 +345,71 @@ public sealed partial class WitchLiveRigController : Node
         }
     }
 
+    public void PulseGesture(string? suit, bool isAttack)
+    {
+        // Four reusable Live2D character motion profiles (Section 5.1):
+        // Potion = graceful cast lift, Mirror = crisp fingertip slice, Grimoire = calm page-turn nod, Desire = mirror resonance
+        switch (suit)
+        {
+            case "potion":
+                LastImpulseName = isAttack ? "gesture:potion_throw" : "gesture:potion_cast";
+                _bodyLeanVel += isAttack ? 5.4f : -1.8f;
+                _headExtraTiltVel += isAttack ? 1.1f : -0.9f;
+                _hairLagVel += isAttack ? -4.8f : 3.2f;
+                _skirtLagVel += isAttack ? -3.8f : 2.8f;
+                _castSurge = 0.95f;
+                _eyeGlow = Mathf.Max(_eyeGlow, 0.80f);
+                _rimColor = RimPotion;
+                _rimStrength = Mathf.Max(_rimStrength, 0.72f);
+                break;
+            case "mirror":
+                LastImpulseName = isAttack ? "gesture:mirror_slice" : "gesture:mirror_ward";
+                _bodyLeanVel += isAttack ? 6.4f : -2.6f;
+                _headExtraTiltVel += isAttack ? 1.5f : -0.6f;
+                _hairLagVel += isAttack ? -5.6f : 2.8f;
+                _skirtLagVel += isAttack ? -4.4f : 2.6f;
+                _castSurge = 0.82f;
+                _eyeGlow = Mathf.Max(_eyeGlow, 0.78f);
+                _rimColor = RimMirror;
+                _rimStrength = Mathf.Max(_rimStrength, 0.82f);
+                _mirrorPulse = Mathf.Max(_mirrorPulse, 0.72f);
+                break;
+            case "grimoire":
+                LastImpulseName = isAttack ? "gesture:grimoire_cast" : "gesture:grimoire_turn";
+                _bodyLeanVel += isAttack ? 3.2f : -1.2f;
+                _headExtraTiltVel -= 1.35f;
+                _hairLagVel += 2.6f;
+                _skirtLagVel += 2.2f;
+                _castSurge = 0.90f;
+                _eyeGlow = Mathf.Max(_eyeGlow, 0.72f);
+                _rimColor = RimGrimoire;
+                _rimStrength = Mathf.Max(_rimStrength, 0.68f);
+                break;
+            case "desire":
+                PulseDesire();
+                break;
+            default:
+                if (isAttack)
+                {
+                    PulseAttack();
+                }
+                else
+                {
+                    PulseCast(null);
+                }
+                break;
+        }
+    }
+
+    public void SetInscriptionLevel(int baseReflectPercent)
+    {
+        _inscriptionGlowTarget = Mathf.Clamp(baseReflectPercent / 100f, 0f, 1f);
+        if (baseReflectPercent > 0)
+        {
+            _mirrorPulse = Mathf.Max(_mirrorPulse, 0.45f);
+        }
+    }
+
     public void SetLowHealth(bool lowHealth)
     {
         _lowHealth = lowHealth;
@@ -400,6 +470,7 @@ public sealed partial class WitchLiveRigController : Node
         _rimStrength = Mathf.Max(0f, _rimStrength - dt * 2.4f);
         _mirrorPulse = Mathf.Max(0f, _mirrorPulse - dt * 1.9f);
         _mirrorAwakened = Mathf.Lerp(_mirrorAwakened, _mirrorAwakenedTarget, 1f - Mathf.Exp(-dt * 2.6f));
+        _inscriptionGlow = Mathf.Lerp(_inscriptionGlow, _inscriptionGlowTarget, 1f - Mathf.Exp(-dt * 3.0f));
 
         // 3. Natural randomized blinking (with occasional quick double-blink)
         if (_blinkPhase >= 0f)
@@ -483,6 +554,7 @@ public sealed partial class WitchLiveRigController : Node
             _mirrorMat.SetShaderParameter("mirror_sway", mSway);
             _mirrorMat.SetShaderParameter("mirror_awakened", _mirrorAwakened);
             _mirrorMat.SetShaderParameter("mirror_pulse", _mirrorPulse);
+            _mirrorMat.SetShaderParameter("inscription_glow", _inscriptionGlow);
         }
     }
 

@@ -13,6 +13,7 @@ uniform float mirror_breath = 0.0;    // [-1, 1] asynchronous breathing out of p
 uniform float mirror_sway = 0.0;      // [-1, 1] subtle uncanny drift inside glass
 uniform float mirror_awakened = 0.0;  // 0.0 = dormant phantom, 1.0 = R10 Mirror Form active
 uniform float mirror_pulse = 0.0;     // [0, 1] temporary surge on Invert / Block / Reflect / Desire
+uniform float inscription_glow = 0.0; // [0, 1] U21 Reflective Inscription persistent frame filigree glow
 uniform float motion_scale = 1.0;
 
 varying vec4 v_tint;
@@ -61,10 +62,12 @@ void fragment() {
     vec3 wine_red = vec3(0.68, 0.19, 0.34);
     tex.rgb += mix(wine_red, cool_silver, 0.28 * sweep_band) * m_art.b * crack_intensity * 0.65 * tex.a;
 
-    // 5. Subtle cool-silver rim sheen along the ornate frame when awakened or reflecting
+    // 5. Subtle cool-silver rim sheen & U21 Reflective Inscription glowing filigree along ornate frame
     float frame_w = clamp(tex.a - glass_w, 0.0, 1.0);
     float frame_glint = pow(0.5 + 0.5 * sin(time_sec * 1.4 + uv.y * 6.0), 3.0);
-    tex.rgb += cool_silver * frame_w * frame_glint * (0.08 + 0.12 * mirror_awakened + 0.25 * mirror_pulse);
+    float filigree_runes = pow(0.5 + 0.5 * sin(uv.y * 42.0 - time_sec * 2.2), 4.0) * inscription_glow;
+    tex.rgb += cool_silver * frame_w * (frame_glint * (0.08 + 0.12 * mirror_awakened + 0.25 * mirror_pulse) + filigree_runes * 0.42);
+    tex.rgb += crimson * frame_w * filigree_runes * 0.16;
 
     COLOR = tex * v_tint;
 }

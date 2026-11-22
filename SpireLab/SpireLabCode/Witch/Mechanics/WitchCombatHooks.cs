@@ -352,6 +352,37 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         if (amount > 0 && WitchCombatState.Find(target.Player) is { } state)
         {
             state.BlockGains++;
+            WitchFeedback.BlockGained(target, amount);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardDrawn(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
+    {
+        if (!fromHandDraw && WitchCombatState.Find(card.Owner) != null)
+        {
+            WitchFeedback.CardDrawn(card.Owner.Creature);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardDiscarded(PlayerChoiceContext choiceContext, CardModel card)
+    {
+        if (WitchCombatState.Find(card.Owner) != null)
+        {
+            WitchFeedback.CardDiscarded(card.Owner.Creature);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardExhausted(PlayerChoiceContext choiceContext, CardModel card, bool causedByEthereal)
+    {
+        if (WitchCombatState.Find(card.Owner) != null)
+        {
+            WitchFeedback.CardExhausted(card.Owner.Creature);
         }
 
         return Task.CompletedTask;
@@ -408,6 +439,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
 
     public override async Task AfterCombatEnd(CombatRoom room)
     {
+        WitchFeedback.CombatEnded();
         foreach (var player in room.CombatState.Players)
         {
             if (WitchCombatState.Find(player) is not { } state)
@@ -527,9 +559,16 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     {
         // U14 Blue Flame Formula buffs only a single powered attack damage event.
         if (props.IsPoweredAttack() && dealer?.Player is { } attacker
-            && WitchCombatState.Find(attacker) is { ActiveSingleHitBonus: > 0 } attackerState)
+            && WitchCombatState.Find(attacker) is { } attackerState)
         {
-            attackerState.ActiveSingleHitBonus = 0;
+            if (attackerState.ActiveSingleHitBonus > 0)
+            {
+                attackerState.ActiveSingleHitBonus = 0;
+            }
+            if (cardSource is WitchCard hitCard && target.Side == CombatSide.Enemy)
+            {
+                WitchFeedback.AttackHit(dealer, target, hitCard);
+            }
         }
 
         if (WitchCombatState.Find(target.Player) is not { } state)
@@ -604,6 +643,7 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
                     if (state.InscriptionReflectGain > 0)
                     {
                         state.BaseReflectPercent = WitchRules.AddCappedReflect(state.BaseReflectPercent, state.InscriptionReflectGain);
+                        WitchFeedback.UpdateInscription(target, state.BaseReflectPercent);
                     }
                 }
                 state.Reflected = true;

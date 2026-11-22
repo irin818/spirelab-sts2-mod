@@ -49,6 +49,10 @@ public static class WitchAnimatedCardArt
     private const string R10ShaderPath = $"{R10Root}/r10_mirror_self.gdshader";
     private const string R10MaskPath = $"{R10Root}/r10_masks.png";
 
+    private const string C01Root = $"{TheWitch.Art}/cards/animated/c01";
+    private const string C01ShaderPath = $"{C01Root}/c01_potion_toss.gdshader";
+    private const string C01MaskPath = $"{C01Root}/c01_masks.png";
+
     private static readonly Dictionary<string, CardArtProfile> Profiles = new(StringComparer.Ordinal)
     {
         ["R10"] = new(
@@ -57,7 +61,14 @@ public static class WitchAnimatedCardArt
             ShaderPath: R10ShaderPath,
             MaskPath: R10MaskPath,
             LoopSeconds: 4.2f,
-            WakeSeconds: 0.14f)
+            WakeSeconds: 0.14f),
+        ["C01"] = new(
+            SpecId: "C01",
+            Variant: CardArtVariant.Original,
+            ShaderPath: C01ShaderPath,
+            MaskPath: C01MaskPath,
+            LoopSeconds: 3.4f,
+            WakeSeconds: 0.12f)
     };
 
     private static readonly HashSet<WitchCardArtController> LiveControllers = [];
@@ -65,7 +76,7 @@ public static class WitchAnimatedCardArt
     private static AnimatedArtMode? _modeOverride;
     private static bool _envRead;
 
-    public static IReadOnlyList<string> Assets { get; } = [R10ShaderPath, R10MaskPath];
+    public static IReadOnlyList<string> Assets { get; } = [R10ShaderPath, R10MaskPath, C01ShaderPath, C01MaskPath];
 
     public static AnimatedArtMode Mode
     {
