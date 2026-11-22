@@ -17,14 +17,19 @@ public sealed class PrimalGreed() : DesireCard("U37", 2, CardType.Skill, CardRar
     protected override async Task OnPlay(PlayerChoiceContext choice, CardPlay play)
     {
         var kept = BelowHalf ? await ChooseOtherHandCard(choice, "SPIRELAB-WITCH_GREED_KEEP") : null;
-        var hand = Owner.PlayerCombatState!.Hand.Cards.Where(card => card != this && card != kept).ToArray();
-        var drawPile = Owner.PlayerCombatState.DrawPile;
-        var combined = drawPile.Cards.Concat(hand).ToList();
+        var piles = Owner.PlayerCombatState!;
+        var drawPile = piles.DrawPile;
+        var combined = drawPile.Cards.Concat(piles.Hand.Cards)
+            .Where(card => card != this && card != kept)
+            .Append(this)
+            .ToList();
         Owner.RunState.Rng.Shuffle.Shuffle(combined);
-        if (combined.Count > 0)
+        Hook.ModifyShuffleOrder(CombatState!, Owner, combined, isInitialShuffle: false);
+        // OnPlayWrapper only moves a card to its result pile if it is still in Play.
+        // Move this instance before drawing so cleanup preserves its actual destination.
+        await CardPileCmd.Add(combined, drawPile);
+        if (!CombatManager.Instance.IsOverOrEnding)
         {
-            Hook.ModifyShuffleOrder(CombatState!, Owner, combined, isInitialShuffle: false);
-            await CardPileCmd.Add(combined, drawPile);
             await Hook.AfterShuffle(CombatState!, choice, Owner);
         }
 

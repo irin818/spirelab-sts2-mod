@@ -10,7 +10,9 @@ case "${1:-witch}" in
     witch-legacy-save) character=witch-legacy-save; smoke_flag=--witch-resume-probe ;;
     witch-campaign) character=witch-campaign; smoke_flag=--witch-campaign; quit_after=200000 ;;
     witch-art) character=witch-art; smoke_flag=--witch-art ;;
-    *) printf 'Usage: %s [witch|witch-save|witch-legacy-save|witch-campaign|witch-art]\n' "$0" >&2; exit 2 ;;
+    witch-greed) character=witch-greed; smoke_flag=--witch-greed ;;
+    witch-finisher) character=witch-finisher; smoke_flag=--witch-finisher; quit_after=24000 ;;
+    *) printf 'Usage: %s [witch|witch-save|witch-legacy-save|witch-campaign|witch-art|witch-greed|witch-finisher]\n' "$0" >&2; exit 2 ;;
 esac
 if [[ "$character" == witch-legacy-save && ! -f "${SPIRELAB_WITCH_LEGACY_SAVE:-}" ]]; then
     printf 'Set SPIRELAB_WITCH_LEGACY_SAVE to a Witch v1.0 save probe fixture.\n' >&2
@@ -62,8 +64,10 @@ config/custom_user_dir_name="$test_profile"
 EOF_CONFIG
 profile="$HOME/Library/Application Support/$test_profile/default/1"
 mkdir -p "$profile"
-cat > "$profile/settings.save" <<'EOF_SETTINGS'
-{"language":"eng","seen_ea_disclaimer":true,"mod_settings":{"mods_enabled":true}}
+limit_background=true
+if [[ "$character" == witch-finisher || "$character" == witch-greed ]]; then limit_background=false; fi
+cat > "$profile/settings.save" <<EOF_SETTINGS
+{"language":"eng","seen_ea_disclaimer":true,"limit_fps_in_background":$limit_background,"mod_settings":{"mods_enabled":true}}
 EOF_SETTINGS
 if [[ "$character" == witch-legacy-save ]]; then
     mkdir -p "$profile/modded/profile1/saves"
@@ -71,13 +75,21 @@ if [[ "$character" == witch-legacy-save ]]; then
 fi
 
 render_args=(--headless)
-if [[ "$character" == witch-art || "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
+if [[ "$character" == witch-art || "$character" == witch-finisher || "$character" == witch-greed || "${SPIRELAB_SMOKE_WINDOWED:-0}" == 1 ]]; then
     render_args=(--windowed --resolution "${SPIRELAB_SMOKE_RESOLUTION:-1200x675}")
 fi
 if [[ "$character" == witch-art ]]; then
     export SPIRELAB_WITCH_ART_SCREENSHOTS="$test_dir/captures"
     mkdir -p "$SPIRELAB_WITCH_ART_SCREENSHOTS"
     printf 'Screenshots: %s\n' "$SPIRELAB_WITCH_ART_SCREENSHOTS"
+fi
+if [[ "$character" == witch-finisher ]]; then
+    export SPIRELAB_WITCH_FINISHER_CAPTURES="$test_dir/captures"
+    mkdir -p "$SPIRELAB_WITCH_FINISHER_CAPTURES"
+    printf 'Finisher screenshots: %s\n' "$SPIRELAB_WITCH_FINISHER_CAPTURES"
+fi
+if [[ "$character" == witch-greed ]]; then
+    export SPIRELAB_WITCH_GREED_CAPTURE="$test_dir/greed-redrawn.png"
 fi
 log="$test_dir/game.log"
 printf 'Smoke test log: %s\n' "$log"

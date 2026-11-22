@@ -47,10 +47,16 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
     public override decimal ModifyHandDraw(Player player, decimal count) =>
         WitchCombatState.Find(player) is { } state ? count + 1 + state.NextDraw : count;
 
-    public override Task BeforeHandDraw(Player player, PlayerChoiceContext choiceContext, ICombatState combatState) =>
-        WitchCombatState.Find(player) != null && combatState is CombatState combat
-            ? Enlightenment.ChooseOpeningCard(choiceContext, player, combat)
-            : Task.CompletedTask;
+    public override Task BeforeHandDraw(Player player, PlayerChoiceContext choiceContext, ICombatState combatState)
+    {
+        if (WitchCombatState.Find(player) == null || combatState is not CombatState combat)
+        {
+            return Task.CompletedTask;
+        }
+
+        CrimsonFinalMirror.WarmMaterials(combat);
+        return Enlightenment.ChooseOpeningCard(choiceContext, player, combat);
+    }
 
     public override bool ShouldPlayerResetEnergy(Player player) =>
         WitchCombatState.Find(player)?.RetainEnergy != true || player.PlayerCombatState!.TurnNumber == 1;
@@ -313,6 +319,14 @@ public sealed class WitchCombatHooks() : CustomSingletonModel(HookType.Combat)
         preventer == this && WitchCombatState.Find(creature.Player) is { } state && creature.Block > state.RetainedBlockCap
             ? CreatureCmd.LoseBlock(new BlockingPlayerChoiceContext(), creature, creature.Block - state.RetainedBlockCap, null)
             : Task.CompletedTask;
+
+    public override Task BeforeDeath(Creature creature)
+    {
+        CrimsonFinalMirror.RememberDefeat(creature);
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCombatVictory(CombatRoom room) => CrimsonFinalMirror.Play(room);
 
     public override async Task AfterCombatEnd(CombatRoom room)
     {

@@ -338,6 +338,8 @@ internal static class WitchSmoke
         public bool SelectFirstHand { get; set; }
         public string OpeningSpecId { get; set; } = "C02";
         public int DesireOptions { get; private set; }
+        public int HandChoices { get; private set; }
+        public Type? PreferredDesire { get; set; }
         public CardModel? LastDesire { get; private set; }
         public int OpeningChoices { get; private set; }
 
@@ -360,10 +362,11 @@ internal static class WitchSmoke
                 }
 
                 DesireOptions = cards.Length;
-                LastDesire = cards[0];
-                return Task.FromResult<IEnumerable<CardModel>>([cards[0]]);
+                LastDesire = cards.FirstOrDefault(card => card.GetType() == PreferredDesire) ?? cards[0];
+                return Task.FromResult<IEnumerable<CardModel>>([LastDesire]);
             }
 
+            HandChoices++;
             return Task.FromResult(SelectFirstHand ? cards.Take(1) : []);
         }
 

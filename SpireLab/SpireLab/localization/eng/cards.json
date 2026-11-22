@@ -22,7 +22,7 @@
   "SPIRELAB-THE_MIRROR_SELF.title": "The Mirror Self",
   "SPIRELAB-THE_MIRROR_SELF.description": "On the first play each combat, set effective HP to max(1, Max HP − real HP). Gains become temporary mirror HP. Reflect 100% of blocked enemy attack damage, rounded down.",
   "SPIRELAB-PRIMAL_GREED.title": "Primal Greed",
-  "SPIRELAB-PRIMAL_GREED.description": "[gold]Desire[/gold]. If below half real HP, you may keep 1 other card in hand. Shuffle the rest of your hand into your draw pile. Draw {Cards:diff()} cards.",
+  "SPIRELAB-PRIMAL_GREED.description": "[gold]Desire[/gold]. If below half real HP, you may keep 1 other card in hand. Shuffle this card and all other non-kept cards in your hand into your draw pile, then draw {Cards:diff()} cards.",
   "SPIRELAB-SLOTH.title": "Sloth",
   "SPIRELAB-SLOTH.description": "[gold]Desire[/gold]. Gain {Block:diff()} Block. If this is your first card this turn, prevent all damage until your next turn instead. If below half real HP, you may Retain 1 other card. End your turn.",
   "SPIRELAB-FALLEN_CONFIDENCE.title": "Fallen Confidence",
