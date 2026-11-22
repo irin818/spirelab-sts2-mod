@@ -53,9 +53,21 @@ internal static class WitchFinisherSmoke
                 ActModel.GetDefaultList(), [], "CRIMSONMIRROR", GameMode.Standard);
             var player = run.Players.Single();
             var choice = new BlockingPlayerChoiceContext();
+            foreach (var boundary in new[] { 0.42f, 1.05f, 1.55f, 2.15f, CrimsonFinalMirror.ShatterTime, 2.95f })
+            {
+                var before = CrimsonMirrorCamera.Theatre(boundary - 0.0001f);
+                var after = CrimsonMirrorCamera.Theatre(boundary + 0.0001f);
+                Check(before.Aim.DistanceTo(after.Aim) < 1.5f && Math.Abs(before.Zoom - after.Zoom) < 0.002f,
+                    $"stage camera is continuous at {boundary:F2}s");
+            }
             await Enter(tree, player, ModelDb.Encounter<NibbitsNormal>());
             Check(PreloadManager.Cache.GetLoadedCacheAssets().IsSupersetOf(CrimsonFinalMirror.Assets),
                 "textures, shaders and audio are preloaded before first battle");
+            var costumeArt = TheWitch.Art + "/finisher/v3/";
+            Check(PreloadManager.Cache.GetTexture2D(costumeArt + "portrait.webp").GetSize() == new Vector2(1672, 941)
+                && PreloadManager.Cache.GetTexture2D(costumeArt + "expression.webp").GetSize() == new Vector2(435, 307)
+                && PreloadManager.Cache.GetTexture2D(costumeArt + "palm.webp").GetSize() == new Vector2(631, 623),
+                "the user-reference art loads at its lossless cutout and expression dimensions");
             var enemy = player.Creature.CombatState!.Enemies.Last();
             foreach (var other in player.Creature.CombatState.Enemies.Where(creature => creature != enemy).ToArray())
             {
@@ -93,7 +105,7 @@ internal static class WitchFinisherSmoke
             {
                 await CreatureCmd.Damage(choice, player.Creature, 4, ValueProp.Move, enemy);
                 await CombatManager.Instance.CheckWinCondition();
-            }, subject: enemy, shots: [(0.70f, "02-camera-turn")]);
+            }, subject: enemy, shots: [(0.82f, "02-pullback-reveal"), (2.42f, "05-reaching-hand"), (2.64f, "11-portrait-erasure")]);
             Check(enemy.IsDead, "the 4 blocked damage led to lethal fixed reflection");
             await LeaveCompletedCombat(tree);
 
@@ -109,7 +121,7 @@ internal static class WitchFinisherSmoke
             {
                 Check(area.TryManualPlay(null), "AOE uses the native action queue");
                 await Task.CompletedTask;
-            }, shots: [(1.29f, "03-witch-closeup"), (2.45f, "06-dissolve")]);
+            }, shots: [(1.30f, "03-mirror-arc"), (3.22f, "07-return")]);
             Check(targets.All(target => target.IsDead), "AOE defeats all remaining enemies in one play");
             await LeaveCompletedCombat(tree);
 
@@ -128,7 +140,7 @@ internal static class WitchFinisherSmoke
             {
                 Check(echo.TryManualPlay(enemy), "two-hit card uses the native action queue");
                 await Task.CompletedTask;
-            }, subject: enemy, resize: true, shots: [(0.31f, "08-left-slot"), (1.73f, "04-collapse")]);
+            }, subject: enemy, resize: true, shots: [(0.31f, "09-left-slot"), (2.12f, "04-wicked-smile")]);
             Check(enemy.IsDead, "two 8-damage hits defeat the target at 12 HP");
             await LeaveCompletedCombat(tree);
 
@@ -153,7 +165,7 @@ internal static class WitchFinisherSmoke
             {
                 await CreatureCmd.Damage(choice, bossTargets, 999, ValueProp.Unpowered, player.Creature);
                 await CombatManager.Instance.CheckWinCondition();
-            }, shots: [(0.31f, "09-boss"), (2.065f, "05-shatter")]);
+            }, shots: [(0.31f, "10-boss"), (2.85f, "06-shatter")]);
             Check(bossTargets.All(target => target.IsDead), "native boss parts are defeated");
             await LeaveCompletedCombat(tree);
 
@@ -180,6 +192,9 @@ internal static class WitchFinisherSmoke
         Check(FindLayer() == null, "no old cinematic remains in the next room");
     }
 
+    private static string FormatMemory(double bytes) =>
+        bytes > 0 ? FormattableString.Invariant($"{bytes / 1048576:F1}") : "unavailable";
+
     private static CanvasLayer? FindLayer() =>
         NCombatRoom.Instance?.GetNodeOrNull<CanvasLayer>("WitchCrimsonFinalMirror");
 
@@ -204,9 +219,19 @@ internal static class WitchFinisherSmoke
         var shot = layout.FindChild("StageShot", recursive: true, owned: false) as Node2D;
         var arm = layout.FindChild("CastingArm", recursive: true, owned: false) as Sprite2D;
         var mirror = layout.FindChild("SoulMirror", recursive: true, owned: false) as Sprite2D;
-        Check(cracks != null && shot != null && arm != null && mirror != null, $"{label} mounts the real V2 scene");
+        var portrait = layout.FindChild("PortraitPlate", recursive: true, owned: false) as Sprite2D;
+        var portraitDepth = layout.FindChild("PortraitDepth", recursive: true, owned: false) as Node2D;
+        var garden = layout.FindChild("LivingMirrorGarden", recursive: true, owned: false) as Node2D;
+        var echoes = layout.FindChild("PeripheralReflections", recursive: true, owned: false) as Node2D;
+        var handDepth = layout.FindChild("HandDepth", recursive: true, owned: false) as Node2D;
+        var soul = layout.FindChild("CapturedSoul", recursive: true, owned: false) as Sprite2D;
+        Check(cracks != null && shot != null && arm != null && mirror != null && portrait != null && soul != null &&
+            portraitDepth != null && handDepth != null && portraitDepth.GetIndex() < shot.GetIndex() && handDepth.GetIndex() > shot.GetIndex()
+            && garden != null && echoes != null && garden.GetIndex() < portraitDepth.GetIndex() && echoes.GetIndex() < garden.GetIndex(),
+            $"{label} layers the central mirror in front of the portrait and behind the reaching hand");
+        var acting = (ShaderMaterial)portrait!.Material;
+        var mirrorInk = (ShaderMaterial)mirror!.Material;
         var impact = layer.GetNode<AudioStreamPlayer>("MirrorImpact");
-        var initialArm = arm!.Texture;
         var shown = Time.GetTicksUsec();
         Check(!room.IsPreFinished && NOverlayStack.Instance?.Peek() == null, $"{label} starts before rewards");
         var displaySize = DisplayServer.WindowGetSize();
@@ -217,14 +242,44 @@ internal static class WitchFinisherSmoke
         var resized = false;
         var pushed = false;
         var recentered = false;
-        var raised = false;
+        var reached = false;
+        var focusPulled = false;
+        var smiled = false;
         var fistSynced = false;
         var stageTravel = false;
+        var widened = false;
+        var collapsed = false;
+        var restoredShot = false;
+        var backgroundMotion = false;
+        var paintedErosion = false;
+        var firstVineRotation = (float?)null;
+        var brightEcho = false;
+        var peakTextureBytes = 0d;
+        var peakVideoBytes = 0d;
+        var peakStaticBytes = 0d;
+        var peakNodeCount = 0d;
         var initialStage = Vector2.Zero;
+        var peakNativeZoom = baselineScale.X;
         while (GodotObject.IsInstanceValid(layer) && layer.IsInsideTree() && !layer.IsQueuedForDeletion()
-            && Time.GetTicksUsec() - shown < 4_000_000)
+            && Time.GetTicksUsec() - shown < 4_500_000)
         {
             var time = drape.GetShaderParameter("elapsed").AsSingle();
+            var textureBytes = Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed);
+            // MegaDot can report a wrapped texture counter during deferred releases.
+            if (textureBytes > 0 && textureBytes < 64d * 1024 * 1024 * 1024)
+            {
+                peakTextureBytes = Math.Max(peakTextureBytes, textureBytes);
+            }
+            peakVideoBytes = Math.Max(peakVideoBytes, Performance.GetMonitor(Performance.Monitor.RenderVideoMemUsed));
+            peakStaticBytes = Math.Max(peakStaticBytes, Performance.GetMonitor(Performance.Monitor.MemoryStatic));
+            peakNodeCount = Math.Max(peakNodeCount, Performance.GetMonitor(Performance.Monitor.ObjectNodeCount));
+            if (time is > 1.05f and < 2.64f)
+            {
+                var vine = garden!.GetChild<Sprite2D>(0);
+                firstVineRotation ??= vine.Rotation;
+                backgroundMotion |= garden.Visible && Math.Abs(vine.Rotation - firstVineRotation.Value) > 0.045f;
+                brightEcho |= echoes!.GetChild<Sprite2D>(0).Modulate.A > 0.16f;
+            }
             if (!pushed && time is >= 0.17f and <= 0.62f && host.SceneContainer.Scale.X > baselineScale.X * 1.05f)
             {
                 pushed = true;
@@ -235,19 +290,42 @@ internal static class WitchFinisherSmoke
                         $"{label} frames the actual defeated target at {target.GetCenter()} with bounds {target.Size}");
                 }
             }
-            if (time is >= 1.18f and <= 1.49f)
+            peakNativeZoom = Math.Max(peakNativeZoom, host.SceneContainer.Scale.X);
+            if (time is > 0.74f and < 1.10f)
             {
-                recentered = host.SceneContainer.Scale.IsEqualApprox(baselineScale);
-                raised = arm.Texture != initialArm && arm.GetParent<Node2D>().Visible;
+                widened |= host.SceneContainer.Scale.X < peakNativeZoom - 0.035f;
+            }
+            if (time is >= 1.08f and <= 1.33f)
+            {
+                recentered |= host.SceneContainer.Scale.IsEqualApprox(baselineScale);
                 initialStage = shot!.Position;
             }
-            if (time is >= 1.84f and < 1.94f)
+            if (time is >= 1.85f and <= 2.21f)
             {
-                stageTravel = shot!.Position.DistanceTo(initialStage) > 85 && mirror!.Visible;
+                stageTravel |= shot!.Position.DistanceTo(initialStage) > 120;
+                focusPulled |= acting.GetShaderParameter("defocus").AsSingle() < 0.45f
+                    && mirrorInk.GetShaderParameter("defocus").AsSingle() > 1.4f;
+                smiled |= acting.GetShaderParameter("smile").AsSingle() > 0.8f
+                    && Math.Abs(acting.GetShaderParameter("tilt").AsSingle()) > 0.04f;
             }
-            if (time is >= 1.98f and < 2.15f)
+            if (time >= 2.40f && time < CrimsonFinalMirror.ShatterTime)
             {
-                fistSynced = arm.Texture.ResourcePath.EndsWith("/v2/fist.webp", StringComparison.Ordinal) && !mirror!.Visible && impact.Playing;
+                reached |= arm!.Visible && arm.Texture.ResourcePath.EndsWith("/v3/palm.webp", StringComparison.Ordinal) &&
+                    handDepth!.Scale.X > portraitDepth!.Scale.X &&
+                    acting.GetShaderParameter("defocus").AsSingle() > 0.45f;
+                paintedErosion |= arm!.Visible && arm.Modulate.A > 0.65f
+                    && acting.GetShaderParameter("erosion").AsSingle() > 0.54f;
+                collapsed |= mirror!.Visible && soul!.Visible && soul.Scale.X < 0.24f &&
+                    ((ShaderMaterial)soul.Material).GetShaderParameter("fracture").AsSingle() > 0.80f;
+            }
+            if (time >= CrimsonFinalMirror.ShatterTime && time < 2.99f)
+            {
+                fistSynced |= arm!.Texture.ResourcePath.EndsWith("/v3/fist.webp", StringComparison.Ordinal)
+                    && arm.Visible && arm.Modulate.A > 0.55f && !mirror!.Visible && !soul!.Visible && impact.Playing;
+            }
+            if (time > 3.30f)
+            {
+                restoredShot |= shot!.Position.Length() < 95 && Math.Abs(shot.Rotation) < 0.007;
             }
             if (images.Count < scheduled.Length && time >= scheduled[images.Count].Seconds)
             {
@@ -273,13 +351,20 @@ internal static class WitchFinisherSmoke
         var runtime = (Time.GetTicksUsec() - shown) / 1000d;
         var sorted = frameTimes.Order().ToArray();
         var p95 = sorted[(int)((sorted.Length - 1) * 0.95)];
-        GD.Print(FormattableString.Invariant($"[SpireLabSmoke] PERF {label}; window={displaySize.X}x{displaySize.Y}; action-to-overlay={(shown - started) / 1000d:F1}ms; runtime={runtime:F1}ms; frames={sorted.Length}; mean={sorted.Average():F2}ms; p95={p95:F2}ms; max={sorted[^1]:F2}ms"));
-        Check(interrupt ? runtime is > 590 and < 1400 : runtime is >= 2500 and <= 2950,
+        var p99 = sorted[(int)((sorted.Length - 1) * 0.99)];
+        var texture = FormatMemory(peakTextureBytes);
+        var staticMemory = FormatMemory(peakStaticBytes);
+        GD.Print(FormattableString.Invariant($"[SpireLabSmoke] PERF {label}; window={displaySize.X}x{displaySize.Y}; action-to-overlay={(shown - started) / 1000d:F1}ms; runtime={runtime:F1}ms; frames={sorted.Length}; mean={sorted.Average():F2}ms; p95={p95:F2}ms; p99={p99:F2}ms; max={sorted[^1]:F2}ms; fps={1000 / sorted.Average():F1}; peakTextureMiB={texture}; peakVideoMiB={peakVideoBytes / 1048576:F1}; peakStaticMiB={staticMemory}; peakNodes={peakNodeCount:F0}"));
+        Check(interrupt ? runtime is > 590 and < 1400 : runtime is >= 3310 and <= 3810,
             $"{label} presentation duration is correct");
         Check(pushed, $"{label} actually changes the native scene camera during the push");
         if (!interrupt)
         {
-            Check(recentered && raised && stageTravel && fistSynced, $"{label} follows the camera path and synchronizes fist, shatter and impact audio");
+            Check(widened && recentered && stageTravel && restoredShot, $"{label} pulls back, climbs to the portrait and settles to the original framing");
+            Check(focusPulled && smiled && reached, $"{label} transfers focus through the smile and into the foreground palm");
+            Check(backgroundMotion && brightEcho, $"{label} animates thorn roses and a delayed peripheral reflection");
+            Check(paintedErosion, $"{label} erodes pigment on the portrait while the foreground hand remains opaque");
+            Check(collapsed && fistSynced, $"{label} collapses the soul before the synchronized fist, shatter and impact audio");
         }
         if (resize)
         {
@@ -300,7 +385,7 @@ internal static class WitchFinisherSmoke
         if (CaptureEnabled && rewardShot)
         {
             await tree.ToSignal(tree.CreateTimer(0.35), SceneTreeTimer.SignalName.Timeout);
-            images.Add(("07-native-rewards", await ReadDrawnFrame(tree)));
+            images.Add(("08-native-rewards", await ReadDrawnFrame(tree)));
         }
         foreach (var (name, image) in images)
         {

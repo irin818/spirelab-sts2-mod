@@ -151,7 +151,8 @@ stage=""
 printf '测试存档：%s\n正在打开独立游戏，请在主菜单正常选择魔女。\n' "$profile_base"
 
 status=0
-env -u SteamAppId -u SteamGameId "$exe" --force-steam=off --log-file "$logs/game.log" > "$logs/console.log" 2>&1 || status=$?
+# The game's own dev display flag avoids the fullscreen transition of a reused test profile.
+env -u SteamAppId -u SteamGameId STS2_DEV_WINDOWED=1 "$exe" --windowed --force-steam=off --log-file "$logs/game.log" > "$logs/console.log" 2>&1 || status=$?
 awk '/^ERROR:|^SCRIPT ERROR:|^\[ERROR\]/ { print FILENAME ": " $0 }' "$logs/game.log" "$logs/console.log" > "$logs/errors.log" 2>/dev/null || true
 if [[ "$status" -ne 0 ]]; then
     tail -n 24 "$logs/console.log"

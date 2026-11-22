@@ -3,7 +3,7 @@
   "name": "SpireLab — The Witch",
   "author": "irin",
   "description": "The Witch with Fate Selection, real card exchange, and native combat status displays.",
-  "version": "v1.6.2",
+  "version": "v1.6.3",
   "min_game_version": "0.111.1",
   "has_pck": true,
   "has_dll": true,

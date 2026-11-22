@@ -22,7 +22,7 @@
   "SPIRELAB-THE_MIRROR_SELF.title": "镜中人",
   "SPIRELAB-THE_MIRROR_SELF.description": "每场战斗首次打出时，使有效生命等于最大生命减去当前真实生命，最低为1。增加部分是镜像生命。本场战斗反射被格挡敌方攻击伤害的100%（向下取整）。",
   "SPIRELAB-PRIMAL_GREED.title": "原初贪婪",
-  "SPIRELAB-PRIMAL_GREED.description": "[gold]欲望[/gold]。真实生命低于一半时，可选择1张其他手牌留在手中。将其余手牌洗入抽牌堆，再抽 {Cards:diff()} 张牌。",
+  "SPIRELAB-PRIMAL_GREED.description": "[gold]欲望[/gold]。真实生命低于一半时，可选择1张其他手牌留在手中。将此牌和其余未保留的手牌洗入抽牌堆，再抽 {Cards:diff()} 张牌。",
   "SPIRELAB-SLOTH.title": "怠惰",
   "SPIRELAB-SLOTH.description": "[gold]欲望[/gold]。获得 {Block:diff()} 点格挡。如果这是本回合打出的第一张牌，改为免疫下回合开始前的所有伤害。真实生命低于一半时，可保留1张其他手牌。结束回合。",
   "SPIRELAB-FALLEN_CONFIDENCE.title": "堕落自信",

@@ -14,12 +14,10 @@ internal sealed class CrimsonMirrorCamera
     private readonly Lens? _actors;
     private readonly Lens? _background;
     private readonly Rect2? _foe;
-    private readonly Rect2? _ally;
 
-    public CrimsonMirrorCamera(NCombatRoom room, Rect2? foe, Rect2? ally)
+    public CrimsonMirrorCamera(NCombatRoom room, Rect2? foe)
     {
         _foe = foe;
-        _ally = ally;
         var actors = room.SceneContainer;
         if (actors == null || actors.IsAncestorOf(room.Ui))
         {
@@ -54,21 +52,95 @@ internal sealed class CrimsonMirrorCamera
         return new Rect2(start, end - start).Abs();
     }
 
+    internal static readonly Vector2 StageCenter = new(960, 517);
+    internal static readonly Vector2 MirrorCenter = new(960, 641);
+
+    // Depth weights apply to both framing and roll. Each painted plane keeps its own world
+    // coordinates, so a foreground gesture can cross the glass without drifting off its axis.
+    internal readonly record struct StageFrame(Vector2 Aim, float Zoom, float Roll, Vector2 Impulse,
+        float FaceFocus, float MirrorFocus, float HallFocus)
+    {
+        public void Apply(Node2D plane, float depth)
+        {
+            var zoom = Mathf.Lerp(1f, Zoom, depth);
+            var rotation = Roll * depth;
+            var target = StageCenter.Lerp(Aim, depth);
+            plane.Scale = Vector2.One * zoom;
+            plane.Rotation = rotation;
+            plane.Position = StageCenter - target.Rotated(rotation) * zoom + Impulse * depth;
+        }
+    }
+
+    public static StageFrame Theatre(float time)
+    {
+        var face = CrimsonMirrorPortrait.Face;
+        var mirror = MirrorCenter - new Vector2(0, 40);
+        var neutral = new StageFrame(StageCenter, 1f, 0f, Vector2.Zero, 2.5f, 0.55f, 0.45f);
+        var reveal = neutral with { Aim = mirror, Zoom = 0.93f };
+        var arrive = reveal with { Aim = face + new Vector2(-6, 34), Zoom = 1.34f, Roll = -0.018f,
+            FaceFocus = 0.20f, MirrorFocus = 1.70f, HallFocus = 1.52f };
+        var smile = arrive with { Aim = face + new Vector2(24, 20), Zoom = 1.48f, Roll = -0.026f,
+            FaceFocus = 0f, MirrorFocus = 1.97f };
+        var hand = neutral with { Aim = new Vector2(1029, 587), Zoom = 1.03f, Roll = 0.012f,
+            FaceFocus = 1.33f, MirrorFocus = 0f, HallFocus = 2.05f };
+        var core = hand with { Aim = mirror + new Vector2(-9, 29), Zoom = 1.20f,
+            Roll = 0.004f, FaceFocus = 1.85f };
+        var recoil = core with { Aim = new Vector2(966, 589), Zoom = 0.99f, Roll = -0.011f,
+            FaceFocus = 2.22f, HallFocus = 1.46f };
+
+        if (time < 1.05f)
+        {
+            var opening = Smooth(time, 0.42f, 1.05f);
+            return Blend(neutral with { Zoom = 1.11f }, reveal, opening);
+        }
+        if (time < 1.55f)
+        {
+            var climb = Smooth(time, 1.05f, 1.55f);
+            // The arc briefly looks past the upper right rim before settling on her face.
+            var control = new Vector2(1133, 533);
+            var arc = reveal.Aim.Lerp(control, climb).Lerp(control.Lerp(arrive.Aim, climb), climb);
+            return Blend(reveal, arrive, climb) with { Aim = arc };
+        }
+        if (time < 2.15f)
+        {
+            var breath = Smooth(time, 1.55f, 2.15f);
+            return Blend(arrive, smile, breath) with
+            {
+                Aim = arrive.Aim.Lerp(smile.Aim, breath) + new Vector2(10, -9) * Mathf.Sin(breath * Mathf.Pi)
+            };
+        }
+        if (time < CrimsonFinalMirror.ShatterTime)
+        {
+            var retreat = Smooth(time, 2.15f, CrimsonFinalMirror.ShatterTime);
+            return Blend(smile, hand, retreat);
+        }
+        if (time < 2.95f)
+        {
+            var jab = Smooth(time, CrimsonFinalMirror.ShatterTime, 2.79f);
+            var recover = Smooth(time, 2.79f, 2.95f);
+            var elapsed = (time - CrimsonFinalMirror.ShatterTime) / (2.95f - CrimsonFinalMirror.ShatterTime);
+            var impulse = Mathf.Sin(elapsed * 9.3f) * Mathf.Pow(1f - elapsed, 2f);
+            return Blend(Blend(hand, core, jab), recoil, recover) with { Impulse = new Vector2(-18, 13) * impulse };
+        }
+        return Blend(recoil, neutral with { FaceFocus = 2.9f, MirrorFocus = 1.80f, HallFocus = 2.3f },
+            Smooth(time, 2.95f, CrimsonFinalMirror.Duration));
+    }
+
+    private static StageFrame Blend(StageFrame a, StageFrame b, float t) =>
+        new(a.Aim.Lerp(b.Aim, t), Mathf.Lerp(a.Zoom, b.Zoom, t), Mathf.Lerp(a.Roll, b.Roll, t), Vector2.Zero,
+            Mathf.Lerp(a.FaceFocus, b.FaceFocus, t), Mathf.Lerp(a.MirrorFocus, b.MirrorFocus, t), Mathf.Lerp(a.HallFocus, b.HallFocus, t));
+
     public Framing Frame(float time)
     {
-        var enemy = _foe?.GetCenter() ?? new Vector2(0.57f, 0.44f);
-        var witch = _ally?.GetCenter() ?? enemy;
-        // Aim at the upper half of tall opponents. Small ones can handle a tighter push.
-        enemy.Y -= (_foe?.Size.Y ?? 0f) * 0.11f;
-        witch.Y -= (_ally?.Size.Y ?? 0f) * 0.18f;
-        var turn = Smooth(time, 0.40f, 0.94f);
-        var push = Smooth(time, 0, 0.41f);
-        var bridge = 1 - Smooth(time, 0.77f, 1.16f);
+        var enemy = _foe?.GetCenter() ?? new Vector2(0.56f, 0.49f);
+        enemy.Y -= (_foe?.Size.Y ?? 0f) * 0.13f;
+        var advance = Mathf.Clamp(time / 0.34f, 0, 1);
+        var catchUp = 1f - Mathf.Pow(1f - advance, 3f);
+        var pullBack = 1f - Smooth(time, 0.42f, 1.04f);
         var zoom = Mathf.Lerp(1.32f, 1.13f, Mathf.Clamp(((_foe?.Size.Y ?? 0.4f) - 0.12f) / 0.46f, 0, 1));
-        var focus = enemy.Lerp(witch, turn);
-        var destination = new Vector2(0.58f, 0.45f).Lerp(new Vector2(0.44f, 0.45f), turn);
-        var amount = push * bridge;
-        return new Framing(focus, 1f + (zoom - 1f - 0.04f * turn) * amount, (destination - focus) * amount * 0.84f);
+        var amount = (catchUp - 0.045f * Smooth(time, 0.29f, 0.42f)) * pullBack;
+        var landing = new Vector2(0.59f, 0.47f);
+        return new Framing(enemy, 1f + (zoom - 1f) * amount, (landing - enemy) * amount * 0.87f);
     }
 
     public void Apply(Framing view)

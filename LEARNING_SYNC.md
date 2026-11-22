@@ -116,3 +116,18 @@
 - `CrimsonMirrorPortrait.cs` 管理上半身画面、前后发束、红眼、透视和四个手势。最值得读的是 `Lens.Apply／Restore` 的坐标变换、`Render` 的六段节奏，以及 `Observe` 里对真实游戏镜头、握拳和恢复的断言。真实伤害、死亡、奖励和存档仍由原版负责。
 - 首轮带截图时出现冷渲染尖峰并越过镜头探针窗口。纹理仍沿用原版预载，新增首场发牌前的小画布材质预热。实机从首播和重复播放记录帧时间，并用左右槽位与 Boss 检查不同受击位置。
 - 根目录 `启动魔女本地测试.command` 调用 `scripts/play-witch-local-macos.sh`。Finder 双击启动真实游戏主菜单，验证 App 副本文件编号和测试用户目录复用。运行时日志与归档截图保留在 `.local/`，详细操作与限制见 [V2 分镜](docs/art/crimson-final-mirror-v2.md)。
+
+## 2026-11-22 · 血色终镜 V3 镜后魔女
+
+- 继续使用目标程序集的致死、战斗结束和胜利钩子，读取真实受击框并保存必要的摄像状态。`CrimsonMirrorCamera.cs` 将原版开镜和镜界镜头分开，新增七段主时间轴、带深度权重的独立图层与弧线抬升。
+- `CrimsonMirrorPortrait.cs` 和 `finisher/v3/` 接入用户提供原画的透明半身、直接取自原图并对位的眼眉口表情纹理、前后发束和四格袖手。局部 UV 形变和分区过渡让抬眼、偏头、嘴角与前伸错峰发生。不同纹理利用 mip 层切换焦点。
+- `CrimsonFinalMirror.cs` 把灵魂收缩、镜裂、局部光波和预制玻璃音纳入同一时间轴。在掌心与镜核处用各层变换后的坐标连接法术丝线。值得读的三段代码是 `Theatre`、`Render` 中的深度投影，以及 `Observe` 在实机记录的镜头、表情和音效断言。
+- 截图回归覆盖普通、反伤、双段、AOE、毒伤中断、Boss、战败、窗口缩放、连续战斗、奖励和生命返还。`.local/crimson-v3/` 保留原图、10 张实机帧和分镜。继续复用既有的 Finder 启动器和独立测试存档。
+
+### 血色终镜 V4 与原初贪婪
+
+- `CrimsonMirrorGarden.cs` 和 `finisher/v4/` 接入倒悬镜庭、荆棘、镜影、袖口柔边与新音轨。查看 `CrimsonMirrorCamera.Theatre` 的镜头连接、`CrimsonMirrorPortrait.Render` 的表情到握拳时间差，以及半身 Shader 如何让头发、衣料、脸部依次溶解。
+- 本机 STS2 v0.111.1 的 `CardModel.OnPlayWrapper` 只会移动仍然位于出牌区的牌。`PrimalGreed.OnPlay` 用原版 `CardPileCmd.Add` 在抽五张前移动原实例，沿用原版洗牌顺序 Hook，弃牌只在原版需要补抽时参与重洗。
+- `WitchGreedSmoke.cs` 通过原版队列检查支付、抽回和未抽回的两条结算路径，用引用相等比较所有战斗牌堆。`WitchFinisherSmoke.cs` 检查镜头边界、局部退场和握拳同步，并记录帧时间。命令见 [V4 说明](docs/art/crimson-final-mirror-v4.md)。
+- Apple Silicon 实机已通过 116 项常规战斗、53 项原初贪婪专项、129 项 V4 演出和 40 项界面检查。围绕原版事件战斗复现了退场时序竞争，改用 `CombatRoom.ParentEventId` 判断事件所属的战斗并保留其原生退场。1600 × 900 无截图回读时，首次正常击杀平均 60.4 FPS，P95 17.31 ms，P99 17.60 ms。
+- 同一 AutoSlay 种子通过茂密植被的事件战斗、三幕首领与最终胜利，冷启动读档复测通过。
